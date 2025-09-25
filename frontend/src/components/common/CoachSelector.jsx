@@ -1,0 +1,100 @@
+import React, { useState } from "react";
+import downarrowIcon from "../../icons/downarrow.svg";
+import searchIcon from "../../icons/search.svg";
+import addcircleIcon from "../../icons/addcircle.svg";
+import trainerIcon from "../../icons/trainer.svg";
+
+export default function CoachSelector({
+  selectedCoach,
+  setSelectedCoach,
+  coachesList,
+  showIcon = true,
+  placeholderColor = "text-black",
+  borderStyle = "#7E818C" // ← اللون مباشرة
+}) {
+  const [openCoach, setOpenCoach] = useState(false);
+  const [coachSearch, setCoachSearch] = useState("");
+
+  return (
+    <div className="relative">
+      <label className="block font-bold text-sm mb-2">المدرب</label>
+      <div
+        className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer relative"
+        onClick={() => setOpenCoach(!openCoach)}
+        style={{ border: `1px solid ${borderStyle}` }}
+      >
+
+        {showIcon && <img src={trainerIcon} alt="trainer" className="absolute right-2" />}
+        <span
+          className={`h-10 w-full flex items-center ${showIcon ? "pr-8" : "pr-2"} pl-2 ${
+            selectedCoach ? "text-black" : placeholderColor
+          } font-normal`}
+        >
+          {selectedCoach || "اختر المدرب"}
+        </span>
+        <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
+      </div>
+
+      {openCoach && (
+        <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-500/40 mt-1 shadow-[0_4px_12px_rgba(0,0,0,0.25)] z-50 text-[#000000]">
+          <div className="w-full h-full p-4 box-border overflow-y-auto">
+            {/* البحث */}
+            <div className="relative w-full h-[30px] mb-2">
+              <input
+                type="text"
+                placeholder="ابحث عن مدرب..."
+                value={coachSearch}
+                onChange={(e) => setCoachSearch(e.target.value)}
+                className="w-full h-full rounded-[8px] border border-gray-500 px-3 pr-10 focus:outline-none placeholder-gray-400 text-gray-800"
+              />
+              <img
+                src={searchIcon}
+                alt="search"
+                className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5"
+              />
+            </div>
+
+            {/* إضافة جديد */}
+            <div className="flex items-center gap-2 mb-2 cursor-pointer px-3 py-2 hover:bg-gray-100">
+              <img src={addcircleIcon} alt="add" className="w-4 h-4" />
+              <span className="text-gray-800 font-normal">إضافة جديد</span>
+            </div>
+
+            {/* قائمة المدربين */}
+            {coachesList
+              .filter((c) => c.toLowerCase().includes(coachSearch.toLowerCase()))
+              .map((coach, idx) => {
+                const isSelected = selectedCoach === coach;
+                return (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between h-[32px] px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-[rgba(126,129,140,0.4)] last:border-b-0"
+                    onClick={() => {
+                      setSelectedCoach(coach);
+                      setOpenCoach(false);
+                      setCoachSearch("");
+                    }}
+                  >
+                    <span className={isSelected ? "font-bold text-black" : "font-normal text-gray-800"}>
+                      {coach}
+                    </span>
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        isSelected ? "border-[#6A0EAD]" : "border-gray-400"
+                      }`}
+                    >
+                      {isSelected && <div className="w-3 h-3 rounded-full bg-[#6A0EAD]"></div>}
+                    </div>
+                  </div>
+                );
+              })}
+
+            {coachesList.filter((c) => c.includes(coachSearch)).length === 0 && (
+              <div className="px-3 py-2 text-gray-400 font-normal">لا يوجد مدربين</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

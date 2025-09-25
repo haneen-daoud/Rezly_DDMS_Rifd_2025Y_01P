@@ -80,19 +80,76 @@ export default function Calender() {
     setShowModal(true);
   };
 
+const days = [
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
+  ];
+
   const handleSaveEvent = () => {
-    if (!newEvent.title?.trim()) return;
-    if (editMode && newEvent.id != null) {
-      setEvents(
-        events.map((ev) => (ev.id === newEvent.id ? { ...newEvent } : ev))
-      );
-    } else {
-      const id = nextId();
+  if (!newEvent.title?.trim()) return;
+
+  if (editMode && newEvent.id != null) {
+    // تعديل حدث موجود
+    setEvents(
+      events.map((ev) => (ev.id === newEvent.id ? { ...newEvent } : ev))
+    );
+  } else {
+    const id = nextId();
+
+    // لو ما في تكرار
+    if (!newEvent.repeat || newEvent.repeat === "") {
       setEvents([...events, { ...newEvent, id }]);
+    } 
+    // تكرار يومي
+    else if (newEvent.repeat === "daily") {
+      let generated = [];
+      for (let i = 0; i < 30; i++) { // كرر 30 يوم قدام
+        let start = new Date(newEvent.start);
+        let end = new Date(newEvent.end);
+        start.setDate(start.getDate() + i);
+        end.setDate(end.getDate() + i);
+        generated.push({
+          ...newEvent,
+          id: id + "-" + i,
+          start: start.toISOString(),
+          end: end.toISOString(),
+        });
+      }
+      setEvents([...events, ...generated]);
+    } 
+    // تكرار أسبوعي بأيام محددة
+    else if (newEvent.repeat === "weekly") {
+      let generated = [];
+      for (let i = 0; i < 60; i++) { // كرر شهرين قدام
+        let start = new Date(newEvent.start);
+        start.setDate(start.getDate() + i);
+        let end = new Date(newEvent.end);
+        end.setDate(end.getDate() + i);
+
+        // إذا اليوم الحالي من الأيام المختارة
+        const weekdayName = days[start.getDay()]; // days = ["أحد","اثنين","..."]
+        if (newEvent.days?.includes(weekdayName)) {
+          generated.push({
+            ...newEvent,
+            id: id + "-" + i,
+            start: start.toISOString(),
+            end: end.toISOString(),
+          });
+        }
+      }
+      setEvents([...events, ...generated]);
     }
-    setShowModal(false);
-    setEditMode(false);
-  };
+  }
+
+  setShowModal(false);
+  setEditMode(false);
+};
+
 
   const handleDeleteClick = () => setShowDeleteConfirm(true);
 

@@ -47,7 +47,6 @@
   align-items: flex-start;
   justify-content: flex-end;
   padding-top: 0px;
-  padding-left: 12px;
   height: 100%;
   box-sizing: border-box;
 
@@ -107,7 +106,8 @@
   /* عشان يقدر يمتد إذا الحدث أكثر من ساعة */
   overflow: visible !important;
   border-radius: 6px;
-  margin: 0 12px;
+  /*margin: 0 12px;*/
+  margin: 4px 8px !important; /* أصغر من 12px عشان لما نضيف حدث نص ساعة يبين منيح ما يطلع صغير*/
   position: absolute !important;
 }
 
