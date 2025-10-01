@@ -1,10 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import CoachSelector from "../common/CoachSelector";
 import LocationSelector from "../common/LocationSelector";
 import MaxParticipantsSelector from "../common/MaxParticipantsSelector";
+import downarrowIcon from "../../icons/downarrow.svg";
+import SearchIcon from "../../icons/search.svg?react";
+import AddcircleIcon from "../../icons/addcircle.svg?react";
 
 const Step1Booking = ({ bookingData, setBookingData }) => {
   if (!bookingData) return null;
+
+  const [openClass, setOpenClass] = useState(false);
+  const [classSearch, setClassSearch] = useState("");
+
+  const classes = ["يوغا", "كارديو", "ملاكمة"];
 
   const coaches = [
     "مريم محمد",
@@ -17,81 +25,169 @@ const Step1Booking = ({ bookingData, setBookingData }) => {
   const rooms = ["قاعة 1", "قاعة 2", "قاعة 3"];
 
   return (
-    <div className="flex flex-col gap-4 w-full items-center font-bold text-black text-[14px]">
-      {/* اسم الحصة */}
-      <div className="flex flex-col w-[344px] gap-2">
-        <label className="font-bold text-black">اسم الحصة</label>
-        <input
-          type="text"
-          placeholder="أدخل اسم الحصة"
-          value={bookingData.title}
-          onChange={(e) =>
-            setBookingData({ ...bookingData, title: e.target.value })
-          }
-          className="w-full h-[42px] border border-gray-300 rounded px-3 text-right placeholder-gray-400 text-black font-normal focus:outline-none focus:border-gray-300"
-        />
-      </div>
+    <div className=" flex justify-center  bg-white w-full text-black text-[14px]">
+      <form className="w-[343px] flex flex-col gap-2 font-[Cairo]">
+        {/* اسم الحصة */}
+        <div className="relative">
+          <label className="block font-bold text-sm w-full h-[18px] mb-2">
+            اسم الحصة
+          </label>
+          <div
+            className="w-full h-10 rounded-[8px] flex items-center justify-between cursor-pointer relative"
+            onClick={() => setOpenClass(!openClass)}
+            style={{ border: "1px solid rgba(0,0,0,0.1)" }}
+          >
+            <span
+              className={`h-10 pr-3 pl-2 w-full flex items-center ${
+                bookingData.title
+                  ? "text-black" // لو في قيمة
+                  : "text-[rgba(0,0,0,0.5)]" // لو placeholder
+              }`}
+            >
+              {bookingData.title || "اختر اسم الحصة"}
+            </span>
 
-      {/* الوصف*/}
-      <div className="flex flex-col w-[344px] gap-2">
-        <label className="font-bold text-black">الوصف</label>
-        <input
-          type="text"
-          placeholder="أدخل الوصف"
-          value={bookingData.description}
-          onChange={(e) =>
-            setBookingData({ ...bookingData, descriptiongit add .
-: e.target.value })
-          }
-          className="w-full h-[42px] border border-gray-300 rounded px-3 text-right placeholder-gray-400 text-black font-normal focus:outline-none focus:border-gray-300"
-        />
-      </div>
+            <img
+              src={downarrowIcon}
+              alt="downarrow"
+              className="absolute left-2"
+            />
+          </div>
 
-      {/* المدرب */}
-      <div className="w-[344px]">
-        <CoachSelector
-          selectedCoach={bookingData.coach}
-          setSelectedCoach={(coach) =>
-            setBookingData({ ...bookingData, coach })
-          }
-          coachesList={coaches}
-          showIcon={false}
-          placeholderColor="text-gray-400"
-          borderStyle="#D1D5DB"
-        />
-      </div>
+          {openClass && (
+            <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-500/40 mt-1 shadow-[0_4px_12px_rgba(0,0,0,0.25)] z-50 text-[#000000]">
+              <div className="w-full h-full p-4 box-border overflow-y-auto">
+                {/* البحث */}
+                <div className="relative w-full h-[30px] mb-2">
+                  <input
+                    type="text"
+                    placeholder="ابحث عن حصة..."
+                    value={classSearch}
+                    onChange={(e) => setClassSearch(e.target.value)}
+                    className="w-full h-full rounded-[8px] pr-10 pl-3 focus:outline-none placeholder-gray-400 text-gray-800"
+                    style={{ border: "1px solid rgba(0,0,0,0.1)" }}
+                  />
+                  <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
+                </div>
 
-      {/* القاعة */}
-      <div className="w-[344px]">
-        <LocationSelector
-          selectedLocation={bookingData.room}
-          setSelectedLocation={(loc) =>
-            setBookingData({ ...bookingData, room: loc })
-          }
-          locationsList={rooms}
-          borderColor="#D1D5DB"
-          placeholderColor="text-gray-400"
-          showIcon={false}
-        />
-      </div>
+                {/* إضافة جديد */}
+                <div className="flex items-center gap-2 mb-2 cursor-pointer px-3 py-2 hover:bg-gray-100">
+                  <AddcircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
+                  <span className="text-gray-800 font-normal">إضافة جديد</span>
+                </div>
 
-      {/* المشتركين */}
-      <div className="w-[344px]">
-        <MaxParticipantsSelector
-          selectedMax={bookingData.maxParticipants}
-          setSelectedMax={(value) =>
-            setBookingData({ ...bookingData, maxParticipants: value })
-          }
-          options={[
-            "1 مشترك",
-            "5 مشتركين",
-            "10 مشتركين",
-            "20 مشتركاً",
-            "إدخال مخصص",
-            "غير محدود",
-          ]}
-        />
-      </div>
+                {/* قائمة الحصص */}
+                {classes
+                  .filter((c) =>
+                    c.toLowerCase().includes(classSearch.toLowerCase())
+                  )
+                  .map((cls, idx) => {
+                    const isSelected = bookingData.title === cls;
+                    return (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between h-[32px] px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-[rgba(126,129,140,0.4)] last:border-b-0"
+                        onClick={() => {
+                          setBookingData({ ...bookingData, title: cls });
+                          setOpenClass(false);
+                          setClassSearch("");
+                        }}
+                      >
+                        <span
+                          className={
+                            isSelected
+                              ? "font-bold text-black"
+                              : "font-normal text-gray-800"
+                          }
+                        >
+                          {cls}
+                        </span>
+                        <div className="w-5 h-5 rounded-full border-2 border-[var(--color-purple)] flex items-center justify-center">
+                          {isSelected && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-purple)]"></div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                {classes.filter((c) => c.includes(classSearch)).length ===
+                  0 && (
+                  <div className="px-3 py-2 text-gray-400 font-normal">
+                    لا يوجد حصص
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* الوصف */}
+        <div className="flex flex-col w-[344px] gap-2">
+          <label className="block font-bold text-sm w-full h-[18px] mb-2">
+            الوصف
+          </label>
+          <input
+            type="text"
+            placeholder="أدخل الوصف"
+            value={bookingData.description}
+            onChange={(e) =>
+              setBookingData({ ...bookingData, description: e.target.value })
+            }
+            className="w-full h-[42px] border rounded-[8px] px-3 text-right font-normal focus:outline-none"
+            style={{
+              border: "1px solid rgba(0,0,0,0.1)",
+              color: bookingData.description ? "#000000" : "rgba(0,0,0,0.5)",
+            }}
+          />
+        </div>
+
+        {/* المدرب */}
+        <div className="w-[344px]">
+          <CoachSelector
+            selectedCoach={bookingData.coach}
+            setSelectedCoach={(coach) =>
+              setBookingData({ ...bookingData, coach })
+            }
+            coachesList={coaches}
+            showIcon={false}
+            placeholderColor="text-gray-400"
+            borderStyle="#D1D5DB"
+          />
+        </div>
+
+        {/* القاعة */}
+        <div className="w-[344px]">
+          <LocationSelector
+            selectedLocation={bookingData.room}
+            setSelectedLocation={(loc) =>
+              setBookingData({ ...bookingData, room: loc })
+            }
+            locationsList={rooms}
+            borderColor="#D1D5DB"
+            placeholderColor="text-gray-400"
+            showIcon={false}
+          />
+        </div>
+
+        {/* المشتركين */}
+        <div className="w-[344px]">
+          <MaxParticipantsSelector
+            selectedMax={bookingData.maxParticipants}
+            setSelectedMax={(value) =>
+              setBookingData({ ...bookingData, maxParticipants: value })
+            }
+            options={[
+              "1 مشترك",
+              "5 مشتركين",
+              "10 مشتركين",
+              "20 مشتركاً",
+              "إدخال مخصص",
+              "غير محدود",
+            ]}
+          />
+        </div>
+      </form>
     </div>
   );
 };

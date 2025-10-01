@@ -1,31 +1,40 @@
 import React, { useState } from "react";
-import downarrowIcon from "../../icons/downarrow.svg";
-import muteIcon from "../../icons/mute.svg";
-import notificationIcon from "../../icons/notification.svg";
+import DownArrowIcon from "../../icons/downarrow.svg?react";
+import MuteIcon from "../../icons/mute.svg?react";
+import NotificationIcon from "../../icons/notification.svg?react";
 
 const ReminderSelector = ({
   selectedReminder,
   setSelectedReminder,
-  showIconInInput = false, // تظهر الأيقونة في الصندوق لو true
+  showIconInInput = false,
   placeholder = "قبل 30 دقيقة",
-  borderStyle = "#D1D5DB", // إطار الصندوق
-  placeholderColor = "text-gray-400", // نص افتراضي
+  borderStyle = "#D1D5DB",
+  placeholderColor = "text-gray-400",
+  variant = "event",
 }) => {
   const [openReminder, setOpenReminder] = useState(false);
 
   const options = [
-    { value: "0", label: "عدم التذكير", icon: muteIcon },
-    { value: "30", label: "قبل 30 دقيقة", icon: notificationIcon },
-    { value: "60", label: "قبل ساعة", icon: notificationIcon },
-    { value: "24", label: "قبل 1 يوم", icon: notificationIcon },
+    { value: "0", label: "عدم التذكير", icon: MuteIcon },
+    { value: "30", label: "قبل 30 دقيقة", icon: NotificationIcon },
+    { value: "60", label: "قبل ساعة", icon: NotificationIcon },
+    { value: "24", label: "قبل 1 يوم", icon: NotificationIcon },
   ];
 
-  const selectedOption = options.find(o => o.value === selectedReminder);
+  const selectedOption = options.find((o) => o.value === selectedReminder);
+
+  const displayLabel =
+    variant === "booking" && !selectedOption
+      ? "اختر موعد التذكير"
+      : selectedOption?.label || placeholder;
+
+  const displayColor =
+    variant === "booking" && !selectedOption ? placeholderColor : "text-black";
 
   return (
     <div className="relative w-full">
       <label className="block font-bold text-sm mb-2">تذكير</label>
-      {/* الصندوق */}
+
       <div
         className="w-full h-10 flex items-center justify-between cursor-pointer px-3 rounded-md"
         style={{ border: `1px solid ${borderStyle}` }}
@@ -33,13 +42,21 @@ const ReminderSelector = ({
       >
         <div className="flex items-center gap-2">
           {showIconInInput && selectedOption && (
-            <img src={selectedOption.icon} alt="notification" className="w-4 h-4" />
+            <selectedOption.icon className="w-4 h-4 text-[var(--color-purple)]" />
           )}
-          <span className={`${!selectedOption ? placeholderColor : "text-black"}`}>
-            {selectedOption?.label || placeholder}
+          <span
+            className={`${
+              variant === "booking" && !selectedOption
+                ? "text-gray-400 font-normal" // placeholder
+                : "text-black font-normal"
+            }`}
+          >
+            {variant === "booking" && !selectedOption
+              ? "اختر موعد التذكير"
+              : selectedOption?.label || placeholder}
           </span>
         </div>
-        <img src={downarrowIcon} alt="downarrow" className="w-4 h-4" />
+        <DownArrowIcon className="w-4 h-4 text-[var(--color-purple)]" />
       </div>
 
       {/* قائمة الخيارات */}
@@ -48,6 +65,7 @@ const ReminderSelector = ({
           <div className="w-full h-full p-4 box-border overflow-y-auto">
             {options.map((option) => {
               const isSelected = selectedReminder === option.value;
+              const Icon = option.icon;
               return (
                 <div
                   key={option.value}
@@ -58,16 +76,21 @@ const ReminderSelector = ({
                   }}
                 >
                   <div className="flex items-center gap-2">
-                    <img src={option.icon} alt="notification" className="w-4 h-4" />
+                    <Icon className="w-4 h-4 text-[var(--color-purple)]" />
                     <span>{option.label}</span>
                   </div>
+
                   {/* الدائرة */}
                   <div
                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      isSelected ? "border-[#6A0EAD]" : "border-gray-400"
+                      isSelected
+                        ? "border-[var(--color-purple)]"
+                        : "border-gray-400"
                     }`}
                   >
-                    {isSelected && <div className="w-3 h-3 rounded-full bg-[#6A0EAD]"></div>}
+                    {isSelected && (
+                      <div className="w-3 h-3 rounded-full bg-[var(--color-purple)]"></div>
+                    )}
                   </div>
                 </div>
               );

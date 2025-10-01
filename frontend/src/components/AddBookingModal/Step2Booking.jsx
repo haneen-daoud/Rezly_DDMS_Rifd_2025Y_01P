@@ -19,6 +19,7 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
     "6 أشهر",
     "سنة",
   ];
+
   if (!bookingData) return null;
 
   const handleDateChange = (date) => {
@@ -53,21 +54,17 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
           <img src={calenderIcon} alt="calender" className="absolute right-2" />
           <input
             type="text"
-            value={getDateString(bookingData.start)}
+            value={bookingData.start ? getDateString(bookingData.start) : ""}
             placeholder="اختر تاريخ"
             readOnly
-            className={`h-10 w-full pr-8 pl-2 rounded-md border border-gray-400 focus:outline-none ${
-              !bookingData.start ? "text-gray-400" : "text-black"
-            }`}
+            className="h-10 w-full pr-8 pl-2 rounded-md border border-[#D1D5DB] focus:outline-none text-black font-normal placeholder-gray-400 placeholder:font-normal text-black"
             onClick={() => setShowCalendar(!showCalendar)}
           />
 
           {showCalendar && (
             <div className="absolute top-full left-0 mt-2 z-30 w-60">
               <MiniCalender
-                currentDate={
-                  bookingData.start ? new Date(bookingData.start) : new Date()
-                }
+                currentDate={new Date()}
                 handleDateChange={handleDateChange}
               />
             </div>
@@ -81,96 +78,95 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
         <TimeRangePicker
           startTime={getTimeString(bookingData.start)}
           endTime={getTimeString(bookingData.end)}
+          variant="booking"
           onChange={({ start, end }) => {
-            const date =
-              getDateString(bookingData.start) ||
-              new Date().toISOString().split("T")[0];
+            const date = getDateString(bookingData.start) || "";
             setBookingData({
               ...bookingData,
-              start: `${date}T${start}`,
-              end: `${date}T${end}`,
+              start: date ? `${date}T${start}` : "",
+              end: date ? `${date}T${end}` : "",
             });
           }}
         />
       </div>
 
+      {/* مدة الاشتراك */}
       <div className="relative w-[344px]">
-  <label className="block font-bold text-sm mb-2">مدة الاشتراك</label>
-
-  {/* الحقل */}
-  <div
-    className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer px-2 relative"
-    style={{ border: `1px solid #D1D5DB` }}
-    onClick={() => setOpenDuration((prev) => !prev)}
-  >
-    <span
-      className={`h-10 w-full flex items-center pl-2 ${
-        bookingData.duration ? "text-black" : "text-gray-400"
-      } font-normal`}
-    >
-      {bookingData.duration || "اختر مدة الاشتراك"}
-    </span>
-    <img
-      src={downarrowIcon}
-      alt="downarrow"
-      className="absolute left-2 w-4 h-4 pointer-events-none"
-    />
-  </div>
-
-  {/* القائمة */}
-  {openDuration && (
-    <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-400 mt-1 shadow z-[1000]">
-      {durationOptions.map((option, idx) => {
-        const isSelected = bookingData.duration === option;
-        return (
-          <div
-            key={idx}
-            className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
-            onClick={() => {
-              setBookingData({ ...bookingData, duration: option });
-              setOpenDuration(false);
-            }}
+        <label className="block font-bold text-sm mb-2">مدة الاشتراك</label>
+        <div
+          className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer px-2 relative"
+          style={{ border: `1px solid #D1D5DB` }}
+          onClick={() => setOpenDuration((prev) => !prev)}
+        >
+          <span
+            className={`h-10 w-full flex items-center pl-2 ${
+              bookingData.duration ? "text-black" : "text-gray-400"
+            } font-normal`}
           >
-            <div className="flex items-center gap-2">
-              <img src={durationIcon} alt="duration" className="w-4 h-4" />
-              <span
-                className={
-                  isSelected
-                    ? "font-bold text-black"
-                    : "font-normal text-gray-800"
-                }
-              >
-                {option}
-              </span>
-            </div>
-            <div
-              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                isSelected ? "border-[#6A0EAD]" : "border-gray-400"
-              }`}
-            >
-              {isSelected && (
-                <div className="w-2.5 h-2.5 bg-[#6A0EAD] rounded-full"></div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  )}
-</div>
+            {bookingData.duration || "اختر مدة الاشتراك"}
+          </span>
+          <img
+            src={downarrowIcon}
+            alt="downarrow"
+            className="absolute left-2 w-4 h-4 pointer-events-none"
+          />
+        </div>
 
+        {/* قائمة المدة */}
+        {openDuration && (
+          <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-400 mt-1 shadow z-[1000]">
+            {durationOptions.map((option, idx) => {
+              const isSelected = bookingData.duration === option;
+              return (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
+                  onClick={() => {
+                    setBookingData({ ...bookingData, duration: option });
+                    setOpenDuration(false);
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={durationIcon}
+                      alt="duration"
+                      className="w-4 h-4"
+                    />
+                    <span
+                      className={
+                        isSelected
+                          ? "font-bold text-black"
+                          : "font-normal text-gray-800"
+                      }
+                    >
+                      {option}
+                    </span>
+                  </div>
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                      isSelected ? "border-[#6A0EAD]" : "border-gray-400"
+                    }`}
+                  >
+                    {isSelected && (
+                      <div className="w-2.5 h-2.5 bg-[#6A0EAD] rounded-full"></div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* التذكير */}
       <div className="w-[344px]">
-       <ReminderSelector
-  selectedReminder={bookingData.reminder}
-  setSelectedReminder={(rem) => setBookingData({ ...bookingData, reminder: rem })}
-  showIconInInput={false}
-  borderStyle="#D1D5DB"
-  placeholderColor="text-gray-400"
-/>
-
-
+        <ReminderSelector
+          selectedReminder={bookingData.reminder}
+          setSelectedReminder={(rem) =>
+            setBookingData({ ...bookingData, reminder: rem })
+          }
+          variant="booking"
+        />
       </div>
     </div>
   );

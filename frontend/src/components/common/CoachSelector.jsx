@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import downarrowIcon from "../../icons/downarrow.svg";
-import searchIcon from "../../icons/search.svg";
-import addcircleIcon from "../../icons/addcircle.svg";
+import SearchIcon from "../../icons/search.svg?react";
+import AddcircleIcon from "../../icons/addcircle.svg?react"; // ← SVG كـ React
 import trainerIcon from "../../icons/trainer.svg";
 
 export default function CoachSelector({
@@ -10,7 +10,7 @@ export default function CoachSelector({
   coachesList,
   showIcon = true,
   placeholderColor = "text-black",
-  borderStyle = "#7E818C" // ← اللون مباشرة
+  borderStyle = "#7E818C",
 }) {
   const [openCoach, setOpenCoach] = useState(false);
   const [coachSearch, setCoachSearch] = useState("");
@@ -23,10 +23,13 @@ export default function CoachSelector({
         onClick={() => setOpenCoach(!openCoach)}
         style={{ border: `1px solid ${borderStyle}` }}
       >
-
-        {showIcon && <img src={trainerIcon} alt="trainer" className="absolute right-2" />}
+        {showIcon && (
+          <img src={trainerIcon} alt="trainer" className="absolute right-2" />
+        )}
         <span
-          className={`h-10 w-full flex items-center ${showIcon ? "pr-8" : "pr-2"} pl-2 ${
+          className={`h-10 w-full flex items-center ${
+            showIcon ? "pr-8" : "pr-2"
+          } pl-2 ${
             selectedCoach ? "text-black" : placeholderColor
           } font-normal`}
         >
@@ -47,22 +50,21 @@ export default function CoachSelector({
                 onChange={(e) => setCoachSearch(e.target.value)}
                 className="w-full h-full rounded-[8px] border border-gray-500 px-3 pr-10 focus:outline-none placeholder-gray-400 text-gray-800"
               />
-              <img
-                src={searchIcon}
-                alt="search"
-                className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5"
-              />
+
+              <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
             </div>
 
             {/* إضافة جديد */}
             <div className="flex items-center gap-2 mb-2 cursor-pointer px-3 py-2 hover:bg-gray-100">
-              <img src={addcircleIcon} alt="add" className="w-4 h-4" />
+              <AddcircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
               <span className="text-gray-800 font-normal">إضافة جديد</span>
             </div>
 
             {/* قائمة المدربين */}
             {coachesList
-              .filter((c) => c.toLowerCase().includes(coachSearch.toLowerCase()))
+              .filter((c) =>
+                c.toLowerCase().includes(coachSearch.toLowerCase())
+              )
               .map((coach, idx) => {
                 const isSelected = selectedCoach === coach;
                 return (
@@ -75,22 +77,31 @@ export default function CoachSelector({
                       setCoachSearch("");
                     }}
                   >
-                    <span className={isSelected ? "font-bold text-black" : "font-normal text-gray-800"}>
+                    <span
+                      className={
+                        isSelected
+                          ? "font-bold text-black"
+                          : "font-normal text-gray-800"
+                      }
+                    >
                       {coach}
                     </span>
-                    <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? "border-[#6A0EAD]" : "border-gray-400"
-                      }`}
-                    >
-                      {isSelected && <div className="w-3 h-3 rounded-full bg-[#6A0EAD]"></div>}
+
+                    {/* دائرة الاختيار */}
+                    <div className="w-5 h-5 rounded-full border-2 border-[var(--color-purple)] flex items-center justify-center">
+                      {isSelected && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-purple)]"></div>
+                      )}
                     </div>
                   </div>
                 );
               })}
 
-            {coachesList.filter((c) => c.includes(coachSearch)).length === 0 && (
-              <div className="px-3 py-2 text-gray-400 font-normal">لا يوجد مدربين</div>
+            {coachesList.filter((c) => c.includes(coachSearch)).length ===
+              0 && (
+              <div className="px-3 py-2 text-gray-400 font-normal">
+                لا يوجد مدربين
+              </div>
             )}
           </div>
         </div>

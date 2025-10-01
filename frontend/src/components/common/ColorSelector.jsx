@@ -1,4 +1,5 @@
 import React from "react";
+import ColorIcon from "../../icons/color.svg?react";
 
 export default function ColorSelector({ selectedColor, setSelectedColor }) {
   const colors = [
@@ -11,7 +12,12 @@ export default function ColorSelector({ selectedColor, setSelectedColor }) {
   return (
     <div className="flex items-center gap-4">
       <label className="flex items-center gap-2 block font-bold text-sm w-[52px] h-[18px] mb-2">
-        اللون
+        <ColorIcon
+          className="w-4 h-4"
+          style={{ color: "var(--color-purple)" }}
+        />
+
+        <span>اللون</span>
       </label>
       <div className="flex gap-4">
         {colors.map((c, i) => {
@@ -23,11 +29,18 @@ export default function ColorSelector({ selectedColor, setSelectedColor }) {
               className="relative w-5 h-5 rounded-full flex-shrink-0 transition-all duration-200 flex items-center justify-center"
               style={{ padding: 0, border: "none" }}
             >
-              <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: c.border }} />
+              <div
+                className="w-3.5 h-3.5 rounded-full"
+                style={{ backgroundColor: c.border }}
+              />
               {isSelected && (
                 <div
                   className="absolute rounded-full"
-                  style={{ width: "130%", height: "130%", border: `2px solid ${c.border}` }}
+                  style={{
+                    width: "130%",
+                    height: "130%",
+                    border: `2px solid ${c.border}`,
+                  }}
                 />
               )}
             </button>

@@ -80,7 +80,7 @@ export default function Calender() {
     setShowModal(true);
   };
 
-const days = [
+  const days = [
     "الأحد",
     "الاثنين",
     "الثلاثاء",
@@ -91,49 +91,29 @@ const days = [
   ];
 
   const handleSaveEvent = () => {
-  if (!newEvent.title?.trim()) return;
+    if (!newEvent.title?.trim()) return;
 
-  if (editMode && newEvent.id != null) {
-    // تعديل حدث موجود
-    setEvents(
-      events.map((ev) => (ev.id === newEvent.id ? { ...newEvent } : ev))
-    );
-  } else {
-    const id = nextId();
+    if (editMode && newEvent.id != null) {
+      // تعديل حدث موجود
+      setEvents(
+        events.map((ev) => (ev.id === newEvent.id ? { ...newEvent } : ev))
+      );
+    } else {
+      const id = nextId();
 
-    // لو ما في تكرار
-    if (!newEvent.repeat || newEvent.repeat === "") {
-      setEvents([...events, { ...newEvent, id }]);
-    } 
-    // تكرار يومي
-    else if (newEvent.repeat === "daily") {
-      let generated = [];
-      for (let i = 0; i < 30; i++) { // كرر 30 يوم قدام
-        let start = new Date(newEvent.start);
-        let end = new Date(newEvent.end);
-        start.setDate(start.getDate() + i);
-        end.setDate(end.getDate() + i);
-        generated.push({
-          ...newEvent,
-          id: id + "-" + i,
-          start: start.toISOString(),
-          end: end.toISOString(),
-        });
+      // لو ما في تكرار
+      if (!newEvent.repeat || newEvent.repeat === "") {
+        setEvents([...events, { ...newEvent, id }]);
       }
-      setEvents([...events, ...generated]);
-    } 
-    // تكرار أسبوعي بأيام محددة
-    else if (newEvent.repeat === "weekly") {
-      let generated = [];
-      for (let i = 0; i < 60; i++) { // كرر شهرين قدام
-        let start = new Date(newEvent.start);
-        start.setDate(start.getDate() + i);
-        let end = new Date(newEvent.end);
-        end.setDate(end.getDate() + i);
-
-        // إذا اليوم الحالي من الأيام المختارة
-        const weekdayName = days[start.getDay()]; // days = ["أحد","اثنين","..."]
-        if (newEvent.days?.includes(weekdayName)) {
+      // تكرار يومي
+      else if (newEvent.repeat === "daily") {
+        let generated = [];
+        for (let i = 0; i < 30; i++) {
+          // تكرار ل30 يوم
+          let start = new Date(newEvent.start);
+          let end = new Date(newEvent.end);
+          start.setDate(start.getDate() + i);
+          end.setDate(end.getDate() + i);
           generated.push({
             ...newEvent,
             id: id + "-" + i,
@@ -141,15 +121,36 @@ const days = [
             end: end.toISOString(),
           });
         }
+        setEvents([...events, ...generated]);
       }
-      setEvents([...events, ...generated]);
+      // تكرار أسبوعي بأيام محددة
+      else if (newEvent.repeat === "weekly") {
+        let generated = [];
+        for (let i = 0; i < 60; i++) {
+          // كرر شهرين قدام
+          let start = new Date(newEvent.start);
+          start.setDate(start.getDate() + i);
+          let end = new Date(newEvent.end);
+          end.setDate(end.getDate() + i);
+
+          // إذا اليوم الحالي من الأيام المختارة
+          const weekdayName = days[start.getDay()];
+          if (newEvent.days?.includes(weekdayName)) {
+            generated.push({
+              ...newEvent,
+              id: id + "-" + i,
+              start: start.toISOString(),
+              end: end.toISOString(),
+            });
+          }
+        }
+        setEvents([...events, ...generated]);
+      }
     }
-  }
 
-  setShowModal(false);
-  setEditMode(false);
-};
-
+    setShowModal(false);
+    setEditMode(false);
+  };
 
   const handleDeleteClick = () => setShowDeleteConfirm(true);
 
@@ -182,7 +183,7 @@ const days = [
     const text = ev.extendedProps.text ?? "#1E3A8A";
     return (
       <div
-        className="flex flex-col justify-center items-start pl-2 box-border font-[Cairo] text-[10px] sm:text-xs md:text-sm font-bold border-r-4 w-full h-full truncate"
+        className="self-stretch p-2 rounded inline-flex flex-col justify-center items-start font-[Cairo] text-[10px] sm:text-xs md:text-sm font-bold border-r-4 w-full h-full truncate"
         style={{ background: bg, borderColor: border, color: text }}
       >
         <div className="opacity-90">{eventInfo.timeText}</div>
@@ -212,7 +213,7 @@ const days = [
                 <div className="relative">
                   <button
                     onClick={() => setShowDatePicker(!showDatePicker)}
-                    className="h-[32px] w-auto px-2 flex items-center gap-2 rounded-[8px] font-semibold bg-white border-0 outline-none"
+                    className="h-[32px] w-auto px-2 flex items-center gap-2 rounded-[8px] font-semibold bg-[#F8F9FA] border-0 outline-none"
                   >
                     <img src={CalenderIcon} alt="calender" />
                     <span className="font-cairo text-[14px] font-bold text-black truncate">
@@ -236,12 +237,12 @@ const days = [
                 <div className="relative">
                   <button
                     onClick={() => setShowViewMenu(!showViewMenu)}
-                    className="bg-white w-[111px] h-[32px] px-[8px] py-2 rounded-[8px] font-semibold flex items-center justify-between gap-x-[12px] !border-0 !outline-none"
+                    className="bg-[#F8F9FA] w-[111px] h-[32px] px-[8px] py-2 rounded-[8px] font-semibold flex items-center justify-between gap-x-[12px] !border-0 !outline-none"
                   >
                     <img src={RightArrowIcon} alt="rightarrow" />
                     <span className="font-cairo text-[14px] font-[700] text-black">
                       {view === "timeGridDay"
-                        ? "يوم"
+                        ? "اليوم"
                         : view === "timeGridWeek"
                         ? "أسبوع"
                         : "شهر"}
@@ -284,7 +285,7 @@ const days = [
                       const api = calendarRef.current.getApi();
                       setTimeout(() => {
                         api.removeAllEvents();
-                        api.addEventSource(events); // بعيد إضافة كل الأحداث
+                        api.addEventSource(events);
                         api.render();
                       }, 0);
                     }
@@ -310,7 +311,7 @@ const days = [
             headerToolbar={false}
             slotMinTime="08:00:00"
             slotMaxTime="24:00:00"
-            slotDuration="01:00:00"
+            slotDuration="00:30:00"
             eventMaxStack={
               fullScreenMode
                 ? 10 // عرض 10 أحداث أقصى حد بالصف الواحد في صفحة الكاليندر الموسعة

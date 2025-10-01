@@ -6,17 +6,12 @@ import RepeatSelector from "../common/RepeatSelector";
 import ReminderSelector from "../common/ReminderSelector";
 import ColorSelector from "../common/ColorSelector";
 
-import notificationIcon from "../../icons/notification.svg";
-import muteIcon from "../../icons/mute.svg";
+import MembersIcon from "../../icons/members.svg?react";
+import AddCircleIcon from "../../icons/addcircle.svg?react";
+import SearchIcon from "../../icons/search.svg?react";
 import MiniCalender from "../MiniCalender/MiniCalender";
-import DeleteIcon from "../../icons/Delete.svg";
+import DeleteIcon from "../../icons/Delete.svg?react";
 import CloseIcon from "../../icons/close.svg";
-import addressIcon from "../../icons/address.svg";
-import discIcon from "../../icons/disc.svg";
-import calenderIcon from "../../icons/calender.svg";
-import hourIcon from "../../icons/hour.svg";
-import membersIcon from "../../icons/members.svg";
-import addcircleIcon from "../../icons/addcircle.svg";
 
 export default function EventModal({
   newEvent,
@@ -58,11 +53,9 @@ export default function EventModal({
           <h3 className="text-right text-black text-[16px] font-['Cairo'] font-bold leading-[24px]">
             تفاصيل الموعد
           </h3>
-          <div className="flex w-18 h-full gap-2 flex items-center justify-between">
-            <img
-              className="w-8 h-8 object-contain"
-              src={DeleteIcon}
-              alt="delete"
+          <div className="flex w-18 h-full gap-2  items-center justify-between">
+            <DeleteIcon
+              className="w-8 h-8 object-contain text-red-500"
               onClick={() => {
                 if (!newEvent?.id) return;
                 handleDeleteClick();
@@ -85,11 +78,20 @@ export default function EventModal({
           <div>
             <label className="block font-bold text-sm mb-2">العنوان</label>
             <div className="relative flex items-center">
-              <img
-                src={addressIcon}
-                alt="address"
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
                 className="absolute right-2"
-              />
+              >
+                <path
+                  d="M5.99805 12.7032L5.12891 13.5724C4.53647 14.1646 3.73317 14.4972 2.89551 14.4972H2C1.72386 14.4972 1.5 14.2733 1.5 13.9972V13.1046C1.5 12.2668 1.83251 11.4628 2.4248 10.8702L3.29492 10.0001L5.99805 12.7032ZM7.66504 11.0363L6.70605 11.9962L4.00293 9.29309L4.96191 8.33313L7.66504 11.0363ZM11.4551 1.84094C11.9102 1.38576 12.6487 1.38647 13.1035 1.84192L14.1602 2.89954C14.6144 3.35459 14.6139 4.09235 14.1592 4.547L8.37305 10.3322L5.66895 7.62805L11.4551 1.84094Z"
+                  fill="  var(--color-purple)
+"
+                />
+              </svg>
               <input
                 type="text"
                 value={newEvent.title || ""}
@@ -108,7 +110,22 @@ export default function EventModal({
               الوصف (اختياري)
             </label>
             <div className="relative flex items-center">
-              <img src={discIcon} alt="disc" className="absolute right-2" />
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="absolute right-2"
+              >
+                <path
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  d="M3.45329 1.5C2.37329 1.5 1.5 2.37329 1.5 3.45329V12.5534C1.5 13.6267 2.37329 14.5 3.45329 14.5H9.29997C9.4733 14.5 9.63993 14.4333 9.75993 14.3066L14.3066 9.75993C14.4333 9.63993 14.5 9.4733 14.5 9.29997V3.45329C14.5 2.37329 13.6266 1.5 12.5533 1.5H3.45329ZM13.2 9.03337L9.03328 13.2V10.0334C9.03328 9.48003 9.47995 9.03337 10.0333 9.03337H13.2Z"
+                  fill="  var(--color-purple)
+"
+                />
+              </svg>
               <textarea
                 value={newEvent.description || ""}
                 onChange={(e) =>
@@ -124,11 +141,20 @@ export default function EventModal({
           <div>
             <label className="block font-bold text-sm mb-2">التاريخ</label>
             <div className="relative flex items-center">
-              <img
-                src={calenderIcon}
-                alt="calender"
-                className="absolute right-2"
-              />
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="absolute right-2 "
+              >
+                <path
+                  d="M14 8V12.6667C14 13.0203 13.8595 13.3594 13.6095 13.6095C13.3594 13.8595 13.0203 14 12.6667 14H3.33333C2.97971 14 2.64057 13.8595 2.39052 13.6095C2.14048 13.3594 2 13.0203 2 12.6667V8H14ZM10.6667 2C10.8435 2 11.013 2.07024 11.1381 2.19526C11.2631 2.32029 11.3333 2.48986 11.3333 2.66667V3.33333H12.6667C13.0203 3.33333 13.3594 3.47381 13.6095 3.72386C13.8595 3.97391 14 4.31304 14 4.66667V6.66667H2V4.66667C2 4.31304 2.14048 3.97391 2.39052 3.72386C2.64057 3.47381 2.97971 3.33333 3.33333 3.33333H4.66667V2.66667C4.66667 2.48986 4.7369 2.32029 4.86193 2.19526C4.98695 2.07024 5.15652 2 5.33333 2C5.51014 2 5.67971 2.07024 5.80474 2.19526C5.92976 2.32029 6 2.48986 6 2.66667V3.33333H10V2.66667C10 2.48986 10.0702 2.32029 10.1953 2.19526C10.3203 2.07024 10.4899 2 10.6667 2Z"
+                  fill="  var(--color-purple)
+"
+                />
+              </svg>
               <input
                 type="text"
                 value={
@@ -187,38 +213,28 @@ export default function EventModal({
 
           {/* المدرب */}
           <CoachSelector
-  selectedCoach={newEvent.coach}
-  setSelectedCoach={(coach) => setNewEvent({ ...newEvent, coach })}
-  coachesList={coaches}
-  showIcon={true}
-    placeholderColor="text-black"
-  borderStyle="#7E818C" 
-/>
-
-
+            selectedCoach={newEvent.coach}
+            setSelectedCoach={(coach) => setNewEvent({ ...newEvent, coach })}
+            coachesList={coaches}
+            showIcon={true}
+            placeholderColor="text-black"
+            borderStyle="#7E818C"
+          />
 
           {/* المشتركين */}
           <div className="relative">
             <label className="block font-bold text-sm mb-2">المشتركين</label>
             <div
-              className="w-full h-10 border border-[#7E818C] rounded-md flex items-center justify-between cursor-pointer"
+              className="w-full h-10 border border-[#7E818C] rounded-md flex items-center justify-between cursor-pointer px-2"
               onClick={() => setOpenMembers(!openMembers)}
             >
-              <img
-                src={membersIcon}
-                alt="members"
-                className="absolute right-2"
-              />
+              <MembersIcon className="absolute right-2 w-4 h-4 text-[var(--color-purple)]" />
               <span className="h-10 pr-8 pl-2 w-full flex items-center">
                 {newEvent.participants?.length > 0
                   ? `${newEvent.participants.length} مشتركين`
                   : "اختر المشتركين"}
               </span>
-              <img
-                src={addcircleIcon}
-                alt="addcircle"
-                className="absolute left-2"
-              />
+              <AddCircleIcon className="absolute left-2 w-4 h-4 text-[var(--color-purple)]" />
             </div>
 
             {openMembers && (
@@ -232,13 +248,17 @@ export default function EventModal({
                       onChange={(e) => setMemberSearch(e.target.value)}
                       className="w-full h-full rounded-[8px] border border-gray-500 px-3 pr-10 focus:outline-none placeholder-gray-400 text-gray-800"
                     />
+                    <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
                   </div>
+
+                  {/* إضافة جديد */}
                   <div className="flex items-center gap-2 mb-2">
-                    <img src={addcircleIcon} alt="add" className="w-4 h-4" />
+                    <AddCircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
                     <span className="text-gray-800 font-normal">
                       إضافة جديد
                     </span>
                   </div>
+
                   {members
                     .filter((m) => m.includes(memberSearch))
                     .map((member, idx) => {
@@ -266,10 +286,11 @@ export default function EventModal({
                           >
                             {member}
                           </span>
+                          {/* الدائرة */}
                           <div
                             className={`w-5 h-5 border-2 flex items-center justify-center rounded-sm ${
                               isSelected
-                                ? "bg-purple-500 border-purple-500"
+                                ? "bg-[var(--color-purple)] border-[var(--color-purple)]"
                                 : "border-gray-400 bg-white"
                             }`}
                           >
@@ -289,6 +310,12 @@ export default function EventModal({
                         </div>
                       );
                     })}
+                  {members.filter((m) => m.includes(memberSearch)).length ===
+                    0 && (
+                    <div className="px-3 py-2 text-gray-400 font-normal">
+                      لا يوجد مشتركين
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -321,16 +348,15 @@ export default function EventModal({
           />
 
           {/* التذكير */}
-        <ReminderSelector
-  selectedReminder={newEvent.reminder}
-  setSelectedReminder={(rem) => setNewEvent({ ...newEvent, reminder: rem })}
-  showIconInInput={true}
-  borderStyle="#7E818C"
-  placeholderColor="text-gray-400"
-/>
-
-
-
+          <ReminderSelector
+            selectedReminder={newEvent.reminder}
+            setSelectedReminder={(rem) =>
+              setNewEvent({ ...newEvent, reminder: rem })
+            }
+            showIconInInput={true}
+            borderStyle="#7E818C"
+            placeholderColor="text-gray-400"
+          />
         </div>
 
         {/* زر الحفظ */}

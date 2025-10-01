@@ -62,9 +62,12 @@
 }
 
 .fc .fc-timegrid-slot {
-  height: 64px !important;
+  height: 30px !important;
   position: relative;
+    border-bottom: 1px solid #E5E7EB; /* الخط الفاصل بين النص نصف ساعة */
+
 }
+
 
 .fc .fc-timegrid-event,
 .fc .fc-event {
@@ -154,3 +157,12 @@
   display: inline-flex !important;
   min-width: max-content !important;
 }
+.save-btn{
+  background-color: var(--color-purple);
+}
+
+/* إلغاء الحد الأيسر الخارجي */
+.fc-theme-standard .fc-scrollgrid {
+  border-left: none !important;
+}
+

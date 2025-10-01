@@ -1,17 +1,27 @@
 import React, { useState } from "react";
 import downarrowIcon from "../../icons/downarrow.svg";
 
-export default function MaxParticipantsSelector({ selectedMax, setSelectedMax, options }) {
+export default function MaxParticipantsSelector({
+  selectedMax,
+  setSelectedMax,
+  options,
+}) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="relative w-full">
-      <label className="block font-bold text-sm mb-2">الحد الأقصى للمشتركين</label>
+      <label className="block font-bold text-sm mb-2">
+        الحد الأقصى للمشتركين
+      </label>
       <div
         className="w-full h-10 border border-gray-300 rounded-md flex items-center justify-between cursor-pointer px-2"
         onClick={() => setOpen(!open)}
       >
-        <span className={`h-10 w-full flex items-center pl-2 ${selectedMax ? "text-black" : "text-gray-400"} font-normal`}>
+        <span
+          className={`h-10 w-full flex items-center pl-2 ${
+            selectedMax ? "text-black" : "text-gray-400"
+          } font-normal`}
+        >
           {selectedMax || "اختر العدد"}
         </span>
         <img src={downarrowIcon} alt="downarrow" className="w-4 h-4" />
@@ -28,11 +38,25 @@ export default function MaxParticipantsSelector({ selectedMax, setSelectedMax, o
                 setOpen(false);
               }}
             >
-              <span className={selectedMax === option ? "font-bold text-black" : "font-normal text-gray-800"}>
+              <span
+                className={
+                  selectedMax === option
+                    ? "font-bold text-black"
+                    : "font-normal text-gray-800"
+                }
+              >
                 {option}
               </span>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedMax === option ? "border-[#6A0EAD]" : "border-gray-400"}`}>
-                {selectedMax === option && <div className="w-3 h-3 rounded-full bg-[#6A0EAD]"></div>}
+              <div
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  selectedMax === option
+                    ? "border-[#6A0EAD]"
+                    : "border-gray-400"
+                }`}
+              >
+                {selectedMax === option && (
+                  <div className="w-3 h-3 rounded-full bg-[#6A0EAD]"></div>
+                )}
               </div>
             </div>
           ))}
