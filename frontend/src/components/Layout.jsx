@@ -6,6 +6,12 @@ import { Outlet } from "react-router-dom";
 export default function Layout() {
   const [openSidebar, setOpenSidebar] = useState(false);
 
+  //state مشترك للحجوزات
+  const [bookings, setBookings] = useState(() => {
+    const saved = localStorage.getItem("calendarEvents");
+    return saved ? JSON.parse(saved) : [];
+  });
+
   return (
     <div className="w-full min-h-screen bg-bg flex">
       {/* Sidebar */}
@@ -33,7 +39,7 @@ export default function Layout() {
 
         {/* الصفحات الداخلية */}
         <main className="flex-1 p-6 w-full overflow-auto">
-          <Outlet />
+          <Outlet context={{ bookings, setBookings }} />
         </main>
       </div>
     </div>

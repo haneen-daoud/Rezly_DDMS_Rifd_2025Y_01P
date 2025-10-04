@@ -14,10 +14,11 @@ import DownArrowIcon from "../../icons/downarrow.svg";
 import RightArrowIcon from "../../icons/rightarrow.svg";
 import LeftArrowIcon from "../../icons/leftarrow.svg";
 
-export default function Calender() {
+export default function Calender({ bookings, setBookings }) {
   const calendarRef = useRef(null);
 
-  const [events, setEvents] = useState([]);
+  const generateId = () => Date.now() + "-" + Math.floor(Math.random() * 1000);
+
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [newEvent, setNewEvent] = useState({});
@@ -28,13 +29,9 @@ export default function Calender() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fullScreenMode, setFullScreenMode] = useState(false);
 
-  const nextId = () =>
-    events.length
-      ? String(Math.max(...events.map((e) => Number(e.id))) + 1)
-      : "1";
-
   const handleDateSelect = (selectInfo) => {
     if (!selectInfo.startStr || !selectInfo.endStr) return;
+
     setNewEvent({
       id: null,
       title: "",
@@ -47,14 +44,15 @@ export default function Calender() {
       bg: "#DBEAFE",
       border: "#3B82F6",
       text: "#1E3A8A",
-      repeat: "",
-      days: [],
+      repeatDays: [],
       reminder: "30",
       reminderName: "قبل 30 دقيقة",
+      duration: "",
     });
+
     setEditMode(false);
     setShowModal(true);
-    if (calendarRef.current) calendarRef.current.getApi().unselect();
+    calendarRef.current?.getApi().unselect();
   };
 
   const handleEventClick = (clickInfo) => {
@@ -71,82 +69,91 @@ export default function Calender() {
       room: ev.extendedProps.room ?? "",
       coach: ev.extendedProps.coach ?? "",
       participants: ev.extendedProps.participants ?? [],
-      repeat: ev.extendedProps.repeat ?? "",
-      days: ev.extendedProps.days ?? [],
+      repeatDays: ev.extendedProps.repeatDays ?? [],
       reminder: ev.extendedProps.reminder ?? "30",
       reminderName: ev.extendedProps.reminderName ?? "قبل 30 دقيقة",
+      duration: ev.extendedProps.duration ?? "",
     });
     setEditMode(true);
     setShowModal(true);
   };
 
-  const days = [
-    "الأحد",
-    "الاثنين",
-    "الثلاثاء",
-    "الأربعاء",
-    "الخميس",
-    "الجمعة",
-    "السبت",
-  ];
-
   const handleSaveEvent = () => {
     if (!newEvent.title?.trim()) return;
 
-    if (editMode && newEvent.id != null) {
-      // تعديل حدث موجود
-      setEvents(
-        events.map((ev) => (ev.id === newEvent.id ? { ...newEvent } : ev))
-      );
-    } else {
-      const id = nextId();
+    const durationInDays = {
+      أسبوع: 7,
+      أسبوعين: 14,
+      "3 أسابيع": 21,
+      شهر: 30,
+      "3 أشهر": 90,
+      "6 أشهر": 180,
+      سنة: 365,
+    };
 
-      // لو ما في تكرار
-      if (!newEvent.repeat || newEvent.repeat === "") {
-        setEvents([...events, { ...newEvent, id }]);
-      }
-      // تكرار يومي
-      else if (newEvent.repeat === "daily") {
-        let generated = [];
-        for (let i = 0; i < 30; i++) {
-          // تكرار ل30 يوم
-          let start = new Date(newEvent.start);
-          let end = new Date(newEvent.end);
-          start.setDate(start.getDate() + i);
-          end.setDate(end.getDate() + i);
-          generated.push({
+    const totalDays = durationInDays[newEvent.duration] || 1;
+    const daysMap = [
+      "الأحد",
+      "الاثنين",
+      "الثلاثاء",
+      "الأربعاء",
+      "الخميس",
+      "الجمعة",
+      "السبت",
+    ];
+    let generatedEvents = [];
+
+    if (!newEvent.repeatDays || newEvent.repeatDays.length === 0) {
+      generatedEvents.push({ ...newEvent, id: generateId() });
+    } else {
+      const startDate = new Date(newEvent.start);
+      const endDate = new Date(newEvent.end);
+
+      for (let i = 0; i < totalDays; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        const weekdayName = daysMap[currentDate.getDay()];
+
+        if (newEvent.repeatDays.includes(weekdayName)) {
+          const s = new Date(startDate);
+          s.setDate(startDate.getDate() + i);
+          s.setHours(new Date(newEvent.start).getHours());
+          s.setMinutes(new Date(newEvent.start).getMinutes());
+
+          const e = new Date(endDate);
+          e.setDate(endDate.getDate() + i);
+          e.setHours(new Date(newEvent.end).getHours());
+          e.setMinutes(new Date(newEvent.end).getMinutes());
+
+          generatedEvents.push({
             ...newEvent,
-            id: id + "-" + i,
-            start: start.toISOString(),
-            end: end.toISOString(),
+            id: generateId(),
+            start: s.toISOString(),
+            end: e.toISOString(),
           });
         }
-        setEvents([...events, ...generated]);
-      }
-      // تكرار أسبوعي بأيام محددة
-      else if (newEvent.repeat === "weekly") {
-        let generated = [];
-        for (let i = 0; i < 60; i++) {
-          // كرر شهرين قدام
-          let start = new Date(newEvent.start);
-          start.setDate(start.getDate() + i);
-          let end = new Date(newEvent.end);
-          end.setDate(end.getDate() + i);
-
-          // إذا اليوم الحالي من الأيام المختارة
-          const weekdayName = days[start.getDay()];
-          if (newEvent.days?.includes(weekdayName)) {
-            generated.push({
-              ...newEvent,
-              id: id + "-" + i,
-              start: start.toISOString(),
-              end: end.toISOString(),
-            });
-          }
-        }
-        setEvents([...events, ...generated]);
       }
     }
+
+    setBookings((prev) => {
+      if (editMode) {
+        // حذف كل النسخ السابقة للحدث المعدل
+        const filtered = prev.filter(
+          (ev) => ev.originalId !== newEvent.originalId
+        );
+        const withOriginal = generatedEvents.map((ev) => ({
+          ...ev,
+          originalId: newEvent.originalId,
+        }));
+        return [...filtered, ...withOriginal];
+      } else {
+        const withOriginal = generatedEvents.map((ev) => ({
+          ...ev,
+          originalId: generateId(),
+        }));
+        return [...prev, ...withOriginal];
+      }
+    });
 
     setShowModal(false);
     setEditMode(false);
@@ -155,7 +162,7 @@ export default function Calender() {
   const handleDeleteClick = () => setShowDeleteConfirm(true);
 
   const handleConfirmDelete = () => {
-    setEvents(events.filter((ev) => ev.id !== newEvent.id));
+    setBookings((prev) => prev.filter((ev) => ev.id !== newEvent.id));
     setShowDeleteConfirm(false);
     setShowModal(false);
   };
@@ -174,6 +181,73 @@ export default function Calender() {
     if (calendarRef.current) {
       calendarRef.current.getApi().changeView(newView);
     }
+  };
+
+  const generateDisplayedEvents = (bookings) => {
+    const daysMap = [
+      "الأحد",
+      "الإثنين",
+      "الثلاثاء",
+      "الأربعاء",
+      "الخميس",
+      "الجمعة",
+      "السبت",
+    ];
+    const durationInDays = {
+      أسبوع: 7,
+      أسبوعين: 14,
+      "3 أسابيع": 21,
+      شهر: 30,
+      "3 أشهر": 90,
+      "6 أشهر": 180,
+      سنة: 365,
+    };
+
+    let allEvents = [];
+
+    bookings.forEach((b) => {
+      const totalDays = durationInDays[b.duration] || 1;
+      const startTime = new Date(b.start);
+      const endTime = new Date(b.end);
+
+      if (!b.repeatDays || b.repeatDays.length === 0) {
+        allEvents.push({
+          ...b,
+          id: generateId(),
+          start: startTime.toISOString(),
+          end: endTime.toISOString(),
+        });
+        return;
+      }
+
+      // تكرار حسب الأيام
+      for (let i = 0; i < totalDays; i++) {
+        const currentDate = new Date(startTime);
+        currentDate.setDate(startTime.getDate() + i);
+        const weekdayName = daysMap[currentDate.getDay()];
+
+        if (b.repeatDays.includes(weekdayName)) {
+          const s = new Date(startTime);
+          s.setDate(startTime.getDate() + i);
+          s.setHours(startTime.getHours());
+          s.setMinutes(startTime.getMinutes());
+
+          const e = new Date(endTime);
+          e.setDate(endTime.getDate() + i);
+          e.setHours(endTime.getHours());
+          e.setMinutes(endTime.getMinutes());
+
+          allEvents.push({
+            ...b,
+            id: generateId(),
+            start: s.toISOString(),
+            end: e.toISOString(),
+          });
+        }
+      }
+    });
+
+    return allEvents;
   };
 
   const renderEvent = (eventInfo) => {
@@ -284,8 +358,6 @@ export default function Calender() {
                     if (calendarRef.current) {
                       const api = calendarRef.current.getApi();
                       setTimeout(() => {
-                        api.removeAllEvents();
-                        api.addEventSource(events);
                         api.render();
                       }, 0);
                     }
@@ -307,17 +379,13 @@ export default function Calender() {
             selectMirror={true}
             select={handleDateSelect}
             eventClick={handleEventClick}
-            events={events}
+            events={generateDisplayedEvents(bookings)}
             headerToolbar={false}
             slotMinTime="08:00:00"
             slotMaxTime="24:00:00"
             slotDuration="00:30:00"
-            eventMaxStack={
-              fullScreenMode
-                ? 10 // عرض 10 أحداث أقصى حد بالصف الواحد في صفحة الكاليندر الموسعة
-                : 4 // عرض 4 أحداث أقصى حد في الكاليندر بالداشبورد
-            }
-            eventDisplay={fullScreenMode ? "auto" : "auto"}
+            eventMaxStack={fullScreenMode ? 10 : 4}
+            eventDisplay="auto"
             allDaySlot={false}
             locale="ar"
             direction="rtl"

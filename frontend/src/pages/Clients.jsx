@@ -1,31 +1,34 @@
 import React, { useState } from "react";
 import SubscribersTab from "../components/Tabs/SubscribersTab";
-import AddParticipantModel from "../components/AddParticipantModel/AddParticipantModel.jsx"; 
-import AddBookingModal from "../components/AddBookingModal/AddBookingModal.jsx"; // <-- مودال الحجز
+import AddParticipantModel from "../components/AddParticipantModel/AddParticipantModel.jsx";
+import AddBookingModal from "../components/AddBookingModal/AddBookingModal.jsx";
 import BookingsTab from "../components/Tabs/BookingsTab.jsx";
+import { useOutletContext } from "react-router-dom";
 
 const tabs = ["الحجوزات", "المشتركين", "سجل الحضور", "التقارير", "الإعدادات"];
 
 export default function ClientsPage() {
   const [activeTab, setActiveTab] = useState("المشتركين");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { bookings, setBookings } = useOutletContext();
 
-  // داخل ClientsPage
-const [bookings, setBookings] = useState([]);
-
-const handleAddBooking = (newBooking) => {
-  setBookings((prev) => [...prev, newBooking]);
-};
+  const handleAddBooking = (newBooking) => {
+    setBookings((prev) => [...prev, newBooking]);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case "المشتركين":
         return <SubscribersTab />;
       case "الحجوزات":
-  return <BookingsTab bookings={bookings} setBookings={setBookings} />;
+        return <BookingsTab bookings={bookings} setBookings={setBookings} />;
 
       default:
-        return <div className="p-4 bg-white rounded-2xl shadow">محتوى {activeTab}</div>;
+        return (
+          <div className="p-4 bg-white rounded-2xl shadow">
+            محتوى {activeTab}
+          </div>
+        );
     }
   };
 
@@ -120,12 +123,11 @@ const handleAddBooking = (newBooking) => {
         />
       )}
       {isModalOpen && activeTab === "الحجوزات" && (
-  <AddBookingModal
-    onClose={() => setIsModalOpen(false)}
-    onSave={handleAddBooking}
-  />
-)}
-
+        <AddBookingModal
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleAddBooking}
+        />
+      )}
     </div>
   );
 }

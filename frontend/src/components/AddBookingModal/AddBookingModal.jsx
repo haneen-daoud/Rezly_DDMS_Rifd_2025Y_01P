@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import CloseIcon from "../../icons/close.svg";
 import Step1Booking from "./Step1Booking";
 import Step2Booking from "./Step2Booking";
+import { createBookingAPI } from "../../api/bookingsApi";
 
 const AddBookingModal = ({
   onClose,
@@ -14,12 +15,13 @@ const AddBookingModal = ({
     initialData || {
       title: "",
       description: "",
-      coach: "",
+      coachId: "68dd54b0f2732ab213f08920",
       room: "",
       maxParticipants: "",
       start: null,
       end: null,
       duration: "",
+      repeatDays: "",
       reminder: "",
     }
   );
@@ -32,6 +34,42 @@ const AddBookingModal = ({
     } else {
       if (onSave) onSave(bookingData);
       onClose();
+    }
+  };
+
+  const getCoachNameById = (id) => {
+    const coaches = {
+      "68dd54b0f2732ab213f08920": "مريم محمد",
+    };
+    return coaches[id] || "لا يوجد مدرب";
+  };
+
+  // تحويل صيغة الـ API لصيغة الكارد
+  const apiToCardBooking = (data) => ({
+    title: data.service,
+    description: data.description || "",
+    coach: getCoachNameById(data.coachId),
+    room: data.room,
+    maxParticipants: data.numberOfMember,
+    start: `${data.date}T${data.timeStart}`,
+    end: `${data.date}T${data.timeEnd}`,
+    duration: data.duration,
+    repeatDays: data.repeatDays,
+    reminder: data.reminder,
+  });
+
+  const handleSave = async () => {
+    try {
+      const response = await createBookingAPI(bookingData);
+      console.log("✅ Booking created:", response);
+
+      const mappedBooking = apiToCardBooking(response.data);
+      onSave(mappedBooking);
+
+      onClose();
+    } catch (err) {
+      console.error("❌ Error creating booking:", err.response?.data || err);
+      alert(err.response?.data?.message || "حدث خطأ أثناء إنشاء الحجز");
     }
   };
 
@@ -54,7 +92,6 @@ const AddBookingModal = ({
             </div>
           </div>
 
-          
           <div className="flex justify-center items-center gap-4 mt-6 mb-8">
             {steps.map((step, index) => (
               <React.Fragment key={index}>
@@ -115,9 +152,7 @@ const AddBookingModal = ({
                 </button>
               </div>
             )}
-
             {activeStep === 1 && (
-              // Step 2 → زرين: السابق + الحفظ
               <div className="flex w-[344px] mt-4 self-center flex-row-reverse gap-2">
                 {/* زر السابق */}
                 <button
@@ -128,9 +163,9 @@ const AddBookingModal = ({
                   السابق
                 </button>
 
-                {/* زر حفظ */}
+                {/* زر الحفظ */}
                 <button
-                  onClick={handleNext}
+                  onClick={handleSave}
                   className="flex-1 py-3 text-white text-sm font-medium rounded-[8px]"
                   style={{ backgroundColor: "#6A0EAD" }}
                 >

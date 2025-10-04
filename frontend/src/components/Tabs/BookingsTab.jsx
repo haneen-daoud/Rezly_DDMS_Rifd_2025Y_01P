@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AddBookingModal from "../AddBookingModal/AddBookingModal";
 import ConfirmDeleteModal from "../Calender/ConfirmDeleteModal";
 
@@ -14,9 +14,32 @@ import LocationIcon from "../../icons/location.svg?react";
 import NotificationIcon from "../../icons/notification.svg?react";
 import MembersIcon from "../../icons/members.svg?react";
 import TrainerIcon from "../../icons/train.svg?react";
-
 const BookingsTab = ({ bookings, setBookings }) => {
-  // ألوان الهيدر للحجوزات بالترتيب 
+  const coachesMap = {
+    "68dd54b0f2732ab213f08920": "مريم محمد",
+    "68cd6e5bbabcb9f4a591cf98": "معاذ حجاوي",
+  };
+
+  const mapBookingForCard = (b) => {
+    const dateStr = b.date;
+    const startTime = b.timeStart;
+    const endTime = b.timeEnd;
+
+    return {
+      ...b,
+      title: b.service || b.title || "غير محدد",
+      description: b.description || "لا يوجد وصف",
+      coach: b.coach || (b.coachId ? coachesMap[b.coachId] : "لا يوجد مدرب"),
+      room: b.room || b.location || "لم يتم تحديد القاعة",
+      maxParticipants: b.maxParticipants || b.numberOfMember || 0,
+      start: dateStr ? `${dateStr}T${startTime}` : null,
+      end: dateStr ? `${dateStr}T${endTime}` : null,
+      repeatDays: b.repeatDays || [],
+      reminder: b.reminder || 0,
+    };
+  };
+
+  // ألوان الهيدر للحجوزات بالترتيب
   const headerColors = ["#FBEDD3", "#E1CFEF", "#D0EFDD", "#D2E6F8"];
   const iconColors = ["#EBA522", "#6A0EAD", "#16B157", "#495AFF"];
 
@@ -31,14 +54,85 @@ const BookingsTab = ({ bookings, setBookings }) => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const handleAddBooking = (updatedBooking) => {
-    if (editMode) {
-      setBookings((prev) =>
-        prev.map((b, i) => (i === editingIndex ? updatedBooking : b))
-      );
-    } else {
-      setBookings((prev) => [...prev, updatedBooking]);
+  const daysMap = [
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
+  ];
+
+  // 🌟 قراءة الحجوزات من localStorage عند التحميل
+  useEffect(() => {
+    const saved = localStorage.getItem("calendarEvents");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+
+      setBookings((prev) => {
+        if (!prev || prev.length === 0) return parsed;
+
+        const existingIds = prev.map((b) => b.id);
+        const merged = [
+          ...prev,
+          ...parsed.filter((b) => !existingIds.includes(b.id)),
+        ];
+        return merged;
+      });
     }
+  }, []);
+
+  const handleAddBooking = (updatedBooking) => {
+    let prevEvents = [...bookings];
+
+    const mappedBooking = mapBookingForCard(updatedBooking);
+
+    if (editMode && editingIndex !== null) {
+      prevEvents[editingIndex] = mappedBooking;
+    } else {
+      let newEvent = {
+        id: prevEvents.length
+          ? String(Math.max(...prevEvents.map((e) => Number(e.id))) + 1)
+          : "1",
+        ...mappedBooking,
+      };
+
+      let generated = [];
+      if (mappedBooking.repeatDays?.length) {
+        const startDate = new Date(mappedBooking.start);
+        const endDate = new Date(mappedBooking.end);
+
+        for (let i = 0; i < 60; i++) {
+          const current = new Date(startDate);
+          current.setDate(startDate.getDate() + i);
+          const weekdayName = daysMap[current.getDay()];
+          if (mappedBooking.repeatDays.includes(weekdayName)) {
+            const s = new Date(startDate);
+            s.setDate(startDate.getDate() + i);
+            const e = new Date(endDate);
+            e.setDate(endDate.getDate() + i);
+            generated.push({
+              ...mappedBooking,
+              id: newEvent.id + "-" + i,
+              start: s.toISOString(),
+              end: e.toISOString(),
+            });
+          }
+        }
+      } else {
+        generated.push(newEvent);
+      }
+
+      prevEvents = [...prevEvents, ...generated];
+    }
+
+    setBookings(prevEvents);
+    localStorage.setItem("calendarEvents", JSON.stringify(prevEvents));
+
+    setEditMode(false);
+    setEditingIndex(null);
+    setShowAddModal(false);
   };
 
   const totalPages = Math.ceil(bookings.length / bookingsPerPage);
@@ -69,12 +163,18 @@ const BookingsTab = ({ bookings, setBookings }) => {
   };
 
   const handleDeleteBooking = (index) => {
-    setBookings((prev) => prev.filter((_, i) => i !== index));
+    const saved = localStorage.getItem("calendarEvents");
+    const prevEvents = saved ? JSON.parse(saved) : [];
+    const updated = prevEvents.filter((_, i) => i !== index);
+    setBookings(updated);
+    localStorage.setItem("calendarEvents", JSON.stringify(updated));
     setOpenMenu(null);
   };
 
   const handleConfirmDelete = () => {
-    setBookings((prev) => prev.filter((b) => b !== bookingToDelete));
+    const updated = bookings.filter((b) => b !== bookingToDelete);
+    setBookings(updated);
+    localStorage.setItem("calendarEvents", JSON.stringify(updated));
     setShowDeleteConfirm(false);
     setBookingToDelete(null);
   };
@@ -151,7 +251,10 @@ const BookingsTab = ({ bookings, setBookings }) => {
                           marginBottom: "16px",
                         }}
                       >
-                        <DeleteIcon className="w-4 h-4" style={{ color: "#000" }} />
+                        <DeleteIcon
+                          className="w-4 h-4"
+                          style={{ color: "#000" }}
+                        />
                         حذف
                       </button>
 
@@ -170,7 +273,10 @@ const BookingsTab = ({ bookings, setBookings }) => {
                           marginBottom: "16px",
                         }}
                       >
-                        <EditIcon className="w-4 h-4" style={{ color: "#000" }} />
+                        <EditIcon
+                          className="w-4 h-4"
+                          style={{ color: "#000" }}
+                        />
                         تعديل
                       </button>
 
@@ -182,7 +288,10 @@ const BookingsTab = ({ bookings, setBookings }) => {
                           lineHeight: "150%",
                         }}
                       >
-                        <ShareIcon className="w-4 h-4" style={{ color: "#000" }} />
+                        <ShareIcon
+                          className="w-4 h-4"
+                          style={{ color: "#000" }}
+                        />
                         مشاركة
                       </button>
                     </div>
@@ -200,26 +309,52 @@ const BookingsTab = ({ bookings, setBookings }) => {
                   {booking.description || "لا يوجد وصف"}
                 </p>
 
-                {/* الوقت */}
-                <div className="flex items-center gap-2 text-[14px] text-black">
-                  <HourIcon className="w-6 h-6" style={{ color: iconColor }} />
-                  <span>
-                    {booking.start && booking.end
-                      ? `${new Date(booking.start)
-                          .toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                          .replace("AM", "ص")
-                          .replace("PM", "م")} - ${new Date(booking.end)
-                          .toLocaleTimeString("en-US", {
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                          .replace("AM", "ص")
-                          .replace("PM", "م")}`
-                      : "لم يتم تحديد الوقت"}
-                  </span>
+                {/* الوقت + التكرار */}
+                <div className="flex items-center justify-between text-[14px] text-black">
+                  <div className="flex items-center gap-2">
+                    <HourIcon
+                      className="w-6 h-6"
+                      style={{ color: iconColor }}
+                    />
+                    <span>
+                      {booking.start && booking.end
+                        ? `${new Date(booking.start)
+                            .toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })
+                            .replace("AM", "ص")
+                            .replace("PM", "م")} - ${new Date(booking.end)
+                            .toLocaleTimeString("en-US", {
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })
+                            .replace("AM", "ص")
+                            .replace("PM", "م")}`
+                        : "لم يتم تحديد الوقت"}
+                    </span>
+                  </div>
+
+                  {/* مربعات التكرار */}
+                  {booking.repeatDays?.length > 0 && (
+                    <div className="flex gap-1">
+                      {booking.repeatDays.map((day, idx) => {
+                        const firstLetter = day[2]; // أول حرف من اليوم
+                        return (
+                          <div
+                            key={idx}
+                            className="w-6 h-6 flex items-center justify-center rounded-md text-xs font-bold"
+                            style={{
+                              backgroundColor: headerBg, // نفس لون الهيدر
+                              color: "#000", // الخط أسود
+                            }}
+                          >
+                            {firstLetter}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* المكان */}
@@ -267,7 +402,7 @@ const BookingsTab = ({ bookings, setBookings }) => {
                 }}
               />
 
-              {/* مسافة تحت الخط (خففناها) */}
+              {/* مسافة تحت الخط */}
               <div style={{ height: "8px" }} />
 
               {/* القسم الأخير (Flow أفقي) */}
@@ -297,39 +432,37 @@ const BookingsTab = ({ bookings, setBookings }) => {
       </div>
 
       {/* Pagination */}
-{totalPages > 1 && (
-  <div className="flex justify-between items-center gap-2 mt-4">
-    {/* جهة الأيقونة + عدد الحجوزات */}
-    <div className="flex items-center gap-2 text-black font-normal">
-      <NoteIcon className="w-6 h-6 text-[var(--color-purple)]" />
-      <span>
-         العدد الكلي {bookings.length}
-      </span>
-    </div>
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center gap-2 mt-4">
+          {/* جهة الأيقونة + عدد الحجوزات */}
+          <div className="flex items-center gap-2 text-black font-normal">
+            <NoteIcon className="w-6 h-6 text-[var(--color-purple)]" />
+            <span>العدد الكلي {bookings.length}</span>
+          </div>
 
-    {/* أزرار الصفحات */}
-    <div className="flex items-center gap-2">
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-        <button
-          key={page}
-          onClick={() => goToPage(page)}
-          className={`px-3 py-1 border rounded-md ${
-            page === currentPage ? "bg-purple-600 text-white" : ""
-          }`}
-        >
-          {page}
-        </button>
-      ))}
-      <button
-        onClick={() => goToPage(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="px-3 py-1 border rounded-md disabled:opacity-50"
-      >
-        ←
-      </button>
-    </div>
-  </div>
-)}
+          {/* أزرار الصفحات */}
+          <div className="flex items-center gap-2">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => goToPage(page)}
+                className={`px-3 py-1 border rounded-md ${
+                  page === currentPage ? "bg-purple-600 text-white" : ""
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              onClick={() => goToPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 border rounded-md disabled:opacity-50"
+            >
+              ←
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* مودال التعديل */}
       {showAddModal && (
