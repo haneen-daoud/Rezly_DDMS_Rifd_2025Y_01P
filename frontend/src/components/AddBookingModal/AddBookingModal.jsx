@@ -3,6 +3,7 @@ import CloseIcon from "../../icons/close.svg";
 import Step1Booking from "./Step1Booking";
 import Step2Booking from "./Step2Booking";
 import { createBookingAPI } from "../../api/bookingsApi";
+import { updateBookingAPI } from "../../api/bookingsApi";
 
 const AddBookingModal = ({
   onClose,
@@ -16,13 +17,14 @@ const AddBookingModal = ({
       title: "",
       description: "",
       coachId: "68dd54b0f2732ab213f08920",
-      room: "",
-      maxParticipants: "",
-      start: null,
-      end: null,
-      duration: "",
-      repeatDays: "",
-      reminder: "",
+      coach: "مريم محمد",
+      room: "قاعة 1",
+      maxMembers: 1,
+      start: new Date().toISOString().split("T")[0] + "T08:00",
+      end: new Date().toISOString().split("T")[0] + "T09:00",
+      subscriptionDuration: "أسبوع",
+      repeatDays: [],
+      reminders: [],
     }
   );
 
@@ -44,32 +46,90 @@ const AddBookingModal = ({
     return coaches[id] || "لا يوجد مدرب";
   };
 
-  // تحويل صيغة الـ API لصيغة الكارد
-  const apiToCardBooking = (data) => ({
-    title: data.service,
-    description: data.description || "",
-    coach: getCoachNameById(data.coachId),
-    room: data.room,
-    maxParticipants: data.numberOfMember,
-    start: `${data.date}T${data.timeStart}`,
-    end: `${data.date}T${data.timeEnd}`,
-    duration: data.duration,
-    repeatDays: data.repeatDays,
-    reminder: data.reminder,
-  });
+  const apiToCardBooking = (data) => {
+    const dateStr = data.date || new Date().toISOString().split("T")[0];
+    const startRaw = data.timeStart || data.start || "08:00";
+    const endRaw = data.timeEnd || data.end || "09:00";
+
+    const parseArabicTimeTo24 = (t) => {
+      if (!t || typeof t !== "string") return "08:00";
+      const parts = t.trim().split(" ");
+      const hhmm = parts[0];
+      const ampm = (parts[1] || "").trim();
+      let [h, m] = hhmm.split(":").map((n) => parseInt(n, 10));
+      if (ampm === "م" && h !== 12) h += 12;
+      if (ampm === "ص" && h === 12) h = 0;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    };
+
+    const start24 =
+      startRaw.includes("ص") || startRaw.includes("م")
+        ? parseArabicTimeTo24(startRaw)
+        : startRaw.slice(0, 5);
+    const end24 =
+      endRaw.includes("ص") || endRaw.includes("م")
+        ? parseArabicTimeTo24(endRaw)
+        : endRaw.slice(0, 5);
+
+    return {
+      title: data.service || data.title || "غير محدد",
+      description: data.description || "لا يوجد وصف",
+      coach: data.coach || getCoachNameById(data.coachId) || "لا يوجد مدرب",
+      coachId: data.coachId,
+      room: data.room || "قاعة 1",
+      maxMembers: data.maxMembers || 1,
+      start: `${dateStr}T${start24}:00`,
+      end: `${dateStr}T${end24}:00`,
+      subscriptionDuration: data.subscriptionDuration || "أسبوع",
+      repeatDays: Array.isArray(data.repeatDays) ? data.repeatDays : [],
+      reminders: Array.isArray(data.reminders) ? data.reminders : ["0"],
+    };
+  };
+
+  const formatToArabicTime = (dateTimeString) => {
+    if (!dateTimeString) return "";
+    const date = new Date(dateTimeString);
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const period = hours >= 12 ? "م" : "ص";
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${period}`;
+  };
 
   const handleSave = async () => {
     try {
-      const response = await createBookingAPI(bookingData);
-      console.log("✅ Booking created:", response);
+      let res;
+      if (editMode && bookingData.id) {
+        // تعديل الحجز
+        res = await updateBookingAPI(bookingData.id, bookingData, true);
+      } else {
+        // إنشاء حجز جديد
+        res = await createBookingAPI(bookingData);
+      }
 
-      const mappedBooking = apiToCardBooking(response.data);
-      onSave(mappedBooking);
+      // تحويل البيانات لتنسيق الكارت
+      const cardBooking = {
+        ...apiToCardBooking({
+          ...bookingData,
+          _id: res._id || res.id,
+          groupId: res.groupId || null,
+        }),
+        coach: bookingData.coach,
+        subscriptionDurationOriginal: bookingData.subscriptionDuration,
+        membersCount: bookingData.members ? bookingData.members.length : 0,
+        members: bookingData.members || [],
+      };
 
+      onSave(cardBooking);
       onClose();
     } catch (err) {
-      console.error("❌ Error creating booking:", err.response?.data || err);
-      alert(err.response?.data?.message || "حدث خطأ أثناء إنشاء الحجز");
+      console.error(
+        "❌ Error creating/updating booking:",
+        err.response?.data || err
+      );
+      alert(
+        err.response?.data?.message || "حدث خطأ أثناء إنشاء أو تعديل الحجز"
+      );
     }
   };
 

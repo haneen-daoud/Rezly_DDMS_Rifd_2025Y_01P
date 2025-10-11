@@ -6,11 +6,7 @@ import { Outlet } from "react-router-dom";
 export default function Layout() {
   const [openSidebar, setOpenSidebar] = useState(false);
 
-  //state مشترك للحجوزات
-  const [bookings, setBookings] = useState(() => {
-    const saved = localStorage.getItem("calendarEvents");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [bookings, setBookings] = useState([]);
 
   return (
     <div className="w-full min-h-screen bg-bg flex">

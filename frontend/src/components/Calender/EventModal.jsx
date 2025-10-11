@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+
 import TimeRangePicker from "../common/TimeRangePicker";
 import CoachSelector from "../common/CoachSelector";
 import LocationSelector from "../common/LocationSelector";
@@ -24,14 +26,8 @@ export default function EventModal({
   const [openMembers, setOpenMembers] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
 
-  const coaches = [
-    "مريم محمد",
-    "معاذ حجاوي",
-    "أحمد علي",
-    "سارة يوسف",
-    "حنين",
-    "بيان",
-  ];
+  const [coaches, setCoaches] = useState([]);
+
   const locations = ["القاعة 1", "القاعة 2", "القاعة 3", "القاعة 4"];
   const members = ["مشترك 1", "مشترك 2", "مشترك 3", "مشترك 4", "مشترك 5"];
 
@@ -44,6 +40,35 @@ export default function EventModal({
     });
     setShowCalendar(false);
   };
+
+  useEffect(() => {
+    const fetchCoaches = async () => {
+      try {
+        const token = import.meta.env.VITE_API_TOKEN;
+        const res = await axios.get(
+          "https://rezly-ddms-rifd-2025y-01p.onrender.com/auth/getAllEmployees",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const coachList = res.data.employees
+          .filter((emp) => emp.role === "Coach")
+          .map((emp) => ({
+            id: emp._id,
+            name: `${emp.firstName} ${emp.lastName}`,
+          }));
+
+        setCoaches(coachList);
+      } catch (error) {
+        console.error("خطأ في جلب المدربين:", error);
+      }
+    };
+
+    fetchCoaches();
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[4000] flex justify-center items-center">
@@ -216,9 +241,6 @@ export default function EventModal({
             selectedCoach={newEvent.coach}
             setSelectedCoach={(coach) => setNewEvent({ ...newEvent, coach })}
             coachesList={coaches}
-            showIcon={true}
-            placeholderColor="text-black"
-            borderStyle="#7E818C"
           />
 
           {/* المشتركين */}

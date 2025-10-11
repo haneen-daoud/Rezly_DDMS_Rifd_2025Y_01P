@@ -12,7 +12,7 @@ const AddParticipantModel = ({ onClose, onSave }) => {
     title: "",
     coach: "",
     room: "",
-    maxParticipants: "",
+    maxMembers: "",
     date: null,
     time: "",
   });

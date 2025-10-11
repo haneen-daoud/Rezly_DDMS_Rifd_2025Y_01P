@@ -2,8 +2,8 @@ console.log("VITE_API_TOKEN =", import.meta.env.VITE_API_TOKEN);
 
 import axios from "axios";
 
-
-const BASE = import.meta.env.VITE_API_BASE_URL || "https://rezly-ddms-rifd-2025y-01p.onrender.com/booking/add-booking";
+const BASE = import.meta.env.VITE_API_BASE_URL || "https://rezly-ddms-rifd-2025y-01p.onrender.com/booking";
+const BASE_URL = "https://rezly-ddms-rifd-2025y-01p.onrender.com/booking";
 
 const ACCESS_TOKEN = import.meta.env.VITE_API_TOKEN || "";
 const REFRESH_TOKEN = import.meta.env.VITE_API_REFRESH || "";
@@ -28,9 +28,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-
-
-function parseMaxParticipants(value) {
+function parsemaxMembers(value) {
   if (value == null) return 1;
   const n = parseInt(String(value).replace(/\D+/g, ""), 10);
   if (!isNaN(n) && n > 0) return n;
@@ -38,61 +36,105 @@ function parseMaxParticipants(value) {
   return 1;
 }
 
+const convertTo12Hour = (t) => {
+  if (!t) return "08:00 ص";
+  const [hourStr, minuteStr] = t.split(":");
+  if (!hourStr || !minuteStr) return "08:00 ص";
+  let hour = parseInt(hourStr, 10);
+  const minute = parseInt(minuteStr, 10);
+  if (isNaN(hour) || isNaN(minute)) return "08:00 ص";
+  const ampm = hour >= 12 ? "م" : "ص";
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+};
+
 function formatPayload(raw) {
   const date = raw.start ? raw.start.split("T")[0] : raw.date || "";
 
-  const getHHMM = (t) => {
-    if (!t) return "";
-    // لو t بصيغة "08:00" أو "15:30" مباشرة نرجعها
-    if (t.includes(":")) return t.slice(0, 5);
-    return t;
+  const daysMap = {
+    "أحد": "Sun",
+    "إثنين": "Mon",
+    "ثلاثاء": "Tue",
+    "أربعاء": "Wed",
+    "خميس": "Thu",
+    "جمعة": "Fri",
+    "سبت": "Sat",
   };
+  const recurrenceEnglish = (raw.repeatDays || []).map(day => daysMap[day] || day);
+
+  const durationMap = {
+    "أسبوع": "1week",
+    "أسبوعين": "2weeks",
+    "3 أسابيع": "3weeks",
+    "شهر": "1month",
+    "3 أشهر": "3months",
+    "6 أشهر": "6months",
+    "سنة": "1year",
+  };
+
+  const remindersMap = {
+  "0": "0",
+  "30m": "30m",
+  "1h": "1h",
+  "1d": "1d",
+};
+
 
   return {
     service: raw.title || raw.service || "",
+    description: raw.description || "",
     coachId: raw.coachId || raw.coach || raw.trainerId || "",
     date,
-    timeStart: raw.start ? getHHMM(raw.start.split("T")[1]) : getHHMM(raw.timeStart),
-    timeEnd: raw.end ? getHHMM(raw.end.split("T")[1]) : getHHMM(raw.timeEnd),
+    timeStart: convertTo12Hour(raw.start ? raw.start.split("T")[1] : raw.timeStart),
+    timeEnd: convertTo12Hour(raw.end ? raw.end.split("T")[1] : raw.timeEnd),
     location: raw.room || raw.location || "",
-    numberOfMember: parseInt(raw.maxParticipants) || 1,
+    maxMembers: parseInt(raw.maxMembers) || 1,
+    recurrence: recurrenceEnglish,
+    subscriptionDuration: durationMap[raw.duration] || "1week",
+reminders:
+  Array.isArray(raw.reminders) && raw.reminders.length > 0
+    ? raw.reminders.map(r => remindersMap[r] || r)
+    : [],
+    members: raw.members || [],
   };
 }
 
-
-// ------------ API FUNCTIONS ------------
 
 // Create booking (POST /booking/)
 export async function createBookingAPI(bookingData) {
   const payload = formatPayload(bookingData);
-  console.log("Payload to API:", payload);
+  console.log("Payload being sent to backend:", payload);
 
   try {
-    const res = await api.post("/", payload);
-    console.log("Booking created successfully:", res.data);
-    return res.data;
+    const res = await api.post("/addBooking", payload);
+    return res.data; 
   } catch (err) {
     console.error("Error creating booking:", err.response?.data || err.message);
-    const message =
+    throw new Error(
       err.response?.data?.message ||
       err.response?.data?.error ||
       err.response?.data ||
       err.message ||
-      "حدث خطأ أثناء إنشاء الحجز";
-    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+      "حدث خطأ أثناء إنشاء الحجز"
+    );
   }
 }
 
-// Get all bookings for current user (GET /booking/all_booking)
-export async function getAllBookingsAPI(params = {}) {
+// Get all bookings (GET /booking/all_booking)
+export const getAllBookingsAPI = async () => {
   try {
-    const res = await api.get("/all_booking", { params });
-    return res.data;
+    const res = await axios.get(`${BASE_URL}/all_booking`, {
+      headers: {
+        Authorization: `Bearer ${import.meta.env.VITE_API_TOKEN}`,
+      },
+    });
+    return res.data.data;
   } catch (err) {
-    console.error("Error fetching all bookings:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || err.message || "فشل جلب الحجوزات");
+    console.error("Error fetching all bookings:", err.response?.data || err);
+    throw err;
   }
-}
+};
 
 // Get booking by ID (GET /booking/:id)
 export async function getBookingByIdAPI(id) {
@@ -106,27 +148,37 @@ export async function getBookingByIdAPI(id) {
 }
 
 // Update booking (PUT /booking/:id)
-export async function updateBookingAPI(id, updateData) {
+export async function updateBookingAPI(id, updateData, isGroup = false) {
   const payload = formatPayload(updateData);
+
   try {
-    const res = await api.put(`/${id}`, payload);
+    const url = isGroup ? `/${id}?updateGroup=true` : `/${id}`;
+    const res = await api.put(url, payload);
     return res.data;
   } catch (err) {
     console.error("Error updating booking:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || err.message || "فشل تحديث الحجز");
+    throw new Error(
+      err.response?.data?.message || err.message || "فشل تحديث الحجز"
+    );
   }
 }
 
-// Delete booking (DELETE /booking/:id)
-export async function deleteBookingAPI(id) {
+
+
+// Delete booking (single or group)
+export async function deleteBookingAPI(id, isGroup = false) {
   try {
-    const res = await api.delete(`/${id}`);
+    const url = isGroup ? `/${id}?type=group` : `/${id}`;
+    const res = await api.delete(url);
     return res.data;
   } catch (err) {
     console.error("Error deleting booking:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || err.message || "فشل حذف الحجز");
+    throw new Error(
+      err.response?.data?.message || err.message || "فشل حذف الحجز"
+    );
   }
 }
+
 
 // Filter bookings (GET /booking/filter)
 export async function filterBookingsAPI(query = {}) {
@@ -150,7 +202,7 @@ export async function calendarViewAPI() {
   }
 }
 
-// Cancel booking (PATCH /booking/cancel/:bookingId) - note: router used '/cancel/:bookingId' in your controller
+// Cancel booking (PATCH /booking/cancel/:bookingId)
 export async function cancelBookingAPI(bookingId) {
   try {
     const res = await api.patch(`/cancel/${bookingId}`);

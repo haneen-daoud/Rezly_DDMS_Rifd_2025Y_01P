@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import CoachSelector from "../common/CoachSelector";
 import LocationSelector from "../common/LocationSelector";
 import MaxParticipantsSelector from "../common/MaxParticipantsSelector";
@@ -9,19 +10,42 @@ import AddcircleIcon from "../../icons/addcircle.svg?react";
 const Step1Booking = ({ bookingData, setBookingData }) => {
   if (!bookingData) return null;
 
+  const [coaches, setCoaches] = useState([]);
+
+  useEffect(() => {
+    const fetchCoaches = async () => {
+      try {
+        const token = import.meta.env.VITE_API_TOKEN;
+        const res = await axios.get(
+          "https://rezly-ddms-rifd-2025y-01p.onrender.com/auth/getAllEmployees",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const coachList = res.data.employees
+          .filter((emp) => emp.role === "Coach")
+          .map((emp) => ({
+            id: emp._id,
+            name: `${emp.firstName} ${emp.lastName}`,
+          }));
+
+        setCoaches(coachList);
+      } catch (error) {
+        console.error("خطأ في جلب المدربين:", error);
+      }
+    };
+
+    fetchCoaches();
+  }, []);
+
   const [openClass, setOpenClass] = useState(false);
   const [classSearch, setClassSearch] = useState("");
 
   const classes = ["يوغا", "كارديو", "ملاكمة"];
 
-  const coaches = [
-    "مريم محمد",
-    "معاذ حجاوي",
-    "أحمد علي",
-    "سارة يوسف",
-    "حنين",
-    "بيان",
-  ];
   const rooms = ["قاعة 1", "قاعة 2", "قاعة 3"];
 
   return (
@@ -147,7 +171,11 @@ const Step1Booking = ({ bookingData, setBookingData }) => {
           <CoachSelector
             selectedCoach={bookingData.coach}
             setSelectedCoach={(coach) =>
-              setBookingData({ ...bookingData, coach })
+              setBookingData({
+                ...bookingData,
+                coachId: coach.id,
+                coach: coach,
+              })
             }
             coachesList={coaches}
             showIcon={false}
@@ -173,17 +201,16 @@ const Step1Booking = ({ bookingData, setBookingData }) => {
         {/* المشتركين */}
         <div className="w-[344px]">
           <MaxParticipantsSelector
-            selectedMax={bookingData.maxParticipants}
+            selectedMax={bookingData.maxMembers}
             setSelectedMax={(value) =>
-              setBookingData({ ...bookingData, maxParticipants: value })
+              setBookingData({ ...bookingData, maxMembers: value })
             }
             options={[
-              "1 مشترك",
-              "5 مشتركين",
-              "10 مشتركين",
-              "20 مشتركاً",
-              "إدخال مخصص",
-              "غير محدود",
+              { label: "1 مشترك", value: 1 },
+              { label: "5 مشتركين", value: 5 },
+              { label: "10 مشتركين", value: 10 },
+              { label: "20 مشتركاً", value: 20 },
+              { label: "غير محدود", value: Infinity },
             ]}
           />
         </div>

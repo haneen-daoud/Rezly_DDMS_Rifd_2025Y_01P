@@ -22,15 +22,7 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
 
   if (!bookingData) return null;
 
-  const allDays = [
-    "السبت",
-    "الأحد",
-    "الإثنين",
-    "الثلاثاء",
-    "الأربعاء",
-    "الخميس",
-    "الجمعة",
-  ];
+  const allDays = ["سبت", "أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة"];
 
   const [openRepeat, setOpenRepeat] = useState(false);
 
@@ -112,10 +104,10 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
         >
           <span
             className={`h-10 w-full flex items-center pl-2 ${
-              bookingData.duration ? "text-black" : "text-gray-400"
+              bookingData.subscriptionDuration ? "text-black" : "text-gray-400"
             } font-normal`}
           >
-            {bookingData.duration || "اختر مدة الاشتراك"}
+            {bookingData.subscriptionDuration || "اختر مدة الاشتراك"}
           </span>
           <img
             src={downarrowIcon}
@@ -128,13 +120,17 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
         {openDuration && (
           <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-400 mt-1 shadow z-[1000]">
             {durationOptions.map((option, idx) => {
-              const isSelected = bookingData.duration === option;
+              const isSelected = bookingData.subscriptionDuration === option;
               return (
                 <div
                   key={idx}
                   className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
                   onClick={() => {
-                    setBookingData({ ...bookingData, duration: option });
+                    setBookingData({
+                      ...bookingData,
+                      duration: option,
+                      subscriptionDuration: option,
+                    });
                     setOpenDuration(false);
                   }}
                 >
@@ -209,7 +205,7 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
 
                   if (day === "يوميًا") {
                     if (dailySelected) {
-                      updated = []; 
+                      updated = [];
                     } else {
                       updated = [...allDays];
                     }
@@ -225,7 +221,11 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
                     }
                   }
 
-                  setBookingData({ ...bookingData, repeatDays: updated });
+                  setBookingData({
+                    ...bookingData,
+                    repeatDays: updated,
+                    recurrence: updated,
+                  });
                 };
 
                 const checked = day === "يوميًا" ? dailySelected : isSelected;
@@ -275,9 +275,9 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
       {/* التذكير */}
       <div className="w-[344px]">
         <ReminderSelector
-          selectedReminder={bookingData.reminder}
-          setSelectedReminder={(rem) =>
-            setBookingData({ ...bookingData, reminder: rem })
+          selectedReminders={bookingData.reminders || []}
+          setSelectedReminders={(reminders) =>
+            setBookingData({ ...bookingData, reminders })
           }
           variant="booking"
         />

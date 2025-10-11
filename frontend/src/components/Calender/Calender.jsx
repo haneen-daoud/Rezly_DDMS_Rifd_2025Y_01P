@@ -57,104 +57,66 @@ export default function Calender({ bookings, setBookings }) {
 
   const handleEventClick = (clickInfo) => {
     const ev = clickInfo.event;
-    setNewEvent({
-      id: String(ev.id),
-      title: ev.title,
-      start: ev.startStr,
-      end: ev.endStr,
-      bg: ev.extendedProps.bg ?? "#DBEAFE",
-      border: ev.extendedProps.border ?? "#3B82F6",
-      text: ev.extendedProps.text ?? "#1E3A8A",
-      description: ev.extendedProps.description ?? "",
-      room: ev.extendedProps.room ?? "",
-      coach: ev.extendedProps.coach ?? "",
-      participants: ev.extendedProps.participants ?? [],
-      repeatDays: ev.extendedProps.repeatDays ?? [],
-      reminder: ev.extendedProps.reminder ?? "30",
-      reminderName: ev.extendedProps.reminderName ?? "قبل 30 دقيقة",
-      duration: ev.extendedProps.duration ?? "",
-    });
+    const data = ev.extendedProps || {};
+
+    let coachObj = { id: "", name: "" };
+
+    if (typeof data.coach === "object" && data.coach !== null) {
+      coachObj = {
+        id: data.coach._id || data.coach.id || "",
+        name: data.coach.name || data.coach.userName || "",
+      };
+    } else if (typeof data.coach === "string") {
+      coachObj = { id: data.coach, name: "غير معروف" };
+    }
+
+    const repeatType =
+      data.recurrence && data.recurrence.length > 0 ? "weekly" : "none";
+    const selectedDays =
+      data.recurrence && Array.isArray(data.recurrence) ? data.recurrence : [];
+
+    const reminderVal =
+      typeof data.reminder === "string" ? data.reminder : "30m";
+
+    const eventData = {
+      id: String(ev.id || data._id || Math.random().toString(36).slice(2)),
+      title: ev.title || data.service || "بدون عنوان",
+      start: ev.startStr || data.date || "",
+      end: ev.endStr || "",
+      description: data.description || "",
+      room: data.room || data.location || "",
+      coach: coachObj,
+      participants: data.members || [],
+      bg: data.bg || "#DBEAFE",
+      border: data.border || "#3B82F6",
+      text: data.text || "#1E3A8A",
+      repeat: repeatType,
+      days: selectedDays,
+      reminder: reminderVal,
+      duration: Array.isArray(data.subscriptionDuration)
+        ? data.subscriptionDuration[0]
+        : data.subscriptionDuration || "",
+      originalId: data.originalId || ev.id,
+      isSingle: true,
+    };
+
+    setNewEvent(eventData);
     setEditMode(true);
     setShowModal(true);
   };
 
-  const handleSaveEvent = () => {
-    if (!newEvent.title?.trim()) return;
-
-    const durationInDays = {
-      أسبوع: 7,
-      أسبوعين: 14,
-      "3 أسابيع": 21,
-      شهر: 30,
-      "3 أشهر": 90,
-      "6 أشهر": 180,
-      سنة: 365,
-    };
-
-    const totalDays = durationInDays[newEvent.duration] || 1;
-    const daysMap = [
-      "الأحد",
-      "الاثنين",
-      "الثلاثاء",
-      "الأربعاء",
-      "الخميس",
-      "الجمعة",
-      "السبت",
-    ];
-    let generatedEvents = [];
-
-    if (!newEvent.repeatDays || newEvent.repeatDays.length === 0) {
-      generatedEvents.push({ ...newEvent, id: generateId() });
-    } else {
-      const startDate = new Date(newEvent.start);
-      const endDate = new Date(newEvent.end);
-
-      for (let i = 0; i < totalDays; i++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + i);
-        const weekdayName = daysMap[currentDate.getDay()];
-
-        if (newEvent.repeatDays.includes(weekdayName)) {
-          const s = new Date(startDate);
-          s.setDate(startDate.getDate() + i);
-          s.setHours(new Date(newEvent.start).getHours());
-          s.setMinutes(new Date(newEvent.start).getMinutes());
-
-          const e = new Date(endDate);
-          e.setDate(endDate.getDate() + i);
-          e.setHours(new Date(newEvent.end).getHours());
-          e.setMinutes(new Date(newEvent.end).getMinutes());
-
-          generatedEvents.push({
-            ...newEvent,
-            id: generateId(),
-            start: s.toISOString(),
-            end: e.toISOString(),
-          });
-        }
-      }
-    }
-
+  const handleSaveEvent = (updatedEvent) => {
     setBookings((prev) => {
-      if (editMode) {
-        // حذف كل النسخ السابقة للحدث المعدل
-        const filtered = prev.filter(
-          (ev) => ev.originalId !== newEvent.originalId
-        );
-        const withOriginal = generatedEvents.map((ev) => ({
-          ...ev,
-          originalId: newEvent.originalId,
-        }));
-        return [...filtered, ...withOriginal];
-      } else {
-        const withOriginal = generatedEvents.map((ev) => ({
-          ...ev,
-          originalId: generateId(),
-        }));
-        return [...prev, ...withOriginal];
-      }
+      return prev.map((ev) => {
+        if (
+          ev.id === updatedEvent.id ||
+          ev.originalId === updatedEvent.originalId
+        ) {
+          return { ...ev, ...updatedEvent };
+        }
+        return ev;
+      });
     });
-
     setShowModal(false);
     setEditMode(false);
   };
@@ -184,15 +146,9 @@ export default function Calender({ bookings, setBookings }) {
   };
 
   const generateDisplayedEvents = (bookings) => {
-    const daysMap = [
-      "الأحد",
-      "الإثنين",
-      "الثلاثاء",
-      "الأربعاء",
-      "الخميس",
-      "الجمعة",
-      "السبت",
-    ];
+    if (!Array.isArray(bookings)) return [];
+
+    const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const durationInDays = {
       أسبوع: 7,
       أسبوعين: 14,
@@ -205,46 +161,69 @@ export default function Calender({ bookings, setBookings }) {
 
     let allEvents = [];
 
+    const parseDateTime = (date, time) => {
+      if (!date) return new Date();
+      const d = new Date(date);
+
+      if (!time) return d;
+
+      let hour = 0,
+        minute = 0;
+      if (time.includes("ص") || time.includes("م")) {
+        const [hhmm, period] = time.split(" ");
+        [hour, minute] = hhmm.split(":").map((t) => parseInt(t, 10));
+        if (period === "م" && hour !== 12) hour += 12;
+        if (period === "ص" && hour === 12) hour = 0;
+      } else {
+        [hour, minute] = time.split(":").map((t) => parseInt(t, 10));
+      }
+
+      d.setHours(hour, minute, 0, 0);
+      return d;
+    };
+
     bookings.forEach((b) => {
-      const totalDays = durationInDays[b.duration] || 1;
-      const startTime = new Date(b.start);
-      const endTime = new Date(b.end);
+      const individualBookings = b.allBookings || [b];
 
-      if (!b.repeatDays || b.repeatDays.length === 0) {
-        allEvents.push({
-          ...b,
-          id: generateId(),
-          start: startTime.toISOString(),
-          end: endTime.toISOString(),
-        });
-        return;
-      }
+      individualBookings.forEach((ib) => {
+        if (!ib.date) return;
 
-      // تكرار حسب الأيام
-      for (let i = 0; i < totalDays; i++) {
-        const currentDate = new Date(startTime);
-        currentDate.setDate(startTime.getDate() + i);
-        const weekdayName = daysMap[currentDate.getDay()];
+        const startTime = parseDateTime(ib.date, ib.timeStart);
+        const endTime = parseDateTime(ib.date, ib.timeEnd);
 
-        if (b.repeatDays.includes(weekdayName)) {
-          const s = new Date(startTime);
-          s.setDate(startTime.getDate() + i);
-          s.setHours(startTime.getHours());
-          s.setMinutes(startTime.getMinutes());
-
-          const e = new Date(endTime);
-          e.setDate(endTime.getDate() + i);
-          e.setHours(endTime.getHours());
-          e.setMinutes(endTime.getMinutes());
-
+        if (!Array.isArray(ib.recurrence) || ib.recurrence.length === 0) {
           allEvents.push({
-            ...b,
-            id: generateId(),
-            start: s.toISOString(),
-            end: e.toISOString(),
+            id: ib._id || ib.id || Math.random().toString(36).slice(2),
+            title: ib.service || "حجز",
+            start: startTime,
+            end: endTime,
+            extendedProps: { ...ib },
           });
+          return;
         }
-      }
+
+        const totalDays = durationInDays[ib.subscriptionDuration] || 1;
+        for (let i = 0; i < totalDays; i++) {
+          const currentDate = new Date(startTime);
+          currentDate.setDate(startTime.getDate() + i);
+          const weekday = daysMap[currentDate.getDay()];
+
+          if (ib.recurrence.includes(weekday)) {
+            const s = new Date(currentDate);
+            const e = new Date(currentDate);
+            s.setHours(startTime.getHours(), startTime.getMinutes());
+            e.setHours(endTime.getHours(), endTime.getMinutes());
+
+            allEvents.push({
+              id: `${ib._id || ib.id}-${i}`,
+              title: ib.service || "حجز",
+              start: s,
+              end: e,
+              extendedProps: { ...ib },
+            });
+          }
+        }
+      });
     });
 
     return allEvents;
@@ -265,6 +244,7 @@ export default function Calender({ bookings, setBookings }) {
       </div>
     );
   };
+  console.log("bookings from API:", bookings);
 
   return (
     <>

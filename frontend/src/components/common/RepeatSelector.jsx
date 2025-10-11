@@ -5,15 +5,7 @@ export default function RepeatSelector({
   selectedDays,
   setRepeatAndDays,
 }) {
-  const days = [
-    "الأحد",
-    "الاثنين",
-    "الثلاثاء",
-    "الأربعاء",
-    "الخميس",
-    "الجمعة",
-    "السبت",
-  ];
+  const days = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 
   return (
     <div>

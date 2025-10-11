@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import downarrowIcon from "../../icons/downarrow.svg";
 import SearchIcon from "../../icons/search.svg?react";
-import AddcircleIcon from "../../icons/addcircle.svg?react"; // ← SVG كـ React
+import AddcircleIcon from "../../icons/addcircle.svg?react";
 import trainerIcon from "../../icons/trainer.svg";
 
 export default function CoachSelector({
@@ -14,6 +14,12 @@ export default function CoachSelector({
 }) {
   const [openCoach, setOpenCoach] = useState(false);
   const [coachSearch, setCoachSearch] = useState("");
+
+  const filteredCoaches = Array.isArray(coachesList)
+    ? coachesList.filter((c) =>
+        c?.name?.toLowerCase().includes(coachSearch.toLowerCase())
+      )
+    : [];
 
   return (
     <div className="relative">
@@ -33,7 +39,7 @@ export default function CoachSelector({
             selectedCoach ? "text-black" : placeholderColor
           } font-normal`}
         >
-          {selectedCoach || "اختر المدرب"}
+          {selectedCoach?.name || "اختر المدرب"}
         </span>
         <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
       </div>
@@ -50,7 +56,6 @@ export default function CoachSelector({
                 onChange={(e) => setCoachSearch(e.target.value)}
                 className="w-full h-full rounded-[8px] border border-gray-500 px-3 pr-10 focus:outline-none placeholder-gray-400 text-gray-800"
               />
-
               <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
             </div>
 
@@ -61,12 +66,9 @@ export default function CoachSelector({
             </div>
 
             {/* قائمة المدربين */}
-            {coachesList
-              .filter((c) =>
-                c.toLowerCase().includes(coachSearch.toLowerCase())
-              )
-              .map((coach, idx) => {
-                const isSelected = selectedCoach === coach;
+            {filteredCoaches.length > 0 ? (
+              filteredCoaches.map((coach, idx) => {
+                const isSelected = selectedCoach?.id === coach.id;
                 return (
                   <div
                     key={idx}
@@ -84,10 +86,8 @@ export default function CoachSelector({
                           : "font-normal text-gray-800"
                       }
                     >
-                      {coach}
+                      {coach.name}
                     </span>
-
-                    {/* دائرة الاختيار */}
                     <div className="w-5 h-5 rounded-full border-2 border-[var(--color-purple)] flex items-center justify-center">
                       {isSelected && (
                         <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-purple)]"></div>
@@ -95,10 +95,8 @@ export default function CoachSelector({
                     </div>
                   </div>
                 );
-              })}
-
-            {coachesList.filter((c) => c.includes(coachSearch)).length ===
-              0 && (
+              })
+            ) : (
               <div className="px-3 py-2 text-gray-400 font-normal">
                 لا يوجد مدربين
               </div>
