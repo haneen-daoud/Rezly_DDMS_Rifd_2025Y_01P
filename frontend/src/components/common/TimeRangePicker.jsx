@@ -1,0 +1,115 @@
+import React, { useState, useEffect } from "react";
+
+const TimeRangePicker = ({
+  startTime: initialStart,
+  endTime: initialEnd,
+  onChange,
+  variant = "event",
+}) => {
+  const [startTime, setStartTime] = useState(initialStart || "08:00");
+  const [endTime, setEndTime] = useState(initialEnd || "09:00");
+
+  // 👇 لتحديد إذا المستخدم غيّر النهاية يدويًا
+  const [userChangedEnd, setUserChangedEnd] = useState(false);
+
+  // تحديث النهاية تلقائيًا ساعة بعد البداية (إذا المستخدم ما غيّرها)
+  useEffect(() => {
+    if (!userChangedEnd && startTime) {
+      const [hour, minute] = startTime.split(":").map(Number);
+      let endHour = hour + 1;
+      if (endHour >= 24) endHour = 23;
+
+      const newEnd = `${String(endHour).padStart(2, "0")}:${String(
+        minute
+      ).padStart(2, "0")}`;
+
+      setEndTime(newEnd);
+    }
+  }, [startTime]);
+
+  // تمرير القيم للأب
+  useEffect(() => {
+    onChange({ start: startTime, end: endTime });
+  }, [startTime, endTime]);
+
+  // خيارات الوقت
+  const generateOptions = () => {
+    const arr = [];
+    for (let i = 8; i <= 22; i++) {
+      arr.push({
+        value: `${String(i).padStart(2, "0")}:00`,
+        label: `${i % 12 || 12}:00 ${i < 12 ? "ص" : "م"}`,
+      });
+      arr.push({
+        value: `${String(i).padStart(2, "0")}:30`,
+        label: `${i % 12 || 12}:30 ${i < 12 ? "ص" : "م"}`,
+      });
+    }
+    return arr;
+  };
+
+  const options = generateOptions();
+
+  const borderColor =
+    variant === "booking" ? "border-black/10" : "border-[#7E818C]";
+
+  // 👇 تحديد إذا الوقت افتراضي (للون الرمادي)
+  const isDefault =
+    startTime === "08:00" && endTime === "09:00" && !userChangedEnd;
+
+  return (
+    <div className="flex items-center gap-1">
+      {/* وقت البداية */}
+      <select
+  value={startTime}
+  onChange={(e) => {
+    setStartTime(e.target.value);
+  }}
+  className={`h-10 pr-2 pl-2 w-full rounded-md border ${borderColor} focus:outline-none appearance-none font-normal ${
+    isDefault ? "text-gray-400" : "text-black"
+  }`}
+>
+
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+     <svg
+        width="70"
+        height="70"
+        viewBox="0 0 30 30"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M8.79297 6.29297C9.18349 5.90247 9.81651 5.90246 10.207 6.29297C10.5975 6.68349 10.5975 7.31651 10.207 7.70703L6.91406 11H20.5C21.0523 11 21.5 11.4477 21.5 12C21.5 12.5523 21.0523 13 20.5 13H6.91406L10.207 16.293C10.5976 16.6835 10.5976 17.3165 10.207 17.707C9.81651 18.0976 9.18349 18.0976 8.79297 17.707L3.79297 12.707C3.69263 12.6067 3.61811 12.4904 3.56934 12.3662C3.52584 12.2556 3.50114 12.1346 3.5 12.0088V11.9971C3.50041 11.8551 3.53022 11.7199 3.58398 11.5977C3.6236 11.5074 3.67756 11.4214 3.74512 11.3438C3.7619 11.3245 3.77965 11.306 3.79785 11.2881L8.79297 6.29297Z"
+          fill=" var(--color-purple) "
+        />
+      </svg>
+
+      {/* وقت النهاية */}
+      <select
+  value={endTime}
+  onChange={(e) => {
+    setEndTime(e.target.value);
+    setUserChangedEnd(true);
+  }}
+  className={`h-10 pr-2 pl-2 w-full rounded-md border ${borderColor} focus:outline-none appearance-none font-normal ${
+    isDefault ? "text-gray-400" : "text-black"
+  }`}
+>
+
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
+export default TimeRangePicker;

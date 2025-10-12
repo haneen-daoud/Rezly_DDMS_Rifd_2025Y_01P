@@ -14,10 +14,11 @@ import DownArrowIcon from "../../icons/downarrow.svg";
 import RightArrowIcon from "../../icons/rightarrow.svg";
 import LeftArrowIcon from "../../icons/leftarrow.svg";
 
-export default function Calender() {
+export default function Calender({ bookings, setBookings }) {
   const calendarRef = useRef(null);
 
-  const [events, setEvents] = useState([]);
+  const generateId = () => Date.now() + "-" + Math.floor(Math.random() * 1000);
+
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [newEvent, setNewEvent] = useState({});
@@ -28,13 +29,9 @@ export default function Calender() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fullScreenMode, setFullScreenMode] = useState(false);
 
-  const nextId = () =>
-    events.length
-      ? String(Math.max(...events.map((e) => Number(e.id))) + 1)
-      : "1";
-
   const handleDateSelect = (selectInfo) => {
     if (!selectInfo.startStr || !selectInfo.endStr) return;
+
     setNewEvent({
       id: null,
       title: "",
@@ -47,49 +44,92 @@ export default function Calender() {
       bg: "#DBEAFE",
       border: "#3B82F6",
       text: "#1E3A8A",
-      repeat: "",
-      days: [],
+      repeatDays: [],
       reminder: "30",
       reminderName: "قبل 30 دقيقة",
+      duration: "",
     });
+
     setEditMode(false);
     setShowModal(true);
-    if (calendarRef.current) calendarRef.current.getApi().unselect();
+    calendarRef.current?.getApi().unselect();
   };
 
   const handleEventClick = (clickInfo) => {
     const ev = clickInfo.event;
-    setNewEvent({
-      id: String(ev.id),
-      title: ev.title,
-      start: ev.startStr,
-      end: ev.endStr,
-      bg: ev.extendedProps.bg ?? "#DBEAFE",
-      border: ev.extendedProps.border ?? "#3B82F6",
-      text: ev.extendedProps.text ?? "#1E3A8A",
-      description: ev.extendedProps.description ?? "",
-      room: ev.extendedProps.room ?? "",
-      coach: ev.extendedProps.coach ?? "",
-      participants: ev.extendedProps.participants ?? [],
-      repeat: ev.extendedProps.repeat ?? "",
-      days: ev.extendedProps.days ?? [],
-      reminder: ev.extendedProps.reminder ?? "30",
-      reminderName: ev.extendedProps.reminderName ?? "قبل 30 دقيقة",
-    });
+    const data = ev.extendedProps || {};
+
+    let coachObj = { id: "", name: "" };
+
+    if (typeof data.coach === "object" && data.coach !== null) {
+      coachObj = {
+        id: data.coach._id || data.coach.id || "",
+        name: data.coach.name || data.coach.userName || "",
+      };
+    } else if (typeof data.coach === "string") {
+      coachObj = { id: data.coach, name: "غير معروف" };
+    }
+
+    const repeatType =
+      data.recurrence && data.recurrence.length > 0 ? "weekly" : "none";
+    const selectedDays =
+      data.recurrence && Array.isArray(data.recurrence) ? data.recurrence : [];
+
+    const reminderVal = (() => {
+  if (Array.isArray(data.reminders) && data.reminders.length > 0) {
+    return data.reminders; // خليها مصفوفة
+  } else if (typeof data.reminder === "string") {
+    return [data.reminder];
+  } else {
+    return []; // عدم التذكير
+  }
+})();
+
+
+
+    const eventData = {
+      id: String(ev.id || data._id || Math.random().toString(36).slice(2)),
+      title: ev.title || data.service || "بدون عنوان",
+      start: ev.startStr || data.date || "",
+      end: ev.endStr || "",
+      description: data.description || "",
+      room: data.room || data.location || "",
+      coach: coachObj,
+      participants: data.members || [],
+      bg: data.bg || "#DBEAFE",
+      border: data.border || "#3B82F6",
+      text: data.text || "#1E3A8A",
+      repeat: repeatType,
+      days: selectedDays,
+      reminder: reminderVal,
+      duration: Array.isArray(data.subscriptionDuration)
+        ? data.subscriptionDuration[0]
+        : data.subscriptionDuration || "",
+      originalId: data.originalId || ev.id,
+      isSingle: true,
+    };
+
+    console.log("📌 Event clicked raw data:", ev);
+console.log("📌 Extended props:", ev.extendedProps);
+console.log("📌 Calculated reminderVal:", reminderVal);
+
+    setNewEvent(eventData);
     setEditMode(true);
     setShowModal(true);
   };
 
-  const handleSaveEvent = () => {
-    if (!newEvent.title?.trim()) return;
-    if (editMode && newEvent.id != null) {
-      setEvents(
-        events.map((ev) => (ev.id === newEvent.id ? { ...newEvent } : ev))
-      );
-    } else {
-      const id = nextId();
-      setEvents([...events, { ...newEvent, id }]);
-    }
+  const handleSaveEvent = (updatedEvent) => {
+    setBookings((prev) => {
+      return prev.map((ev) => {
+        if (
+          ev.id === updatedEvent.id ||
+          ev.originalId === updatedEvent.originalId
+        ) {
+          return { ...ev, ...updatedEvent };
+        }
+        return ev;
+      });
+    });
     setShowModal(false);
     setEditMode(false);
   };
@@ -97,7 +137,7 @@ export default function Calender() {
   const handleDeleteClick = () => setShowDeleteConfirm(true);
 
   const handleConfirmDelete = () => {
-    setEvents(events.filter((ev) => ev.id !== newEvent.id));
+    setBookings((prev) => prev.filter((ev) => ev.id !== newEvent.id));
     setShowDeleteConfirm(false);
     setShowModal(false);
   };
@@ -118,6 +158,90 @@ export default function Calender() {
     }
   };
 
+  const generateDisplayedEvents = (bookings) => {
+    if (!Array.isArray(bookings)) return [];
+
+    const daysMap = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const durationInDays = {
+      أسبوع: 7,
+      أسبوعين: 14,
+      "3 أسابيع": 21,
+      شهر: 30,
+      "3 أشهر": 90,
+      "6 أشهر": 180,
+      سنة: 365,
+    };
+
+    let allEvents = [];
+
+    const parseDateTime = (date, time) => {
+      if (!date) return new Date();
+      const d = new Date(date);
+
+      if (!time) return d;
+
+      let hour = 0,
+        minute = 0;
+      if (time.includes("ص") || time.includes("م")) {
+        const [hhmm, period] = time.split(" ");
+        [hour, minute] = hhmm.split(":").map((t) => parseInt(t, 10));
+        if (period === "م" && hour !== 12) hour += 12;
+        if (period === "ص" && hour === 12) hour = 0;
+      } else {
+        [hour, minute] = time.split(":").map((t) => parseInt(t, 10));
+      }
+
+      d.setHours(hour, minute, 0, 0);
+      return d;
+    };
+
+    bookings.forEach((b) => {
+      const individualBookings = b.allBookings || [b];
+
+      individualBookings.forEach((ib) => {
+        if (!ib.date) return;
+
+        const startTime = parseDateTime(ib.date, ib.timeStart);
+        const endTime = parseDateTime(ib.date, ib.timeEnd);
+
+        if (!Array.isArray(ib.recurrence) || ib.recurrence.length === 0) {
+          allEvents.push({
+            id: ib._id || ib.id || Math.random().toString(36).slice(2),
+            title: ib.service || "حجز",
+            start: startTime,
+            end: endTime,
+            extendedProps: { ...ib },
+          });
+          return;
+        }
+
+        const totalDays = durationInDays[ib.subscriptionDuration] || 1;
+        for (let i = 0; i < totalDays; i++) {
+          const currentDate = new Date(startTime);
+          currentDate.setDate(startTime.getDate() + i);
+          const weekday = daysMap[currentDate.getDay()];
+
+          if (ib.recurrence.includes(weekday)) {
+            const s = new Date(currentDate);
+            const e = new Date(currentDate);
+            s.setHours(startTime.getHours(), startTime.getMinutes());
+            e.setHours(endTime.getHours(), endTime.getMinutes());
+
+            allEvents.push({
+              id: `${ib._id || ib.id}-${i}`,
+              title: ib.service || "حجز",
+              start: s,
+              end: e,
+              extendedProps: { ...ib },
+            });
+          }
+        }
+      });
+    });
+
+    return allEvents;
+  };
+
   const renderEvent = (eventInfo) => {
     const ev = eventInfo.event;
     const bg = ev.extendedProps.bg ?? "#DBEAFE";
@@ -125,7 +249,7 @@ export default function Calender() {
     const text = ev.extendedProps.text ?? "#1E3A8A";
     return (
       <div
-        className="flex flex-col justify-center items-start pl-2 box-border font-[Cairo] text-[10px] sm:text-xs md:text-sm font-bold border-r-4 w-full h-full truncate"
+        className="self-stretch p-2 rounded inline-flex flex-col justify-center items-start font-[Cairo] text-[10px] sm:text-xs md:text-sm font-bold border-r-4 w-full h-full truncate"
         style={{ background: bg, borderColor: border, color: text }}
       >
         <div className="opacity-90">{eventInfo.timeText}</div>
@@ -133,6 +257,7 @@ export default function Calender() {
       </div>
     );
   };
+  {/*console.log("bookings from API:", bookings);*/}
 
   return (
     <>
@@ -155,7 +280,7 @@ export default function Calender() {
                 <div className="relative">
                   <button
                     onClick={() => setShowDatePicker(!showDatePicker)}
-                    className="h-[32px] w-auto px-2 flex items-center gap-2 rounded-[8px] font-semibold bg-white border-0 outline-none"
+                    className="h-[32px] w-auto px-2 flex items-center gap-2 rounded-[8px] font-semibold bg-[#F8F9FA] border-0 outline-none"
                   >
                     <img src={CalenderIcon} alt="calender" />
                     <span className="font-cairo text-[14px] font-bold text-black truncate">
@@ -179,12 +304,12 @@ export default function Calender() {
                 <div className="relative">
                   <button
                     onClick={() => setShowViewMenu(!showViewMenu)}
-                    className="bg-white w-[111px] h-[32px] px-[8px] py-2 rounded-[8px] font-semibold flex items-center justify-between gap-x-[12px] !border-0 !outline-none"
+                    className="bg-[#F8F9FA] w-[111px] h-[32px] px-[8px] py-2 rounded-[8px] font-semibold flex items-center justify-between gap-x-[12px] !border-0 !outline-none"
                   >
                     <img src={RightArrowIcon} alt="rightarrow" />
                     <span className="font-cairo text-[14px] font-[700] text-black">
                       {view === "timeGridDay"
-                        ? "يوم"
+                        ? "اليوم"
                         : view === "timeGridWeek"
                         ? "أسبوع"
                         : "شهر"}
@@ -226,8 +351,6 @@ export default function Calender() {
                     if (calendarRef.current) {
                       const api = calendarRef.current.getApi();
                       setTimeout(() => {
-                        api.removeAllEvents();
-                        api.addEventSource(events); // بعيد إضافة كل الأحداث
                         api.render();
                       }, 0);
                     }
@@ -249,17 +372,13 @@ export default function Calender() {
             selectMirror={true}
             select={handleDateSelect}
             eventClick={handleEventClick}
-            events={events}
+            events={generateDisplayedEvents(bookings)}
             headerToolbar={false}
             slotMinTime="08:00:00"
             slotMaxTime="24:00:00"
-            slotDuration="01:00:00"
-            eventMaxStack={
-              fullScreenMode
-                ? 10 // عرض 10 أحداث أقصى حد بالصف الواحد في صفحة الكاليندر الموسعة
-                : 4 // عرض 4 أحداث أقصى حد في الكاليندر بالداشبورد
-            }
-            eventDisplay={fullScreenMode ? "auto" : "auto"}
+            slotDuration="00:30:00"
+            eventMaxStack={fullScreenMode ? 10 : 4}
+            eventDisplay="auto"
             allDaySlot={false}
             locale="ar"
             direction="rtl"
@@ -285,14 +404,18 @@ export default function Calender() {
 
       {/* مودال الحدث */}
       {showModal && (
-        <EventModal
-          newEvent={newEvent}
-          setNewEvent={setNewEvent}
-          handleSaveEvent={handleSaveEvent}
-          handleDeleteClick={handleDeleteClick}
-          closeModal={() => setShowModal(false)}
-        />
-      )}
+  <>
+    {console.log("📌 showModal is TRUE")}
+    <EventModal
+      newEvent={newEvent}
+      setNewEvent={setNewEvent}
+      handleSaveEvent={handleSaveEvent}
+      handleDeleteClick={handleDeleteClick}
+      closeModal={() => setShowModal(false)}
+    />
+  </>
+)}
+
 
       {/* تأكيد الحذف */}
       {showDeleteConfirm && (

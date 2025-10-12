@@ -5,28 +5,27 @@
 
 :root {
   --color-bg: #F8F9FA;
-  --color-purple: #6A0EAD; ;   
+  --color-purple: #6A0EAD;
+  ;
   --color-green: #4caf50;
   --color-blue: #3B82F6;
   --color-yellow: #FACC15;
   --color-white: #ffffff;
   --color-black: #000000;
   --color-danger: #EF4444;
-  --color-grey:  #7E818C;
-  
-
-  font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+  --color-greytext: #7E818C;
+  --color-cardborder: rgba(126, 129, 140, 0.40);
+  font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light dark;
   background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 body {
   font-family: 'Cairo';
   background-color: #F8F9FA;
@@ -49,8 +48,8 @@ button:focus {
 
 a {
   font-weight: 500;
-  color: var(--color-purple);
   text-decoration: inherit;
+
 }
 
 a:hover {
@@ -59,8 +58,6 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -86,7 +83,7 @@ h1 {
     color: var(--color-purple);
   }
 
- 
+
 }
 
 /*chart css*/
@@ -109,6 +106,7 @@ h1 {
   width: 100px;
   color: black;
   height: 32px;
+  font-size: 14px;
 
 }
 
@@ -124,8 +122,9 @@ h1 {
   height: 32px;
   align-items: center;
   display: flex;
+  font-size: 14px;
   justify-content: center;
-  
+
 }
 
 .tab-btn.active {
@@ -158,4 +157,25 @@ h1 {
   /* IE and Edge */
   scrollbar-width: none;
   /* Firefox */
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 5px dotted #6A0EAD;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  box-sizing: border-box;
+  animation: rotation 2s linear infinite;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }

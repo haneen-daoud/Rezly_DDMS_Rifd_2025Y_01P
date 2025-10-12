@@ -56,7 +56,7 @@
 }
 
 .react-datepicker__week {
-  direction: ltr !important;
+  direction: rtl !important;
 
 }
 

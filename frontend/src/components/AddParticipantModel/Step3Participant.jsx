@@ -6,7 +6,7 @@ export default function HealthFormStep() {
 
     const copyLink = () => {
         navigator.clipboard.writeText("https://Rezly/Form/");
-        alert("تم نسخ الرابط ✅");
+        alert("تم نسخ الرابط  ");
     };
 
     return (

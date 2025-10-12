@@ -45,7 +45,9 @@ export default function ConfirmDeleteModal({ onCancel, onConfirm, event }) {
           </span>
 
           <span className="font-bold text-black text-sm">
-            هل أنت متأكد من حذف الموعد؟
+            {event?.title
+              ? `هل أنت متأكد من حذف حجز ${event.title}؟`
+              : "هل أنت متأكد من حذف الموعد؟"}
           </span>
 
           {/* ديف الأزرار */}

@@ -3,6 +3,7 @@ import Chart from "../components/Chart";
 import AttendanceTable from "../components/AttendanceTable/AttendanceTable";
 import StatCard from "../components/StatCard";
 import Calender from "../components/Calender/Calender";
+import { useOutletContext } from "react-router-dom";
 
 import Icon1 from "../assets/icon/card-icon1.svg";
 import Icon2 from "../assets/icon/card-icon2.svg";
@@ -10,6 +11,7 @@ import Icon3 from "../assets/icon/card-icon3.svg";
 import Icon4 from "../assets/icon/card-icon4.svg";
 
 export default function Home() {
+  const { bookings, setBookings } = useOutletContext();
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       <div className="flex-[2] flex flex-col gap-6">
@@ -31,7 +33,7 @@ export default function Home() {
 
       <div className="flex-[3] flex mt-6 lg:mt-0 w-full">
         <div className="bg-white rounded-2xl shadow p-4">
-          <Calender />
+          <Calender bookings={bookings} setBookings={setBookings} />
         </div>
       </div>
     </div>
