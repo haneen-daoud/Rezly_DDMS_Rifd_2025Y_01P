@@ -4,6 +4,8 @@ import Step1Booking from "./Step1Booking";
 import Step2Booking from "./Step2Booking";
 import { createBookingAPI } from "../../api/bookingsApi";
 import { updateBookingAPI } from "../../api/bookingsApi";
+import { toast } from "react-toastify";
+import * as Yup from "yup";
 
 const AddBookingModal = ({
   onClose,
@@ -16,17 +18,36 @@ const AddBookingModal = ({
     initialData || {
       title: "",
       description: "",
-      coachId: "68dd54b0f2732ab213f08920",
-      coach: "مريم محمد",
-      room: "قاعة 1",
-      maxMembers: 1,
-      start: new Date().toISOString().split("T")[0] + "T08:00",
-      end: new Date().toISOString().split("T")[0] + "T09:00",
-      subscriptionDuration: "أسبوع",
+      coachId: "",
+      coach: "",
+      room: "",
+      maxMembers: 0,
+      start: "",
+      end: "",
+      subscriptionDuration: "",
       repeatDays: [],
       reminders: [],
     }
   );
+
+  const bookingSchema = Yup.object().shape({
+    title: Yup.string().required("اسم الحصة مطلوب"),
+    description: Yup.string().required("الوصف مطلوب"),
+    coachId: Yup.string().required("اختيار المدرب مطلوب"),
+    room: Yup.string().required("اختيار القاعة مطلوب"),
+    maxMembers: Yup.number()
+      .min(1, "عدد المشتركين لا يمكن أن يكون أقل من 1")
+      .required("عدد المشتركين مطلوب"),
+  });
+
+  const step2Schema = Yup.object().shape({
+    start: Yup.string().required("تاريخ البدء مطلوب"),
+    end: Yup.string().required("الوقت مطلوب"),
+    subscriptionDuration: Yup.string().required("مدة الاشتراك مطلوبة"),
+    repeatDays: Yup.array()
+      .min(1, "يجب اختيار يوم واحد على الأقل للتكرار")
+      .required("أيام التكرار مطلوبة"),
+  });
 
   const steps = ["معلومات الحجز", "موعد الحجز"];
 
@@ -98,16 +119,19 @@ const AddBookingModal = ({
 
   const handleSave = async () => {
     try {
+      // تحقق من الحقول المطلوبة (Step 2)
+      await step2Schema.validate(bookingData, { abortEarly: false });
+
+      //لو كله تمام نكمل الحفظ
       let res;
       if (editMode && bookingData.id) {
-        // تعديل الحجز
         res = await updateBookingAPI(bookingData.id, bookingData, true);
+        toast.success("✅ تم تعديل الحجز بنجاح!");
       } else {
-        // إنشاء حجز جديد
         res = await createBookingAPI(bookingData);
+        toast.success("✅ تم حفظ الحجز بنجاح!");
       }
 
-      // تحويل البيانات لتنسيق الكارت
       const cardBooking = {
         ...apiToCardBooking({
           ...bookingData,
@@ -121,15 +145,20 @@ const AddBookingModal = ({
       };
 
       onSave(cardBooking);
-      onClose();
+
+      setTimeout(() => onClose(), 500);
     } catch (err) {
-      console.error(
-        "❌ Error creating/updating booking:",
-        err.response?.data || err
-      );
-      alert(
-        err.response?.data?.message || "حدث خطأ أثناء إنشاء أو تعديل الحجز"
-      );
+      if (err.inner) {
+        toast.error(
+          <div className="flex flex-col gap-1">
+            {err.inner.map((e, idx) => (
+              <div key={idx}>• {e.message}</div>
+            ))}
+          </div>
+        );
+      } else {
+        toast.error(err.message);
+      }
     }
   };
 
@@ -204,7 +233,26 @@ const AddBookingModal = ({
               // Step 1 → زر التالي فقط
               <div className="w-[344px] mt-4 self-center">
                 <button
-                  onClick={() => setActiveStep(1)}
+                  onClick={async () => {
+                    try {
+                      await bookingSchema.validate(bookingData, {
+                        abortEarly: false,
+                      });
+                      setActiveStep(1);
+                    } catch (err) {
+                      if (err.inner) {
+                        toast.error(
+                          <div className="flex flex-col gap-1">
+                            {err.inner.map((e, idx) => (
+                              <div key={idx}>• {e.message}</div>
+                            ))}
+                          </div>
+                        );
+                      } else {
+                        toast.error(err.message);
+                      }
+                    }
+                  }}
                   className="w-full py-3 text-white text-sm font-medium rounded-[8px]"
                   style={{ backgroundColor: "#6A0EAD" }}
                 >

@@ -22,6 +22,9 @@ export default function EventModal({
   handleDeleteClick,
   closeModal,
 }) {
+
+  console.log("📌 newEvent at render:", newEvent);
+
   const [showCalendar, setShowCalendar] = useState(false);
   const [openMembers, setOpenMembers] = useState(false);
   const [memberSearch, setMemberSearch] = useState("");
@@ -41,34 +44,55 @@ export default function EventModal({
     setShowCalendar(false);
   };
 
-  useEffect(() => {
-    const fetchCoaches = async () => {
-      try {
-        const token = import.meta.env.VITE_API_TOKEN;
-        const res = await axios.get(
-          "https://rezly-ddms-rifd-2025y-01p.onrender.com/auth/getAllEmployees",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  // 1️⃣ أول useEffect: لجلب المدربين من الباك
+useEffect(() => {
+  const fetchCoaches = async () => {
+    try {
+      const token = import.meta.env.VITE_API_TOKEN;
+      const res = await axios.get(
+        "https://rezly-ddms-rifd-2025y-01p.onrender.com/auth/getAllEmployees",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-        const coachList = res.data.employees
-          .filter((emp) => emp.role === "Coach")
-          .map((emp) => ({
-            id: emp._id,
-            name: `${emp.firstName} ${emp.lastName}`,
-          }));
+      const coachList = res.data.employees
+        .filter((emp) => emp.role === "Coach")
+        .map((emp) => ({
+          id: emp._id,
+          name: `${emp.firstName} ${emp.lastName}`,
+        }));
 
-        setCoaches(coachList);
-      } catch (error) {
-        console.error("خطأ في جلب المدربين:", error);
-      }
-    };
+      setCoaches(coachList);
+    } catch (error) {
+      console.error("خطأ في جلب المدربين:", error);
+    }
+  };
 
-    fetchCoaches();
-  }, []);
+  fetchCoaches();
+}, []);
+
+// 2️⃣ ثاني useEffect: لتحديث اسم المدرب في حال كان ID فقط
+useEffect(() => {
+  if (!newEvent || coaches.length === 0) return;
+
+  let updatedCoach = newEvent.coach;
+
+  if (typeof newEvent.coach === "string") {
+    const found = coaches.find(c => c.id === newEvent.coach);
+    if (found) updatedCoach = found;
+  } else if (typeof newEvent.coach === "object" && newEvent.coach.id) {
+    const found = coaches.find(c => c.id === newEvent.coach.id);
+    if (found) updatedCoach = found;
+  }
+
+  if (updatedCoach !== newEvent.coach) {
+    setNewEvent({ ...newEvent, coach: updatedCoach });
+  }
+}, [coaches]);
+
+console.log("👀 Coach value before render:", newEvent.coach);
+
 
   return (
     <div className="fixed inset-0 z-[4000] flex justify-center items-center">
@@ -206,7 +230,7 @@ export default function EventModal({
 
           {/* الوقت */}
           <div>
-            <label className="block font-bold text-sm mb-2">الوقت</label>
+            <label className="block font-bold text-sm">الوقت</label>
             <TimeRangePicker
               startTime={
                 newEvent.start
@@ -238,10 +262,14 @@ export default function EventModal({
 
           {/* المدرب */}
           <CoachSelector
-            selectedCoach={newEvent.coach}
-            setSelectedCoach={(coach) => setNewEvent({ ...newEvent, coach })}
-            coachesList={coaches}
-          />
+  selectedCoach={newEvent.coach}
+  setSelectedCoach={(coach) =>
+    setNewEvent({ ...newEvent, coach: coach, coachId: coach.id })
+  }
+  coachesList={coaches}
+/>
+
+
 
           {/* المشتركين */}
           <div className="relative">
@@ -371,14 +399,15 @@ export default function EventModal({
 
           {/* التذكير */}
           <ReminderSelector
-            selectedReminder={newEvent.reminder}
-            setSelectedReminder={(rem) =>
-              setNewEvent({ ...newEvent, reminder: rem })
-            }
-            showIconInInput={true}
-            borderStyle="#7E818C"
-            placeholderColor="text-gray-400"
-          />
+  selectedReminders={newEvent.reminder || []} // بدل selectedReminder
+  setSelectedReminders={(rem) =>
+    setNewEvent({ ...newEvent, reminder: rem })
+  }
+  showIconInInput={true}
+  borderStyle="#7E818C"
+  placeholderColor="text-gray-400"
+/>
+
         </div>
 
         {/* زر الحفظ */}

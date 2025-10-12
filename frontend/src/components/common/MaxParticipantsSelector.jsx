@@ -22,7 +22,6 @@ export default function MaxParticipantsSelector({
             selectedMax ? "text-black" : "text-gray-400"
           } font-normal`}
         >
-          {/* ✅ عرض النص حسب الخيار */}
           {selectedMax
             ? options.find((o) => o.value === selectedMax)?.label
             : "اختر العدد"}
@@ -37,7 +36,7 @@ export default function MaxParticipantsSelector({
               key={idx}
               className="flex items-center justify-between h-[32px] px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-[rgba(126,129,140,0.4)] last:border-b-0"
               onClick={() => {
-                setSelectedMax(option.value); // ✅ نخزن القيمة الرقمية
+                setSelectedMax(option.value);
                 setOpen(false);
               }}
             >

@@ -6,6 +6,7 @@ import MaxParticipantsSelector from "../common/MaxParticipantsSelector";
 import downarrowIcon from "../../icons/downarrow.svg";
 import SearchIcon from "../../icons/search.svg?react";
 import AddcircleIcon from "../../icons/addcircle.svg?react";
+import * as Yup from "yup";
 
 const Step1Booking = ({ bookingData, setBookingData }) => {
   if (!bookingData) return null;
@@ -210,6 +211,7 @@ const Step1Booking = ({ bookingData, setBookingData }) => {
               { label: "5 مشتركين", value: 5 },
               { label: "10 مشتركين", value: 10 },
               { label: "20 مشتركاً", value: 20 },
+              { label: "إدخال مخصص", value: 20 },
               { label: "غير محدود", value: Infinity },
             ]}
           />

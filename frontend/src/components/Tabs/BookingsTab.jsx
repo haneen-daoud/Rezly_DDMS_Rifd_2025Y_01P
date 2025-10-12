@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import AddBookingModal from "../AddBookingModal/AddBookingModal";
 import ConfirmDeleteModal from "../Calender/ConfirmDeleteModal";
+import { useOutletContext } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import CalenderIcon from "../../icons/calender.svg?react";
 import DeleteIcon from "../../icons/delete.svg?react";
@@ -11,6 +13,15 @@ import MembersIcon from "../../icons/members.svg?react";
 
 import { getAllBookingsAPI, deleteBookingAPI } from "../../api/bookingsApi";
 import { getAllCoachesAPI } from "../../api/coachesApi";
+
+// 🟢 دالة normalizeReminder لتوحيد قيمة التذكير
+const normalizeReminder = (rem) => {
+  if (!rem || ["0", "0m"].includes(rem)) return "0";
+  if (["30", "30m"].includes(rem)) return "30";
+  if (["60", "60m", "1h"].includes(rem)) return "60";
+  if (["24", "24h", "1d"].includes(rem)) return "1440"; // أو حسب ما يتوقع ReminderSelector
+  return rem;
+};
 
 const parseArabicTimeTo24 = (t) => {
   if (!t || typeof t !== "string") return "08:00";
@@ -28,56 +39,29 @@ const parseArabicTimeTo24 = (t) => {
 const computeOccurrences = (subscriptionDuration, repeatDays) => {
   if (!repeatDays || repeatDays.length === 0) return 1;
   let weeks = 1;
-  if (subscriptionDuration.includes("أسبوع"))
-    weeks = parseInt(subscriptionDuration) || 1;
-  else if (subscriptionDuration.includes("شهر"))
-    weeks = (parseInt(subscriptionDuration) || 1) * 4;
-  else if (subscriptionDuration.includes("سنة"))
-    weeks = (parseInt(subscriptionDuration) || 1) * 52;
+  if (subscriptionDuration.includes("أسبوع")) weeks = parseInt(subscriptionDuration) || 1;
+  else if (subscriptionDuration.includes("شهر")) weeks = (parseInt(subscriptionDuration) || 1) * 4;
+  else if (subscriptionDuration.includes("سنة")) weeks = (parseInt(subscriptionDuration) || 1) * 52;
   return weeks * repeatDays.length;
 };
 
+// 🟢 تعديل mapBookingForCard لتوحيد reminder
 const mapBookingForCard = (b, coachesMap) => {
   const repeatDays = Array.isArray(b.recurrence) ? b.recurrence : [];
-  const subscriptionDuration = Array.isArray(b.subscriptionDuration)
-    ? b.subscriptionDuration[0]
-    : b.subscriptionDuration || "أسبوع";
+  const subscriptionDuration = Array.isArray(b.subscriptionDuration) ? b.subscriptionDuration[0] : b.subscriptionDuration || "أسبوع";
 
-  const dateStr = b.date
-    ? b.date.split("T")[0]
-    : new Date().toISOString().split("T")[0];
+  const dateStr = b.date ? b.date.split("T")[0] : b.start ? b.start.split("T")[0] : new Date().toISOString().split("T")[0];
 
-  const parseArabicTimeTo24 = (t) => {
-    if (!t || typeof t !== "string") return "08:00";
-    const parts = t.trim().split(" ");
-    const hhmm = parts[0];
-    const ampm = (parts[1] || "").trim();
-    let [h, m] = hhmm.split(":").map((n) => parseInt(n, 10));
-    if (ampm === "م" && h !== 12) h += 12;
-    if (ampm === "ص" && h === 12) h = 0;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  };
+  let start24 = "08:00";
+  let end24 = "09:00";
 
-  const start24 =
-    b.timeStart?.includes("ص") || b.timeStart?.includes("م")
-      ? parseArabicTimeTo24(b.timeStart)
-      : b.timeStart?.slice(0, 5) || "08:00";
+  if (b.start) start24 = b.start.split("T")[1].slice(0,5);
+  if (b.end) end24 = b.end.split("T")[1].slice(0,5);
+  if (b.timeStart?.includes("ص") || b.timeStart?.includes("م")) start24 = parseArabicTimeTo24(b.timeStart);
+  if (b.timeEnd?.includes("ص") || b.timeEnd?.includes("م")) end24 = parseArabicTimeTo24(b.timeEnd);
 
-  const end24 =
-    b.timeEnd?.includes("ص") || b.timeEnd?.includes("م")
-      ? parseArabicTimeTo24(b.timeEnd)
-      : b.timeEnd?.slice(0, 5) || "09:00";
-
-  const dayMap = {
-    Sun: "الأحد",
-    Mon: "الإثنين",
-    Tue: "الثلاثاء",
-    Wed: "الأربعاء",
-    Thu: "الخميس",
-    Fri: "الجمعة",
-    Sat: "السبت",
-  };
-  const repeatDaysArabic = repeatDays.map((day) => dayMap[day] || day);
+  const dayMap = { Sun: "الأحد", Mon: "الإثنين", Tue: "الثلاثاء", Wed: "الأربعاء", Thu: "الخميس", Fri: "الجمعة", Sat: "السبت" };
+  const repeatDaysArabic = repeatDays.map(day => dayMap[day] || day);
 
   let subscriptionDurationArabic = b.subscriptionDuration || "أسبوع";
   if (typeof subscriptionDurationArabic === "string") {
@@ -92,10 +76,11 @@ const mapBookingForCard = (b, coachesMap) => {
   }
 
   let coachObj = { id: null, name: "لا يوجد مدرب" };
-  if (b.coach && typeof b.coach === "object" && b.coach.name) {
-    coachObj = { id: b.coach._id || null, name: b.coach.name };
-  } else if (b.coach && typeof b.coach === "string" && coachesMap[b.coach]) {
-    coachObj = { id: b.coach, name: coachesMap[b.coach] };
+  if (b.coach && typeof b.coach === "object") {
+    const fullName = b.coach.name || `${b.coach.firstName || ""} ${b.coach.lastName || ""}`.trim();
+    coachObj = { id: b.coach._id || b.coach.id || null, name: fullName || "لا يوجد مدرب" };
+  } else if (typeof b.coach === "string") {
+    coachObj = { id: b.coach, name: coachesMap[b.coach] || "لا يوجد مدرب" };
   } else if (b.coachId && coachesMap[b.coachId]) {
     coachObj = { id: b.coachId, name: coachesMap[b.coachId] };
   }
@@ -111,22 +96,16 @@ const mapBookingForCard = (b, coachesMap) => {
     end: `${dateStr}T${end24}:00`,
     repeatDays: repeatDaysArabic,
     subscriptionDuration: subscriptionDurationArabic,
-    reminder:
-      Array.isArray(b.reminders) && b.reminders.length
-        ? String(b.reminders[0])
-        : "0",
+    reminder: Array.isArray(b.reminders) && b.reminders.length ? normalizeReminder(b.reminders[0]) : "0",
     occurrences: computeOccurrences(subscriptionDuration, repeatDays),
   };
 };
 
-// حساب تاريخ النهاية حسب مدة الاشتراك
 const getEndDateBySubscription = (start, subscriptionDuration) => {
   const endDate = new Date(start);
-
   if (!subscriptionDuration) return endDate;
 
   let daysToAdd = 7;
-
   if (typeof subscriptionDuration === "string") {
     const str = subscriptionDuration.toLowerCase();
     if (str.includes("أسبوع") || str.includes("week")) {
@@ -145,7 +124,9 @@ const getEndDateBySubscription = (start, subscriptionDuration) => {
   return endDate;
 };
 
-const BookingsTab = ({ bookings, setBookings }) => {
+const BookingsTab = () => {
+  const { bookings, setBookings } = useOutletContext();
+
   const headerColors = ["#FBEDD3", "#E1CFEF", "#D0EFDD", "#D2E6F8"];
   const iconColors = ["#EBA522", "#6A0EAD", "#16B157", "#495AFF"];
 
@@ -163,96 +144,93 @@ const BookingsTab = ({ bookings, setBookings }) => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        //  جلب المدربين من الـ API
         const response = await getAllCoachesAPI();
-        console.log("✅ Coaches API response:", response);
-
-        const coaches = response.employees || [];
-        console.log("✅ Coaches array:", coaches);
-
         const map = {};
-        coaches.forEach((c) => {
-          map[c._id] = `${c.firstName} ${c.lastName}`;
-        });
-        console.log("✅ CoachesMap:", map);
+        if (Array.isArray(response)) {
+          response.forEach(c => { if (c.role === "Coach") map[c._id] = `${c.firstName} ${c.lastName}`.trim(); });
+        } else if (response.role === "Coach") {
+          map[response._id] = `${response.firstName} ${response.lastName}`.trim();
+        }
+        setCoachesMap(map);
 
-        // جلب الحجوزات
         const data = await getAllBookingsAPI();
-        console.log("✅ Raw bookings from API:", data);
-
         const bookingMap = new Map();
-        data.forEach((b) => {
+        data.forEach(b => {
           const groupKey = b.groupId || b._id;
           if (!bookingMap.has(groupKey)) {
-            bookingMap.set(groupKey, {
-              ...b,
-              groupId: groupKey,
-              allBookings: [b],
-              recurrence: [...(b.recurrence || [])],
-            });
+            bookingMap.set(groupKey, { ...b, groupId: groupKey, allBookings: [b], recurrence: [...(b.recurrence || [])] });
           } else {
             const existing = bookingMap.get(groupKey);
             existing.allBookings.push(b);
-            existing.recurrence = Array.from(
-              new Set([...existing.recurrence, ...(b.recurrence || [])])
-            );
+            existing.recurrence = Array.from(new Set([...existing.recurrence, ...(b.recurrence || [])]));
             bookingMap.set(groupKey, existing);
           }
         });
 
         const uniqueBookings = Array.from(bookingMap.values())
-          .map((b) => {
-            const mapped = mapBookingForCard(b, map);
-            console.log(`🔹 Booking mapped for card (ID: ${b._id}):`, mapped);
-            return {
-              ...mapped,
-              id: b.groupId || b._id,
-            };
-          })
+          .map(b => ({ ...mapBookingForCard(b, map), id: b.groupId || b._id }))
           .sort((a, b) => new Date(a.start) - new Date(b.start));
 
         setBookings(uniqueBookings);
-        setCoachesMap(map);
       } catch (err) {
         console.error(err);
       }
     };
-
     fetchBookings();
   }, []);
 
   const handleAddBooking = (updatedBooking) => {
-    const mapped = mapBookingForCard(
-      {
-        ...updatedBooking,
-        reminders: updatedBooking.reminders.map((r) => r.replace("m", "")),
-      },
-      coachesMap
-    );
+  try {
+    const startISO = updatedBooking.start || new Date().toISOString();
+    const endISO = updatedBooking.end || new Date(new Date(startISO).getTime() + 60*60*1000).toISOString();
+    const subscriptionDurationOriginal = updatedBooking.duration || updatedBooking.subscriptionDuration || "أسبوع";
 
-    setBookings((prev) => [...prev, mapped]);
+    const bookingToMap = {
+      ...updatedBooking,
+      start: startISO,
+      end: endISO,
+      subscriptionDurationOriginal,
+      date: startISO.split("T")[0],
+      timeStart: startISO.split("T")[1].slice(0,5),
+      timeEnd: endISO.split("T")[1].slice(0,5),
+      reminders: Array.isArray(updatedBooking.reminders) ? updatedBooking.reminders.map(normalizeReminder) : ["0"]
+    };
+
+    const mappedBooking = mapBookingForCard(bookingToMap, coachesMap);
+    setBookings(prev => [...prev, mappedBooking]);
+
+    toast.success(" تم إضافة الحجز بنجاح!");
+
     setShowAddModal(false);
     setEditMode(false);
     setEditingIndex(null);
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error(" حدث خطأ أثناء إضافة الحجز!");
+  }
+};
+
 
   const handleDeleteBooking = async (id, mode = "single") => {
-    try {
-      if (mode === "group") {
-        await deleteBookingAPI(id, true);
-        setBookings(bookings.filter((b) => b.groupId !== id));
-      } else {
-        await deleteBookingAPI(id);
-        setBookings(bookings.filter((b) => b._id !== id));
-      }
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || "حدث خطأ أثناء حذف الحجز");
+  try {
+    if (mode === "group") {
+      await deleteBookingAPI(id, true);
+      setBookings(bookings.filter(b => b.groupId !== id));
+    } else {
+      await deleteBookingAPI(id);
+      setBookings(bookings.filter(b => b._id !== id));
     }
-  };
+    toast.success(" تم حذف الحجز بنجاح!");
+  } catch (err) {
+    console.error(err);
+    toast.error(" حدث خطأ أثناء حذف الحجز!");
+  }
+};
+
 
   return (
     <div className="p-6">
+      {/* Grid of bookings */}
       <div className="grid grid-cols-3 gap-6 justify-items-center mb-4">
         {bookings.map((booking, idx) => {
           const iconColor = iconColors[idx % iconColors.length];

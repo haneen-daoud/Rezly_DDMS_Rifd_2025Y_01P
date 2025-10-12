@@ -494,35 +494,6 @@ const BookingsTab = ({ bookings, setBookings }) => {
         })}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center gap-2 mt-4">
-          <div className="flex items-center gap-2 text-black font-normal">
-            <NoteIcon className="w-6 h-6 text-[var(--color-purple)]" />
-            <span>العدد الكلي {bookings.length}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => goToPage(page)}
-                className={`px-3 py-1 border rounded-md ${
-                  page === currentPage ? "bg-purple-600 text-white" : ""
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 border rounded-md disabled:opacity-50"
-            >
-              ←
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Add/Edit Modal */}
       {showAddModal && (

@@ -5,10 +5,14 @@ import calenderIcon from "../../icons/calender.svg";
 import ReminderSelector from "../common/ReminderSelector";
 import durationIcon from "../../icons/duration.svg";
 import downarrowIcon from "../../icons/downarrow.svg";
+import * as Yup from "yup";
+import { toast } from "react-toastify";
 
 const Step2Booking = ({ bookingData, setBookingData }) => {
+
   const [showCalendar, setShowCalendar] = useState(false);
   const [openDuration, setOpenDuration] = useState(false);
+  const [openRepeat, setOpenRepeat] = useState(false);
 
   const durationOptions = [
     "أسبوع",
@@ -24,51 +28,54 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
 
   const allDays = ["سبت", "أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة"];
 
-  const [openRepeat, setOpenRepeat] = useState(false);
-
   const handleDateChange = (date) => {
     const dateString = date.toISOString().split("T")[0];
-    // ضبط البداية 08:00 والنهاية 09:00 عند اختيار التاريخ
+
+    const currentStartTime = bookingData.start?.split("T")[1] || "08:00";
+    const currentEndTime = bookingData.end?.split("T")[1] || "09:00";
+
     setBookingData({
       ...bookingData,
-      start: `${dateString}T08:00`,
-      end: `${dateString}T09:00`,
+      start: `${dateString}T${currentStartTime}`,
+      end: `${dateString}T${currentEndTime}`,
     });
+
     setShowCalendar(false);
   };
 
-  const getDateString = (dt) => {
-    if (!dt) return "";
-    if (typeof dt === "string" && dt.includes("T")) return dt.split("T")[0];
-    return "";
-  };
+  const getDateString = (dt) =>
+    typeof dt === "string" && dt.includes("T") ? dt.split("T")[0] : "";
 
-  const getTimeString = (dt) => {
-    if (!dt) return "";
-    if (typeof dt === "string" && dt.includes("T")) return dt.split("T")[1];
-    return "";
-  };
+  const getTimeString = (dt) =>
+    typeof dt === "string" && dt.includes("T") ? dt.split("T")[1] : "";
+
+  const dateChosen = Boolean(
+    bookingData.start && getDateString(bookingData.start)
+  );
 
   return (
     <div className="flex flex-col gap-4 w-full items-center font-bold text-black text-[14px]">
       {/* التاريخ */}
       <div className="w-[344px]">
-        <label className="block font-bold text-sm mb-2">التاريخ</label>
+        <label className="block font-bold text-sm mb-2">تاريخ البدء</label>
         <div className="relative flex items-center w-full">
           <img src={calenderIcon} alt="calender" className="absolute right-2" />
           <input
             type="text"
-            value={bookingData.start ? getDateString(bookingData.start) : ""}
+            value={dateChosen ? getDateString(bookingData.start) : ""}
             placeholder="اختر تاريخ"
             readOnly
-            className="h-10 w-full pr-8 pl-2 rounded-md border border-[#D1D5DB] focus:outline-none text-black font-normal placeholder-gray-400 placeholder:font-normal text-black"
+            className={`h-10 w-full pr-8 pl-2 rounded-md border border-[#D1D5DB] focus:outline-none ${
+              dateChosen ? "text-black" : "text-gray-400"
+            } font-normal`}
             onClick={() => setShowCalendar(!showCalendar)}
           />
-
           {showCalendar && (
             <div className="absolute top-full left-0 mt-2 z-30 w-60">
               <MiniCalender
-                currentDate={new Date()}
+                currentDate={
+                  bookingData.start ? new Date(bookingData.start) : new Date()
+                }
                 handleDateChange={handleDateChange}
               />
             </div>
@@ -80,11 +87,11 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
       <div className="w-[344px]">
         <label className="block font-bold text-sm mb-2">الوقت</label>
         <TimeRangePicker
-          startTime={getTimeString(bookingData.start)}
-          endTime={getTimeString(bookingData.end)}
+          startTime={getTimeString(bookingData.start) || "08:00"}
+          endTime={getTimeString(bookingData.end) || "09:00"}
           variant="booking"
           onChange={({ start, end }) => {
-            const date = getDateString(bookingData.start) || "";
+            const date = bookingData.start?.split("T")[0];
             setBookingData({
               ...bookingData,
               start: date ? `${date}T${start}` : "",
@@ -169,7 +176,7 @@ const Step2Booking = ({ bookingData, setBookingData }) => {
       {/* التكرار */}
       <div className="relative w-[344px]">
         <label className="block font-bold text-sm w-full h-[18px] mb-2">
-          التكرار
+          أيام التكرار
         </label>
         <div
           className="w-full h-10 rounded-[8px] flex items-center justify-between cursor-pointer relative"

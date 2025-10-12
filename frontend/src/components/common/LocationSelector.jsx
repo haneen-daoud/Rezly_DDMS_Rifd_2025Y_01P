@@ -15,7 +15,7 @@ export default function LocationSelector({
 
   return (
     <div className="relative">
-      <label className="block font-bold text-sm mb-2">المكان</label>
+      <label className="block font-bold text-sm mb-2">القاعة</label>
       <div
         className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer px-2"
         onClick={() => setOpenLocation(!openLocation)}

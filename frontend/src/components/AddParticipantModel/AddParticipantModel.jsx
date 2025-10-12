@@ -12,7 +12,7 @@ const AddParticipantModel = ({ onClose, onSave }) => {
     title: "",
     coach: "",
     room: "",
-    maxMembers: "",
+    maxParticipants: "",
     date: null,
     time: "",
   });
@@ -35,9 +35,9 @@ const AddParticipantModel = ({ onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25">
-      <div className="bg-white rounded-2xl shadow-lg w-[849px] h-[712px] flex flex-col p-6 text-right overflow-hidden">
-        <div className="flex flex-col w-[801px] h-[712px] gap-4 mx-auto">
+<div className="fixed inset-0 flex items-center justify-center bg-black/25 z-50">
+  <div className="bg-white rounded-2xl shadow-lg w-full max-w-[849px] h-[712px] flex-1 flex-col p-6 text-right overflow-hidden">
+        <div className="flex flex-col w-full gap-4 mx-auto">
           {/* الهيدر */}
           <div className="flex justify-between items-start">
             <h2 className="text-[16px] font-bold text-black">إضافة مشترك جديد</h2>
@@ -86,7 +86,7 @@ const AddParticipantModel = ({ onClose, onSave }) => {
           </div>
 
           {/* محتوى الخطوة */}
-          <div className="flex-grow flex flex-col justify-between pr-2 text-[14px]">
+          <div className="flex-grow flex flex-col justify-between pr-2 text-[14px] ">
             {activeStep === 0 && (
               <Step1Participant bookingData={bookingData} setBookingData={setBookingData} />
             )}
@@ -116,7 +116,7 @@ const AddParticipantModel = ({ onClose, onSave }) => {
                 className="w-full py-3 text-white text-sm font-medium rounded-[8px]"
                 style={{ backgroundColor: "#6A0EAD" }}
               >
-                {activeStep === steps.length - 1 ? "حفظ" : "التالي"}
+                {activeStep === steps.length - 1 ? "إضافة" : "التالي"}
               </button>
             </div>
           </div>

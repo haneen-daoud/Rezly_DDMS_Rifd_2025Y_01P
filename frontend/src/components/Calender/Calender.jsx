@@ -75,8 +75,17 @@ export default function Calender({ bookings, setBookings }) {
     const selectedDays =
       data.recurrence && Array.isArray(data.recurrence) ? data.recurrence : [];
 
-    const reminderVal =
-      typeof data.reminder === "string" ? data.reminder : "30m";
+    const reminderVal = (() => {
+  if (Array.isArray(data.reminders) && data.reminders.length > 0) {
+    return data.reminders; // خليها مصفوفة
+  } else if (typeof data.reminder === "string") {
+    return [data.reminder];
+  } else {
+    return []; // عدم التذكير
+  }
+})();
+
+
 
     const eventData = {
       id: String(ev.id || data._id || Math.random().toString(36).slice(2)),
@@ -99,6 +108,10 @@ export default function Calender({ bookings, setBookings }) {
       originalId: data.originalId || ev.id,
       isSingle: true,
     };
+
+    console.log("📌 Event clicked raw data:", ev);
+console.log("📌 Extended props:", ev.extendedProps);
+console.log("📌 Calculated reminderVal:", reminderVal);
 
     setNewEvent(eventData);
     setEditMode(true);
@@ -244,7 +257,7 @@ export default function Calender({ bookings, setBookings }) {
       </div>
     );
   };
-  console.log("bookings from API:", bookings);
+  {/*console.log("bookings from API:", bookings);*/}
 
   return (
     <>
@@ -391,14 +404,18 @@ export default function Calender({ bookings, setBookings }) {
 
       {/* مودال الحدث */}
       {showModal && (
-        <EventModal
-          newEvent={newEvent}
-          setNewEvent={setNewEvent}
-          handleSaveEvent={handleSaveEvent}
-          handleDeleteClick={handleDeleteClick}
-          closeModal={() => setShowModal(false)}
-        />
-      )}
+  <>
+    {console.log("📌 showModal is TRUE")}
+    <EventModal
+      newEvent={newEvent}
+      setNewEvent={setNewEvent}
+      handleSaveEvent={handleSaveEvent}
+      handleDeleteClick={handleDeleteClick}
+      closeModal={() => setShowModal(false)}
+    />
+  </>
+)}
+
 
       {/* تأكيد الحذف */}
       {showDeleteConfirm && (

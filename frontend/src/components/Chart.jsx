@@ -38,7 +38,7 @@ export default function Chart() {
         {/* Tabs يمين */}
         <div className="flex gap-2">
           <button className={`tab-btn active `}>الزوار</button>
-          <button className={`tab-btn`}>المبيعات</button>
+          <button className={`tab-btn `}>المبيعات</button>
         </div>
 
         {/* Dropdown بالنص */}

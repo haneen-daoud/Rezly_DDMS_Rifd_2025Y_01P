@@ -32,7 +32,7 @@ const ReminderSelector = ({
 
   return (
     <div className="relative w-full">
-      <label className="block font-bold text-sm mb-2">تذكير</label>
+      <label className="block font-bold text-sm mb-2">وقت إرسال التذكير</label>
 
       <div
         className="w-full h-10 flex items-center justify-between cursor-pointer px-3 rounded-md"
@@ -57,6 +57,8 @@ const ReminderSelector = ({
                 (option.value === "0" && selectedReminders.length === 0) ||
                 selectedReminders.includes(option.value);
               const Icon = option.icon;
+
+              console.log("📌 selectedReminders in ReminderSelector:", selectedReminders);
 
               return (
                 <div

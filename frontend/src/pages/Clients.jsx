@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import SubscribersTab from "../components/Tabs/SubscribersTab";
+import BookingsTab from "../components/Tabs/BookingsTab.jsx";
 import AddParticipantModel from "../components/AddParticipantModel/AddParticipantModel.jsx";
 import AddBookingModal from "../components/AddBookingModal/AddBookingModal.jsx";
-import BookingsTab from "../components/Tabs/BookingsTab.jsx";
 import { useOutletContext } from "react-router-dom";
 
 const tabs = ["الحجوزات", "المشتركين", "سجل الحضور", "التقارير", "الإعدادات"];
@@ -24,16 +24,12 @@ export default function ClientsPage() {
         return <BookingsTab bookings={bookings} setBookings={setBookings} />;
 
       default:
-        return (
-          <div className="p-4 bg-white rounded-2xl shadow">
-            محتوى {activeTab}
-          </div>
-        );
+        return <div className="p-4 bg-white rounded-2xl shadow">محتوى {activeTab}</div>;
     }
   };
 
   return (
-    <div className="flex flex-col gap-3 w-full">
+    <div className="flex flex-col gap-3 flex-1 w-full">
       {/* Navbar */}
       <div className="flex">
         <div className="flex w-full bg-white">
@@ -41,9 +37,8 @@ export default function ClientsPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-2.5 text-base cursor-pointer relative pb-1 text-[12px] font-[600] font-Cairo leading-[150%] text-center transition ${
-                activeTab === tab ? "" : "text-[var(--grey,#7E818C)]"
-              }`}
+              className={`px-3 py-2.5 text-base cursor-pointer relative pb-1 text-[12px] font-[600] font-Cairo leading-[150%] text-center transition ${activeTab === tab ? "" : "text-[var(--grey,#7E818C)]"
+                }`}
             >
               {tab}
               {activeTab === tab && (
@@ -54,9 +49,9 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      <div className="flex justify-between items-center p-2">
+      <div className="flex  justify-between items-center p-2">
         {/* الجانب الأيمن */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-2 items-center gap-3">
           {/* زر الإضافة حسب التاب */}
           {(activeTab === "المشتركين" || activeTab === "الحجوزات") && (
             <button
@@ -74,6 +69,7 @@ export default function ClientsPage() {
               </span>
             </button>
           )}
+
 
           {/* فلترة */}
           <div className="flex items-center gap-1 cursor-pointer text-gray-700 hover:text-gray-900">
@@ -100,24 +96,55 @@ export default function ClientsPage() {
                 fill="#6A0EAD"
               />
             </svg>
-            <span>30</span>
+            <span className="text-[12px]">30</span>
           </div>
         </div>
 
         {/* الجانب الأيسر */}
-        <div>
-          <button className="text-black text-[12px] font-[600] font-Cairo leading-[150%]">
-            عرض الكل
-          </button>
+        <div className="flex justify-between  align-center ">
+          <div className=" flex justify-between w-[241px] h-[32px] gap-2 px-2 py-1 align-center  rounded-[10px] bg-white">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clip-path="url(#clip0_1569_57)">
+                <path d="M6.33301 0.666992C9.46251 0.666992 11.9998 3.20354 12 6.33301C12 7.65733 11.5435 8.8741 10.7822 9.83887L11.8047 10.8623L11.7793 10.8867C12.2287 10.754 12.7352 10.866 13.0898 11.2207L14.7793 12.9102C15.2955 13.4263 15.2955 14.2631 14.7793 14.7793C14.2631 15.2955 13.4263 15.2955 12.9102 14.7793L11.2207 13.0898C10.866 12.7352 10.754 12.2287 10.8867 11.7793L10.8623 11.8047L9.83887 10.7822C8.8741 11.5435 7.65733 12 6.33301 12C3.20354 11.9998 0.666992 9.46251 0.666992 6.33301C0.667168 3.20365 3.20365 0.667168 6.33301 0.666992ZM6.33301 2C3.94003 2.00018 2.00018 3.94003 2 6.33301C2 8.72613 3.93992 10.6668 6.33301 10.667C8.72624 10.667 10.667 8.72624 10.667 6.33301C10.6668 3.93992 8.72613 2 6.33301 2Z" fill="#6A0EAD" />
+              </g>
+              <defs>
+                <clipPath id="clip0_1569_57">
+                  <rect width="16" height="16" fill="white" />
+                </clipPath>
+              </defs>
+            </svg>
+
+            <input
+  type="text"
+  placeholder={activeTab === "المشتركين" ? "ابحث عن المشترك..." : "ابحث عن الحجز..."}
+ 
+  className="w-full text-[12px] text-[var(--color-greytext)]"
+/>
+
+
+          </div>
+          {/*
+          <div className=" flex flex-1 justify-center align-center bg-white ">
+
+            <button className="text-black text-[12px] font-[600] font-Cairo leading-[150%]" >
+              عرض الكل
+            </button>
+            <svg  className="mt-1" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M3.84913 5.76863C4.0353 5.56565 4.33715 5.56565 4.52332 5.76863L7.66291 9.19181C7.84908 9.3948 8.15092 9.3948 8.33709 9.19181L11.4767 5.76864C11.6629 5.56565 11.9647 5.56565 12.1509 5.76864C12.337 5.97162 12.337 6.30073 12.1509 6.50372L9.01128 9.92689C8.45277 10.5359 7.54724 10.5359 6.98872 9.92689L3.84913 6.50372C3.66296 6.30073 3.66296 5.97162 3.84913 5.76863Z" fill="black" />
+            </svg>
+
+          </div>
+*/}
+
         </div>
+
       </div>
 
       {/* المحتوى حسب التاب */}
       {renderContent()}
 
-      {/* المودال حسب التاب */}
-      {isModalOpen && activeTab === "المشتركين" && (
-        <AddParticipantModel
+      {isModalOpen && (
+        <AddBookingModal
           onClose={() => setIsModalOpen(false)}
           onSave={(data) => console.log("معلومات المشترك ", data)}
         />

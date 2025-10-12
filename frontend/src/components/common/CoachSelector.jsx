@@ -23,7 +23,7 @@ export default function CoachSelector({
 
   return (
     <div className="relative">
-      <label className="block font-bold text-sm mb-2">المدرب</label>
+      <label className="block font-bold text-sm mb-2">اسم المدرب</label>
       <div
         className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer relative"
         onClick={() => setOpenCoach(!openCoach)}
@@ -33,14 +33,15 @@ export default function CoachSelector({
           <img src={trainerIcon} alt="trainer" className="absolute right-2" />
         )}
         <span
-          className={`h-10 w-full flex items-center ${
-            showIcon ? "pr-8" : "pr-2"
-          } pl-2 ${
-            selectedCoach ? "text-black" : placeholderColor
-          } font-normal`}
-        >
-          {selectedCoach?.name || "اختر المدرب"}
-        </span>
+  className={`h-10 w-full flex items-center ${
+    showIcon ? "pr-8" : "pr-2"
+  } pl-2 ${
+    selectedCoach ? "text-black" : placeholderColor
+  } font-normal`}
+>
+  {selectedCoach?.name || "اختر المدرب"}
+</span>
+
         <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
       </div>
 
@@ -68,7 +69,9 @@ export default function CoachSelector({
             {/* قائمة المدربين */}
             {filteredCoaches.length > 0 ? (
               filteredCoaches.map((coach, idx) => {
-                const isSelected = selectedCoach?.id === coach.id;
+                const isSelected = String(selectedCoach?.id || selectedCoach?._id) === String(coach.id || coach._id);
+
+
                 return (
                   <div
                     key={idx}
