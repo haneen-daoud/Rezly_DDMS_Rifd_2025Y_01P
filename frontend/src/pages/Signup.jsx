@@ -1,16 +1,19 @@
 import React, { useState } from "react";
-import Logo from "../assets/icon/rezly-logo.svg";
-
 import UserIcon from "../icons/user.svg?react";
 import EmailIcon from "../icons/email.svg?react";
 import PasswordIcon from "../icons/password.svg?react";
 import EyeOffIcon from "../icons/eyeOff.svg?react";
+import SignupBg from "../icons/signup.svg"; // استيراد الخلفية
 import { useNavigate } from "react-router-dom";
+import { signup } from "../api.js";
+import Logo from "../assets/icon/rezly-logo.svg";
 
 const Signup = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showCPassword, setShowCPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     userName: "",
     email: "",
@@ -25,24 +28,40 @@ const Signup = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault();
-    alert("البيانات المدخلة: " + JSON.stringify(formData, null, 2));
+
+    if (formData.password !== formData.cpassword) {
+      alert("كلمة المرور وتأكيدها غير متطابقين");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await signup(formData);
+      alert("تم إنشاء الحساب بنجاح!");
+      navigate("/"); // تحويل المستخدم لصفحة تسجيل الدخول
+    } catch (error) {
+      console.error("خطأ أثناء التسجيل:", error);
+      alert(
+        error.response?.data?.message ||
+          "حدث خطأ أثناء التسجيل، حاول مرة أخرى"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      className="flex h-screen font-[Cairo]"
-      style={{ justifyContent: "center", alignItems: "center", gap: "2rem" }}
-    >
+    <div className="flex h-screen font-[Cairo] items-stretch justify-center gap-8">
       {/* نموذج التسجيل */}
-      <div className="flex flex-col items-center gap-6 flex-1 max-w-md p-10 h-[90%]">
-        <div className="mb-6 flex justify-center w-full">
-          <img src={Logo} alt="logo" className="logo" />{" "}
+      <div className="flex flex-col items-center justify-start gap-5 flex-1 max-w-md p-8 mt-[-30px]">
+        <div className="mb-4 flex justify-center w-full">
+          <img src={Logo} alt="logo" className="logo" />
         </div>
 
-        <h2 className="text-3xl font-bold text-black mb-2">إنشاء حساب</h2>
-        <p className="text-lg font-bold text-[#7E818C] mb-6 text-center">
+        <h2 className="text-3xl font-bold text-black mb-1">إنشاء حساب</h2>
+        <p className="text-lg font-bold text-[#7E818C] mb-4 text-center">
           ابدأ تجربتك مع نظامنا الذكي لإدارة الجيم
         </p>
 
@@ -50,7 +69,8 @@ const Signup = () => {
           onSubmit={handleSignUp}
           className="w-full text-right text-sm font-bold"
         >
-          <div className="mb-4">
+          {/* اسم المستخدم */}
+          <div className="mb-3">
             <label className="block mb-1">اسم المستخدم</label>
             <div className="relative w-full">
               <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
@@ -65,7 +85,8 @@ const Signup = () => {
             </div>
           </div>
 
-          <div className="mb-4">
+          {/* البريد الإلكتروني */}
+          <div className="mb-3">
             <label className="block mb-1">البريد الإلكتروني</label>
             <div className="relative w-full">
               <EmailIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
@@ -80,7 +101,8 @@ const Signup = () => {
             </div>
           </div>
 
-          <div className="mb-4">
+          {/* كلمة المرور */}
+          <div className="mb-3">
             <label className="block mb-1">كلمة المرور</label>
             <div className="relative w-full">
               <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
@@ -102,7 +124,8 @@ const Signup = () => {
             </div>
           </div>
 
-          <div className="mb-4">
+          {/* تأكيد كلمة المرور */}
+          <div className="mb-3">
             <label className="block mb-1">تأكيد كلمة المرور</label>
             <div className="relative w-full">
               <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
@@ -124,7 +147,8 @@ const Signup = () => {
             </div>
           </div>
 
-          <div className="mb-4">
+          {/* رقم الهاتف */}
+          <div className="mb-3">
             <label className="block mb-1">رقم الهاتف</label>
             <input
               type="text"
@@ -136,7 +160,8 @@ const Signup = () => {
             />
           </div>
 
-          <div className="mb-4">
+          {/* الجنس */}
+          <div className="mb-3">
             <label className="block mb-1">الجنس</label>
             <select
               name="gender"
@@ -150,7 +175,8 @@ const Signup = () => {
             </select>
           </div>
 
-          <div className="mb-6">
+          {/* مستوى الصلاحية */}
+          <div className="mb-5">
             <label className="block mb-1">مستوى الصلاحية</label>
             <select
               name="role"
@@ -166,15 +192,17 @@ const Signup = () => {
             </select>
           </div>
 
+          {/* زر الإنشاء */}
           <button
             type="submit"
+            disabled={loading}
             className="w-full h-12 text-white font-semibold rounded-lg hover:bg-[#580b94] transition"
             style={{ backgroundColor: "#6A0EAD" }}
           >
-            إنشاء حساب
+            {loading ? "جاري الإنشاء..." : "إنشاء حساب"}
           </button>
 
-          <p className="text-center text-sm text-gray-600 mt-4">
+          <p className="text-center text-sm text-gray-600 mt-3">
             لديك حساب بالفعل؟{" "}
             <button
               type="button"
@@ -187,8 +215,20 @@ const Signup = () => {
         </form>
       </div>
 
-      {/* الخلفية البنفسجية */}
-      <div className="w-[680px] h-[800px] flex-shrink-0 bg-[#6A0EAD] rounded-[40px] self-center"></div>
+      {/* خلفية الواجهة */}
+      <div
+        style={{
+          width: "680px",
+          height: "904px",
+          flexShrink: 0,
+          backgroundImage: `url(${SignupBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          borderRadius: "46px",
+          alignSelf: "center",
+        }}
+      ></div>
     </div>
   );
 };

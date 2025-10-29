@@ -6,11 +6,13 @@ import Step3Employee from "./Step3Employee.jsx";
 import Step4Employee from "./Step4Employee.jsx";
 import { createEmployee, updateEmployee } from "../../api";
 import { toast } from "react-toastify";
+import { step1Schema, step2Schema, step3Schema, step4Schema } from "../../components/employeeValidation";
 
 const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [employeeDataState, setEmployeeDataState] = useState({
     firstName: "",
@@ -65,7 +67,7 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
   };
 
   const handleSubmit = async () => {
-    console.log(type === "add" ? "🚀 بدء الإضافة" : "🛠 بدء التعديل");
+    console.log(type === "add" ? " بدء الإضافة" : "🛠 بدء التعديل");
     setIsLoading(true);
 
     try {
@@ -76,7 +78,7 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
         }
       });
 
-      console.group("📦 محتوى formData قبل الإرسال:");
+      console.group(" محتوى formData قبل الإرسال:");
       for (const [key, value] of formData.entries()) {
         console.log(`${key}`, value);
       }
@@ -95,7 +97,7 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
           return;
         }
         res = await updateEmployee(employeeDataState._id, formData);
-        console.log(" تمّ التعديل بنجاح:", res);
+        console.log("تمّ التعديل بنجاح:", res);
         toast.success("تم تعديل بيانات الموظف بنجاح");
 
         if (onSave) {
@@ -113,29 +115,48 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
         onClose();
       }, 100);
     } catch (err) {
-      console.error("   خطأ:", err.response?.data || err.message);
-      toast.error("حدث خطأ أثناء تعديل بيانات الموظف ");
+      console.error("خطأ:", err.response?.data || err.message);
       setIsLoading(false);
     }
   };
 
   const step1Ref = React.useRef();
+  const step2Ref = React.useRef();
+  const step3Ref = React.useRef();
+  const step4Ref = React.useRef();
+
+
+
 
   const handleNext = async () => {
-    if (activeStep === 0 && step1Ref.current) {
-      const valid = await step1Ref.current.validateAll();
-      if (!valid) {
-        toast.error("يرجى تعبئة جميع الحقول بشكل صحيح");
-        return;
-      }
-    }
+    let isValid = false;
 
-    if (activeStep < steps.length - 1) {
-      setActiveStep(activeStep + 1);
-    } else {
-      handleSubmit();
+    try {
+      if (activeStep === 0 && step1Ref.current) {
+        isValid = await step1Ref.current.validateAll();
+      } else if (activeStep === 1 && step2Ref.current) {
+        isValid = await step2Ref.current.validateAll();
+      } else if (activeStep === 2 && step3Ref.current) {
+        isValid = await step3Ref.current.validateAll();
+      } else if (activeStep === 3 && step4Ref.current) {
+        isValid = await step4Ref.current.validateAll();
+      }
+
+      if (isValid) {
+        setErrors({});
+        if (activeStep < steps.length - 1) {
+          setActiveStep(activeStep + 1);
+        } else {
+          handleSubmit();
+        }
+      }
+    } catch (err) {
+      console.log("خطأ في التحقق", err);
     }
   };
+
+
+
 
 
   return (
@@ -183,7 +204,7 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
           ) : (
             <>
               {/* Stepper */}
-              <div className="flex justify-center items-center gap-4 mt-6 mb-8">
+              <div className="flex justify-center items-center gap-4 mt-2 mb-4">
                 {steps.map((step, index) => (
                   <React.Fragment key={index}>
                     <div
@@ -221,24 +242,34 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
                 {activeStep === 0 && (
                   <Step1Employee
                     ref={step1Ref}
-                    data={{ ...employeeDataState, _ref: step1Ref }}
+                    data={employeeDataState}
                     onChange={handleChange}
+                    errors={errors}
                   />
                 )}
 
                 {activeStep === 1 && (
-                  <Step2Employee data={employeeDataState} onChange={handleChange} />
+                  <Step2Employee
+                    ref={step2Ref}
+                    data={employeeDataState} onChange={handleChange} errors={errors} />
                 )}
                 {activeStep === 2 && (
-                  <Step3Employee data={employeeDataState} onChange={handleChange} />
+                  <Step3Employee
+                    ref={step3Ref}
+
+                    data={employeeDataState} onChange={handleChange} errors={errors} />
                 )}
                 {activeStep === 3 && (
-                  <Step4Employee data={employeeDataState} onChange={handleChange} />
+                  <Step4Employee
+                    ref={step4Ref}
+
+                    data={employeeDataState} onChange={handleChange} errors={errors} />
                 )}
+
               </div>
 
               {/* أزرار التنقل */}
-              <div className="w-[344px] self-center flex gap-4 absolute bottom-12">
+              <div className="w-[344px] self-center flex gap-4 absolute bottom-5">
                 {activeStep > 0 && (
                   <button
                     onClick={() => setActiveStep(activeStep - 1)}

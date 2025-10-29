@@ -522,3 +522,63 @@ const BookingsTab = ({ bookings, setBookings }) => {
 };
 
 export default BookingsTab;
+--------------------------------------
+import React, { useState, useEffect } from "react";
+import { getAllBookingsAPI } from "../../api/bookingsApi";
+import { getAllCoachesAPI } from "../../api/coachesApi";
+import AddBookingModal from "../../Bookings/components/AddBookingModal/AddBookingModal";
+import BookingsList from "../../components/BookingsList/BookingsList";
+import CalendarView from "../../components/CalendarView/CalendarView";
+
+export default function BookingsPage() {
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // دالة الجلب والتحديث المركزي
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const coaches = await getAllCoachesAPI();
+      const coachesMap = {};
+      coaches.forEach((c) => {
+        if (c.role === "Coach")
+          coachesMap[c._id] = `${c.firstName} ${c.lastName}`.trim();
+      });
+
+      const data = await getAllBookingsAPI();
+      const mapped = data.map((b) => ({
+        ...b,
+        coach: b.coachId
+          ? {
+              id: b.coachId,
+              name: coachesMap[b.coachId] || "لا يوجد مدرب",
+            }
+          : { id: null, name: "لا يوجد مدرب" },
+      }));
+
+      setBookings(mapped);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  return (
+    <div className="p-6 flex flex-col gap-6">
+      <AddBookingModal onChange={fetchBookings} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BookingsList
+          bookings={bookings}
+          onChange={fetchBookings}
+          loading={loading}
+        />
+        <CalendarView bookings={bookings} />
+      </div>
+    </div>
+  );
+}

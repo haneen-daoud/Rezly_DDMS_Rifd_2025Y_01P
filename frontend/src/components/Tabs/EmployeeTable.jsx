@@ -75,7 +75,8 @@ export default function EmployeesTable() {
   const handleDeleteEmployee = async (id) => {
     try {
       await toggleEmployeeStatus(id, false);
-      setEmployees((prev) => prev.filter((emp) => emp._id !== id));
+setEmployees(prev => prev.filter(emp => emp._id !== id));
+// هذا يكفي لتحديث الجدول والكاونتر مباشرة
       setIsDeleteModalOpen(false);
        setTotalEmployees(prev => prev - 1);
        toast.success("تم حذف الموظف بنجاح")

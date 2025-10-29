@@ -40,7 +40,7 @@ export default function LocationSelector({
 
       {openLocation && (
         <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-500/40 mt-1 shadow-[0_4px_12px_rgba(0,0,0,0.25)] z-50 text-[#000000]">
-          <div className="w-full h-full p-4 box-border overflow-y-auto">
+          <div className="w-full h-full p-4 box-border max-h-[250px] overflow-y-auto">
             {/* إضافة جديد */}
             <div className="flex items-center gap-2 mb-2 cursor-pointer px-3 py-2 hover:bg-gray-100">
               <AddCircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
