@@ -17,7 +17,6 @@ import DeleteIcon from "../../icons/Delete.svg?react";
 import CloseIcon from "../../icons/close.svg";
 
 import { toast } from "react-toastify";
-import { updateBookingAPI } from "../../api/bookingsApi";
 import { useBookings } from "../BookingsContext";
 
 export default function EventModal({

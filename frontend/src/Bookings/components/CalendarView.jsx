@@ -5,7 +5,6 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { toast } from "react-toastify";
-import { updateBookingAPI, deleteBookingAPI } from "../../api/bookingsApi";
 import { useBookings } from "../BookingsContext";
 import EventModal from "./EventModal";
 import MiniCalender from "../../components/MiniCalender/MiniCalender";
@@ -72,41 +71,45 @@ export default function CalendarView() {
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   };
 
-  const events = (bookings || [])
-    .filter((b) => b && b.date)
-    .map((b) => {
-      const baseDate = new Date(b.date);
-      // استخدم start/end إذا موجودين بصيغة ISO، وإلا نبنيها من timeStart/timeEnd
-      const safeDateStr = baseDate.toISOString().split("T")[0];
+  // 🟣 الآن كل schedule داخل booking يتحول إلى Event مستقل
+const events = (bookings || [])
+  .flatMap((booking) => {
+    if (!booking.schedules || booking.schedules.length === 0) return [];
 
-      const getStartISO = () => {
-        if (b.start) return b.start; // لو موجودة بصيغة ISO
-        const t = parseArabicTime(b.timeStart);
-        return `${safeDateStr}T${t}`;
+    return booking.schedules.map((s) => {
+      const parseArabicTime = (timeStr) => {
+        if (!timeStr) return "00:00";
+        const hasPM = /م/.test(timeStr);
+        const hasAM = /ص/.test(timeStr);
+        const clean = timeStr.replace(/[^\d:]/g, "");
+        const [hStr, mStr] = clean.split(":");
+        let h = parseInt(hStr || "0", 10);
+        const m = parseInt(mStr || "0", 10);
+        if (hasPM && h < 12) h += 12;
+        if (hasAM && h === 12) h = 0;
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
       };
-      const getEndISO = () => {
-        if (b.end) return b.end;
-        const t = parseArabicTime(b.timeEnd);
-        return `${safeDateStr}T${t}`;
-      };
 
-      const startIso = getStartISO();
-      const endIso = getEndISO();
+      const safeDate = new Date(s.date);
+      const dateStr = safeDate.toISOString().split("T")[0];
+      const start = `${dateStr}T${parseArabicTime(s.timeStart)}`;
+      const end = `${dateStr}T${parseArabicTime(s.timeEnd)}`;
 
-      // Extended props للعرض داخل الـ eventContent
       return {
-        id: b._id,
-        title: b.service || b.className || "بدون اسم",
-        start: startIso,
-        end: endIso,
+        id: s._id,
+        title: booking.service || "حجز",
+        start,
+        end,
         extendedProps: {
-          coach: b.coach?.name || (b.coach?.id && b.coach?.name) || "لا يوجد مدرب",
-          participants: b.membersCount ?? b.participants?.length ?? 0,
-          room: b.location || b.room || "",
-          rawBooking: b, // نحفظ النسخة الأصلية لو احتجنا
+          coach: booking.coach?.name || "لا يوجد مدرب",
+          participants: booking.membersCount ?? 0,
+          room: s.location || booking.location || "",
+          rawBooking: booking,
         },
       };
     });
+  });
+
 
   // ---- دوال التحكم ----
   const handleChangeView = (newView) => {
@@ -252,7 +255,24 @@ export default function CalendarView() {
             slotMaxTime="24:00:00"
             slotDuration="00:30:00"
             events={events}
-            eventClick={onEventClick}
+            eventClick={(info) => {
+  const scheduleId = info.event.id;
+  const foundBooking = bookings.find((b) =>
+    b.schedules?.some((s) => s._id === scheduleId)
+  );
+
+  if (foundBooking) {
+    setSelectedBooking({
+      ...foundBooking,
+      selectedScheduleId: scheduleId,
+      selectedSchedule: foundBooking.schedules.find((s) => s._id === scheduleId),
+    });
+  } else {
+    console.warn("❌ لم يتم العثور على الحجز لهذا الـ schedule:", scheduleId);
+  }
+}}
+
+
             eventContent={(eventInfo) => {
               
               return (

@@ -329,11 +329,15 @@ useEffect(() => {
       {/* 🔔 التذكير */}
       <div className="w-[344px] mt-3">
         <ReminderSelector
-          selectedReminders={formData.reminders || []}
-    setSelectedReminders={(reminders) => {
-      setFormData((prev) => ({ ...prev, reminders }));
-    }}
-        />
+  selectedReminders={formData.reminders || []}
+  setSelectedReminders={(newReminders) => {
+    setFormData((prev) => ({
+      ...prev,
+      reminders: newReminders,
+    }));
+  }}
+/>
+
       </div>
     </div>
   );

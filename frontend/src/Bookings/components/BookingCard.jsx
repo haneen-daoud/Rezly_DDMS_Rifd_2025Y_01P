@@ -30,6 +30,7 @@ export default function BookingCard({
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   /* ==========================
       معالجة البيانات من الباك الجديد
@@ -239,14 +240,23 @@ export default function BookingCard({
         {/* النقاط الثلاث */}
         <div className="relative">
           <button
-            onClick={() => setOpenMenu(openMenu === index ? null : index)}
-            className="w-10 h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
-          >
-            <span className="text-xl leading-none text-[#000]">⋯</span>
-          </button>
+  onClick={(e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.bottom + 12,
+      left: rect.left - 100,
+    });
+    setOpenMenu(openMenu === index ? null : index);
+  }}
+  className="w-10 h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
+>
+  <span className="text-xl leading-none text-[#000]">⋯</span>
+</button>
+
 
           {openMenu === index && (
-            <div className="absolute bg-white rounded-lg flex flex-col z-20 shadow-md border border-[#7E818C66] p-2 left-[-100px] top-[calc(100%+12px)] w-[174px]">
+  <div className="absolute bg-white rounded-lg flex flex-col z-[9999] shadow-lg border border-[#7E818C66] p-2 left-[-100px] top-[calc(100%+12px)] w-[174px]">
+
               <button
                 onClick={() => {
                   window.dispatchEvent(

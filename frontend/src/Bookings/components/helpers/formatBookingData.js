@@ -142,6 +142,13 @@ export const formatBookingData = (booking) => {
 
   description: booking.description || "",
 
+  // ✅ نقرأ الريمايندر من أول schedule إذا موجود
+reminders:
+  (firstSchedule.reminders && firstSchedule.reminders.length > 0)
+    ? firstSchedule.reminders
+    : booking.reminders || [],
+
+
       // ---- Step2 ----
       dateOnly: safeDateString,
       daysSchedule, // ← صار فيه [{day:"أحد",start:"08:00",end:"09:00"}, ...]
