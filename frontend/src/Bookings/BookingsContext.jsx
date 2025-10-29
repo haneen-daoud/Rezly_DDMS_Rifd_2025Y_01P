@@ -4,96 +4,94 @@ import { getAllCoachesAPI } from "../api/coachesApi";
 import { getUserFromToken } from "../api/bookingsApi";
 
 const BookingsContext = createContext();
-
 export const useBookings = () => useContext(BookingsContext);
 
 export const BookingsProvider = ({ children }) => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchBookings = async () => {
-    setLoading(true);
-    try {
-      // 🟣 مين داخل الآن؟
-      const user = getUserFromToken();
-      const isCoach = user?.role?.toLowerCase() === "coach";
+   const fetchBookings = async () => {
+  setLoading(true);
+  try {
+    const user = await getUserFromToken();
+    const isCoach = user?.role?.toLowerCase() === "coach";
 
-      // 1) جلب كل المدربين وبناء خريطة id → {id, name}
-      const employees = await getAllCoachesAPI();
-      const coachesOnly = (employees?.employees || employees || []).filter(
-        (e) => e.role === "Coach"
-      );
+    // ✅ 1) جلب المدربين
+    const employeesRes = await getAllCoachesAPI();
+    const coachesList = Array.isArray(employeesRes)
+      ? employeesRes
+      : employeesRes?.employees || [];
 
-      const coachesMap = {};
-      coachesOnly.forEach((emp) => {
+    console.log(
+      "👥 قائمة المدربين من السيرفر:",
+      coachesList.map((c) => ({
+        id: c._id,
+        name: `${c.firstName} ${c.lastName}`,
+        role: c.role,
+      }))
+    );
+
+    // ✅ 2) بناء خريطة المدربين
+    const coachesMap = {};
+    (coachesList || []).forEach((emp) => {
+      if (emp.role?.toLowerCase() === "coach") {
+        const id = String(emp._id);
         const fullName = `${emp.firstName || ""} ${emp.lastName || ""}`.trim();
-        coachesMap[emp._id] = { id: emp._id, name: fullName || "مدرب" };
-      });
+        coachesMap[id] = { id, name: fullName };
+      }
+    });
+    console.log("🗺️ coachesMap بعد البناء:", coachesMap);
 
-      console.log("🗺️ coachesMap:", coachesMap);
+    // ✅ 3) جلب الحجوزات
+    const data = await getAllBookingsAPI();
+    console.log("📦 الحجوزات الأصلية:", data);
 
-      // 2) جلب الحجوزات
-      const data = await getAllBookingsAPI();
-      console.log("📦 الحجوزات الأصلية:", data);
+    const base = isCoach
+      ? data.filter((b) => b.schedules?.some((s) => s.coach === user?.id))
+      : data;
 
-      // 3) فلترة للمدرب (إن لزم)
-      const base = isCoach
-        ? data.filter((b) => {
-            const cid =
-              (typeof b.coach === "string" && b.coach) ||
-              b.coachId ||
-              b.coach?._id ||
-              null;
-            return cid === user?.id;
-          })
-        : data;
+    // ✅ 4) دمج الكوتش الصحيح
+    const formatted = base.map((b) => {
+      // نجيب أول schedule فيه coach
+      const firstSchedule = b.schedules?.find((s) => s.coach) || {};
+      const coachIdRaw = firstSchedule.coach || b.coachId || null;
+      const coachId = coachIdRaw ? String(coachIdRaw) : "";
 
-      // 4) تحويل coach من ID → كائن {id, name}
-      const formatted = base.map((b) => {
-        const cid =
-          (typeof b.coach === "string" && b.coach) ||
-          b.coachId ||
-          (b.coach && b.coach._id) ||
-          null;
+      // ✅ نطبع لتتبع السبب
+      if (coachId && !coachesMap[coachId]) {
+        console.log("⚠️ لم يُعثر على الكوتش في الماب:", {
+          coachId,
+          scheduleCoach: firstSchedule.coach,
+          mapKeys: Object.keys(coachesMap),
+        });
+      }
 
-        return {
-          ...b,
-          coach: cid
-            ? coachesMap[cid] || { id: cid, name: "مدرب" }
-            : { id: null, name: "لا يوجد مدرب" },
-        };
-      });
+      const coachData =
+        coachId && coachesMap[coachId]
+          ? coachesMap[coachId]
+          : coachId
+          ? { id: coachId, name: "مدرب غير معروف" }
+          : { id: null, name: "لا يوجد مدرب" };
 
-      console.log("✅ الحجوزات بعد تحويل coach:", formatted);
+      return { ...b, coach: coachData };
+    });
 
-      setBookings(formatted);
-    } catch (err) {
-      console.error("❌ فشل جلب الحجوزات:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.log("✅ الحجوزات بعد إصلاح coach:", formatted);
+    setBookings(formatted);
+  } catch (err) {
+    console.error("❌ فشل جلب الحجوزات:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  useEffect(() => {
-    const loadEmployees = async () => {
-      const employees = await getAllCoachesAPI();
-      localStorage.setItem(
-        "allEmployees",
-        JSON.stringify(employees?.employees || [])
-      );
-      console.log("✅ تم تخزين الموظفين:", employees);
-    };
-    loadEmployees();
-  }, []);
 
   useEffect(() => {
     fetchBookings();
   }, []);
 
   return (
-    <BookingsContext.Provider
-      value={{ bookings, setBookings, fetchBookings, loading }}
-    >
+    <BookingsContext.Provider value={{ bookings, setBookings, fetchBookings, loading }}>
       {children}
     </BookingsContext.Provider>
   );

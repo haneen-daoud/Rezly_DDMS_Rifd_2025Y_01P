@@ -8,6 +8,7 @@ import EditIcon from "../../icons/address.svg?react";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import { deleteBookingAPI } from "../../api/bookingsApi";
 import { toast } from "react-toastify";
+import ReactDOM from "react-dom";
 
 export default function BookingCard({
   bookingGroup = [],
@@ -111,7 +112,8 @@ export default function BookingCard({
   console.log("✅ booking:", booking);
 
   return (
-    <div className="w-full max-w-[370px] rounded-[16px] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] p-4 flex flex-col justify-between transition-transform duration-300 hover:scale-[1.03] hover:shadow-[0_4px_12px_rgba(0,0,0,0.25)] relative">
+    <div className="w-full max-w-[370px] rounded-[16px] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] p-4 flex flex-col justify-between transition-transform duration-300 hover:scale-[1.03] hover:shadow-[0_4px_12px_rgba(0,0,0,0.25)] relative z-0">
+
       {/* 🔹 صورة المدرب */}
       {booking.coach?.image && (
         <img
@@ -182,7 +184,8 @@ export default function BookingCard({
           <MembersIcon className="w-6 h-6 text-[var(--color-purple)]" />
           {/* العدد */}
           <span className="text-sm font-semibold text-gray-700">
-            {booking.membersCount}/{booking.maxMembers}
+            {booking.membersCount}/{booking.maxMembers || firstSchedule.maxMembers || 0}
+
           </span>
 
           {/* صور المشتركين */}
@@ -278,27 +281,30 @@ export default function BookingCard({
       </div>
 
       {/* ✅ مودال الحذف */}
-      {showDeleteModal && (
-        <ConfirmDeleteModal
-          event={booking}
-          isLoading={deleting}
-          onCancel={() => setShowDeleteModal(false)}
-          onConfirm={async () => {
-            try {
-              setDeleting(true);
-              await deleteBookingAPI(booking._id);
-              toast.success("تم حذف الحجز ✅");
-              setShowDeleteModal(false);
-              onChange?.();
-            } catch (err) {
-              console.error(err);
-              toast.error("حدث خطأ أثناء الحذف");
-            } finally {
-              setDeleting(false);
-            }
-          }}
-        />
-      )}
+      {showDeleteModal &&
+  ReactDOM.createPortal(
+    <ConfirmDeleteModal
+      event={booking}
+      isLoading={deleting}
+      onCancel={() => setShowDeleteModal(false)}
+      onConfirm={async () => {
+        try {
+          setDeleting(true);
+          await deleteBookingAPI(booking._id);
+          toast.success("تم حذف الحجز ✅");
+          setShowDeleteModal(false);
+          onChange?.();
+        } catch (err) {
+          console.error(err);
+          toast.error("حدث خطأ أثناء الحذف");
+        } finally {
+          setDeleting(false);
+        }
+      }}
+    />,
+    document.body
+  )}
+
     </div>
   );
 }

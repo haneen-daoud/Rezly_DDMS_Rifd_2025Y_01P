@@ -28,22 +28,25 @@ export default function Step2Booking({
 
   // 🟣 كل ما يتغير formData.daysSchedule، نحدّث state الداخلي
 // ✅ إعادة تهيئة الخطوة كل ما يتغير formData بالكامل (مش بس daysSchedule)
+// ✅ يشغل مرة واحدة عند الدخول أو لو تغيّر daysSchedule من الخارج
 useEffect(() => {
-  if (formData) {
-    setDaysSchedule(formData.daysSchedule || []);
+  if (Array.isArray(formData?.daysSchedule)) {
+    setDaysSchedule(formData.daysSchedule);
   }
-  // نظّف الأخطاء القديمة لما يتغير الحجز
-  if (errors && Object.keys(errors).length > 0) {
-    setErrors({});
-  }
-}, [formData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [formData.daysSchedule]);
+
+// ✅ لما نغيّر داخليًا، نحدّث formData بدون حلقة
+useEffect(() => {
+  setFormData((prev) => {
+    if (JSON.stringify(prev.daysSchedule) === JSON.stringify(daysSchedule)) {
+      return prev; // ما نحدّث لو ما تغيّر فعليًا
+    }
+    return { ...prev, daysSchedule };
+  });
+}, [daysSchedule]);
 
 
-{/* 
-  useEffect(() => {
-    setFormData((prev) => ({ ...prev, daysSchedule }));
-  }, [daysSchedule]);
-*/}
 
 
   // ✅ خريطة اليوم العربي الكاملة لتوحيد العرض والقيمة
@@ -225,106 +228,111 @@ useEffect(() => {
       )}
 
       {/* 🗓️ جدول الأيام أو تعديل فردي */}
-      <div className="w-[344px] flex flex-col gap-3">
-        <label className="block font-bold text-sm mb-1">
-          {isIndividual ? "تعديل وقت الحجز" : "جدول المواعيد"}{" "}
-          <span className="text-red-500">*</span>
-        </label>
+<div className="w-[344px] flex flex-col gap-3">
+  {!isIndividual && (
+    <div className="flex items-center justify-between mb-1">
+      <label className="block font-bold text-sm">
+        جدول المواعيد <span className="text-red-500">*</span>
+      </label>
 
-        {/* ✅ تعديل حجز فردي */}
-        {isIndividual ? (
-          <div className="flex flex-col gap-2">
-            <TimeRangePicker
-              startTime={formData.start?.split("T")[1]?.slice(0, 5) || "08:00"}
-              endTime={formData.end?.split("T")[1]?.slice(0, 5) || "09:00"}
-              onChange={({ start, end }) => {
-                const dateBase =
-                  formData.dateOnly || new Date().toISOString().split("T")[0];
-                setFormData({
-                  ...formData,
-                  start: `${dateBase}T${start}`,
-                  end: `${dateBase}T${end}`,
-                });
-              }}
-              variant="booking"
-            />
-          </div>
-        ) : (
-          <>
-            {/* ✅ الواجهة العادية (إضافة أو تعديل جماعي) */}
-            <div className="flex items-center justify-between mb-1">
-              <button
-                onClick={handleAddDay}
-                className="text-[var(--color-purple)] font-semibold text-sm flex items-center gap-1"
+      <button
+        onClick={handleAddDay}
+        type="button"
+        className="text-[var(--color-purple)] font-semibold text-sm flex items-center gap-1 hover:underline"
+      >
+        <span className="text-lg leading-none">＋</span>
+        <span>إضافة يوم جديد</span>
+      </button>
+    </div>
+  )}
+
+  {isIndividual && (
+    <label className="block font-bold text-sm mb-1">
+      تعديل وقت الحجز <span className="text-red-500">*</span>
+    </label>
+  )}
+
+  {/* ✅ تعديل حجز فردي */}
+  {isIndividual ? (
+    <div className="flex flex-col gap-2">
+      <TimeRangePicker
+        startTime={formData.start?.split("T")[1]?.slice(0, 5) || "08:00"}
+        endTime={formData.end?.split("T")[1]?.slice(0, 5) || "09:00"}
+        onChange={({ start, end }) => {
+          const dateBase =
+            formData.dateOnly || new Date().toISOString().split("T")[0];
+          setFormData({
+            ...formData,
+            start: `${dateBase}T${start}`,
+            end: `${dateBase}T${end}`,
+          });
+        }}
+        variant="booking"
+      />
+    </div>
+  ) : (
+    <>
+      {daysSchedule.length === 0 ? (
+        <p className="text-gray-400 text-sm text-center py-3">
+          لم تتم إضافة أي يوم بعد
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {daysSchedule.map((row, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-2 text-[13px] font-normal"
+            >
+              {/* اليوم */}
+              <select
+                value={row.day}
+                onChange={(e) => handleChange(index, "day", e.target.value)}
+                className="flex-1 h-9 rounded-md border border-gray-300 px-2 text-sm focus:outline-none"
               >
-                <span className="w-4 h-4 inline-block"></span>
-                <span>إضافة يوم جديد</span>
+                <option value="">اختر اليوم</option>
+                {allDays.map((d) => (
+                  <option key={d.short} value={d.short}>
+                    {d.full}
+                  </option>
+                ))}
+              </select>
+
+              {/* الوقت */}
+              <div className="flex-[1.5]">
+                <TimeRangePicker
+                  startTime={row.start}
+                  endTime={row.end}
+                  onChange={({ start, end }) => {
+                    handleChange(index, "start", start);
+                    handleChange(index, "end", end);
+                  }}
+                  variant="booking"
+                />
+              </div>
+
+              {/* حذف اليوم */}
+              <button
+                onClick={() => handleDeleteDay(index)}
+                className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-md"
+              >
+                <DeleteIcon className="w-4 h-4 text-red-500" />
               </button>
             </div>
+          ))}
+        </div>
+      )}
+    </>
+  )}
+</div>
 
-            {daysSchedule.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-3">
-                لم تتم إضافة أي يوم بعد
-              </p>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {daysSchedule.map((row, index) => (
-                  
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 text-[13px] font-normal"
-                  >
-                    {/* اليوم */}
-                    <select
-                      value={row.day}
-                      onChange={(e) =>
-                        handleChange(index, "day", e.target.value)
-                      }
-                      className="flex-1 h-9 rounded-md border border-gray-300 px-2 text-sm focus:outline-none"
-                    >
-                      <option value="">اختر اليوم</option>
-                      {allDays.map((d) => (
-                        <option key={d.short} value={d.short}>
-                          {d.full}
-                        </option>
-                      ))}
-                    </select>
-
-                    {/* الوقت */}
-                    <div className="flex-[1.5]">
-                      <TimeRangePicker
-                        startTime={row.start}
-                        endTime={row.end}
-                        onChange={({ start, end }) => {
-                          handleChange(index, "start", start);
-                          handleChange(index, "end", end);
-                        }}
-                        variant="booking"
-                      />
-                    </div>
-
-                    {/* حذف اليوم */}
-                    <button
-                      onClick={() => handleDeleteDay(index)}
-                      className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-red-100"
-                    >
-                      <DeleteIcon className="w-4 h-4 text-red-500" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </div>
 
       {/* 🔔 التذكير */}
       <div className="w-[344px] mt-3">
         <ReminderSelector
           selectedReminders={formData.reminders || []}
-          setSelectedReminders={(val) =>
-            setFormData((prev) => ({ ...prev, reminders: val }))
-          }
+    setSelectedReminders={(reminders) => {
+      setFormData((prev) => ({ ...prev, reminders }));
+    }}
         />
       </div>
     </div>

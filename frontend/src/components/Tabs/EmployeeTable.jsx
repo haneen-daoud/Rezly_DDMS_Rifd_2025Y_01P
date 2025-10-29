@@ -75,11 +75,11 @@ export default function EmployeesTable() {
   const handleDeleteEmployee = async (id) => {
     try {
       await toggleEmployeeStatus(id, false);
-setEmployees(prev => prev.filter(emp => emp._id !== id));
-// هذا يكفي لتحديث الجدول والكاونتر مباشرة
+      setEmployees(prev => prev.filter(emp => emp._id !== id));
+      // هذا يكفي لتحديث الجدول والكاونتر مباشرة
       setIsDeleteModalOpen(false);
-       setTotalEmployees(prev => prev - 1);
-       toast.success("تم حذف الموظف بنجاح")
+      setTotalEmployees(prev => prev - 1);
+      toast.success("تم حذف الموظف بنجاح")
     } catch (err) {
       console.error("   خطأ أثناء الحذف:", err);
       alert("حدث خطأ أثناء الحذف. الرجاء المحاولة لاحقًا.");
@@ -165,18 +165,9 @@ setEmployees(prev => prev.filter(emp => emp._id !== id));
                     ? new Date(emp.startDate).toLocaleDateString("ar-EG")
                     : "-"}
                 </td>
-                <td className="table-text">
-                  <select
-                    value={emp.role || ""}
-                    onChange={(e) => handleRoleChange(emp._id, e.target.value)}
-                  >
-                    <option value="">اختر الصلاحية</option>
-                    <option value="Admin">مدير</option>
-                    <option value="Coach">مدرب</option>
-                    <option value="Accountant">محاسبة</option>
-                    <option value="Receptionist">موظف استقبال</option>
-                  </select>
-                </td>
+                <td className="table-text">{emp.role || ""}</td>
+
+
                 <td className="table-text flex justify-center gap-2">
                   <button onClick={() => openEditModal(emp)}>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

@@ -63,12 +63,19 @@ export default function Step1Booking({
 
 
   const handleClassSelect = (cls) => {
-    if (isReadOnly) return;
-    setFormData({ ...formData, title: cls });
-    setOpenClass(false);
-    setClassSearch("");
-    if (errors?.title) setErrors((prev) => ({ ...prev, title: null }));
-  };
+  if (isReadOnly) return;
+
+  setFormData((prev) => ({
+    ...prev,
+    title: cls,
+    service: cls, // 🟣 ضروري للباك (هو اللي بنبعت بـ PUT)
+  }));
+
+  setOpenClass(false);
+  setClassSearch("");
+  if (errors?.title) setErrors((prev) => ({ ...prev, title: null }));
+};
+
 
   const handleAddNewClass = () => {
     if (isReadOnly) return;
@@ -79,11 +86,24 @@ export default function Step1Booking({
     }
   };
 
+// 🟣 إغلاق القوائم عند الضغط خارجها
+useEffect(() => {
+  const handleClickOutside = (e) => {
+    // إذا العنصر المفتوح مو جزء من العنصر اللي تم الضغط عليه
+    if (!e.target.closest(".dropdown-step1")) {
+      setOpenClass(false);
+    }
+  };
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+
+
   return (
     <div className="flex justify-center bg-white w-full text-black text-[14px]">
       <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
         {/* اسم الحصة */}
-        <div className="relative">
+        <div className="relative dropdown-step1">
           <label className="block font-bold text-sm mb-1">
             اسم الحصة <span className="text-red-500">*</span>
           </label>
@@ -180,7 +200,7 @@ export default function Step1Booking({
         </div>
 
         {/* الوصف */}
-        <div>
+        <div >
           <label className="block font-bold text-sm mb-1">
             الوصف <span className="text-red-500">*</span>
           </label>
@@ -234,7 +254,12 @@ export default function Step1Booking({
             selectedLocation={formData.room}
             setSelectedLocation={(loc) => {
               if (isReadOnly) return;
-              setFormData({ ...formData, room: loc });
+              setFormData((prev) => ({
+  ...prev,
+  room: loc,
+  location: loc, // 🟣 هذا الحقل اللي الباك بيستخدمه
+}));
+
               if (errors?.room) setErrors((prev) => ({ ...prev, room: null }));
             }}
             locationsList={rooms}
@@ -253,7 +278,11 @@ export default function Step1Booking({
             selectedMax={formData.maxMembers}
             setSelectedMax={(value) => {
               if (isReadOnly) return;
-              setFormData({ ...formData, maxMembers: value });
+              setFormData((prev) => ({
+  ...prev,
+  maxMembers: Number(value), // 🟣 تأكيد إنه دايمًا رقم
+}));
+
               if (errors?.maxMembers)
                 setErrors((prev) => ({ ...prev, maxMembers: null }));
             }}

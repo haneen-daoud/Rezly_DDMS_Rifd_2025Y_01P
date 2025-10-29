@@ -43,6 +43,7 @@ const Signup = () => {
       navigate("/"); // تحويل المستخدم لصفحة تسجيل الدخول
     } catch (error) {
       console.error("خطأ أثناء التسجيل:", error);
+      console.log("Signup error:", error.response?.data || error);
       alert(
         error.response?.data?.message ||
           "حدث خطأ أثناء التسجيل، حاول مرة أخرى"
