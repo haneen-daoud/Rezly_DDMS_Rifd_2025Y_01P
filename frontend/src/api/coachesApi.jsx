@@ -2,16 +2,20 @@ import axios from "axios";
 
 const BASE_URL = "https://rezly-ddms-rifd-2025y-01p.onrender.com";
 
-const ACCESS_TOKEN = import.meta.env.VITE_API_TOKEN || "";
-
+// ✅ نستخدم التوكن من localStorage بدل .env
 export const getAllCoachesAPI = async () => {
   try {
+    const token =
+      localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
+
     const res = await axios.get(`${BASE_URL}/auth/getAllEmployees?role=Coach`, {
       headers: {
-        Authorization: `Bearer ${ACCESS_TOKEN.trim()}`,
+        Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
       },
     });
-    return res.data.employees;
+
+    // ✅ النتيجة مصفوفة
+    return res.data?.employees || [];
   } catch (err) {
     console.error("Error fetching coaches:", err.response?.data || err.message);
     return [];

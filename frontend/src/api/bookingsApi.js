@@ -189,37 +189,42 @@ export async function getBookingByIdAPI(id) {
   }
 }
 
-// تعديل حجز
-export async function updateBookingAPI(id, updateData, isGroup = false) {
+export async function updateGeneralBookingAPI(bookingId, body) {
   try {
-    // لو تعديل جماعي → نحضّر البيانات الكاملة بصيغة الباك
-    const payload = isGroup ? formatPayload(updateData) : updateData;
+    const token =
+      localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
 
-  
-    const url = isGroup
-      ? `/${id}?updateGroup=true`
-      : `/${id}`;
+    const res = await api.put(`/${bookingId}`, body, {
+      headers: {
+        Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-    console.log("📡 updateBookingAPI →", { url, payload });
-
-    const res = await api.put(url, payload);
     return res.data;
   } catch (err) {
-    console.error("❌ خطأ أثناء تحديث الحجز:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || "فشل تعديل الحجز");
+    console.error("❌ خطأ في updateGeneralBookingAPI:", err.response?.data || err.message);
+    throw err;
   }
 }
 
-
-// تعديل موعد فردي داخل حجز جماعي باستخدام scheduleId
-export async function updateSingleScheduleAPI(bookingId, data) {
+export async function updateSingleScheduleAPI(bookingId, body) {
   try {
-    const url = `/booking/${bookingId}`;
-    const res = await api.put(url, data);
+    const token =
+      localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
+
+    // body لازم يحتوي على updateByDate, timeStart, timeEnd, location, ...الخ
+    const res = await api.put(`/${bookingId}`, body, {
+      headers: {
+        Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
     return res.data;
   } catch (err) {
-    console.error("خطأ أثناء تعديل موعد فردي:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || "فشل تعديل الموعد الفردي");
+    console.error("❌ خطأ في updateSingleScheduleAPI:", err.response?.data || err.message);
+    throw err;
   }
 }
 
@@ -291,12 +296,12 @@ export default {
   createBookingAPI,
   getAllBookingsAPI,
   getBookingByIdAPI,
-  updateBookingAPI,
   deleteBookingAPI,
   filterBookingsAPI,
   calendarViewAPI,
   cancelBookingAPI,
   getBookingsCountAPI,
   getUserFromToken,
-  updateSingleScheduleAPI
+  updateSingleScheduleAPI,
+  updateGeneralBookingAPI
 };

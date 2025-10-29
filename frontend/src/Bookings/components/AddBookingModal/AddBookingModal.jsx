@@ -8,10 +8,48 @@ import { formatBookingData } from "../helpers/formatBookingData";
 import { step1Schema, step2Schema } from "../helpers/bookingValidation";
 import {
   createBookingAPI,
-  updateBookingAPI,
+updateGeneralBookingAPI,
   updateSingleScheduleAPI,
   getUserFromToken,
 } from "../../../api/bookingsApi";
+
+
+// تحول "أسبوعين" -> "2weeks"
+function mapDurationToBackend(arabicText) {
+  const map = {
+    "أسبوع": "1week",
+    "أسبوعين": "2weeks",
+    "3 أسابيع": "3weeks",
+    "شهر": "1month",
+    "3 أشهر": "3months",
+    "6 أشهر": "6months",
+    "سنة": "1year",
+  };
+  return map[arabicText] || arabicText || "";
+}
+
+// تحول "08:00" -> "8:00 ص" مؤقتاً لإرضاء الباك
+function convertToBackendTimeFormat(hhmm, fullDateTime) {
+  if (!hhmm) return "";
+  // hhmm = "08:00"
+  const [hStr, mStr] = hhmm.split(":");
+  let h = parseInt(hStr, 10);
+  let suffix = "ص";
+
+  if (h === 0) {
+    h = 12;
+    suffix = "ص";
+  } else if (h === 12) {
+    suffix = "م";
+  } else if (h > 12) {
+    h = h - 12;
+    suffix = "م";
+  } else {
+    suffix = h < 12 ? "ص" : "م";
+  }
+
+  return `${h}:${mStr} ${suffix}`;
+}
 
 export default function AddBookingModal({ onChange }) {
   const [open, setOpen] = useState(false);
@@ -291,167 +329,118 @@ const schedules = Array.isArray(formData.daysSchedule)
   };
 
   // الحفظ
-  const handleSubmit = async () => {
-    setLoading(true);
-    try {
-      // ✅ لو المستخدم كوتش ولسا مش حاطط coachId بالمودال، نعبيه من حاله
-      if (isCoach && coachId && !formData.coachId) formData.coachId = coachId;
-      if (isCoach && coachId && !formData.coach)
-        formData.coach = { id: coachId };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-      // ✅ تحقق خطوة 1
-if (isGroupEdit) {
   try {
-    await step1Schema.validate(formData, { abortEarly: false });
-    setStep1Errors({});
-  } catch (err) {
-    const formattedErrors = {};
-    if (Array.isArray(err.inner)) {
-      err.inner.forEach((e) => {
-        formattedErrors[e.path] = e.message;
-      });
+    // 🟣 إنشاء حجز جديد
+    if (!isEditing) {
+      const bodyForCreate = buildRequestBodyForBackend();
+      console.log("🚀 إرسال بيانات الإضافة:", bodyForCreate);
+
+      await createBookingAPI(bodyForCreate);
+
+      toast.success("تم إنشاء الحجز بنجاح ✅");
+      handleClose();
+      onChange(); // لإعادة تحميل القائمة
+      setLoading(false);
+      return;
     }
-    setStep1Errors(formattedErrors);
-    toast.error("يرجى تعبئة معلومات الحجز بشكل صحيح");
-    setLoading(false);
-    return;
-  }
-}
 
+    // 🟣 تعديل حجز موجود
+    if (isEditing) {
+      // ---------------------------------
+      // حالة تعديل الكل
+      // ---------------------------------
+      if (isGroupEdit) {
+        // 🟣 تحديد الـ coachId النهائي بصيغة نص فقط
+        let coachIdFinal = "";
 
-      // ✅ تحقق خطوة 2 (بس الأساسيات)
-      try {
-        console.log("🧩 Step2 validation input:", {
-  ...formData,
-  isIndividual: !!selectedBooking,
-});
-
-        await step2Schema.validate(
-          {
-            ...formData,
-            isIndividual: !!selectedBooking,
-          },
-          { abortEarly: false }
-        );
-        setStep2Errors({});
-      } catch (err) {
-        console.error("❌ Step2 validation error:", err);
-        const formattedErrors = {};
-        if (Array.isArray(err.inner)) {
-          err.inner.forEach((e) => {
-            formattedErrors[e.path] = e.message;
-          });
+        if (typeof formData.coachId === "string") {
+          coachIdFinal = formData.coachId;
+        } else if (
+          typeof formData.coachId === "object" &&
+          formData.coachId?.id
+        ) {
+          coachIdFinal = formData.coachId.id;
+        } else if (typeof formData.coach === "object" && formData.coach?.id) {
+          coachIdFinal = formData.coach.id;
         }
-        setStep2Errors(formattedErrors);
-        toast.error("يرجى تعبئة مواعيد الحجز بشكل صحيح");
+
+        const fullUpdateBody = {
+          service: formData.service || formData.title || "",
+          description: formData.description || "",
+          coachId: coachIdFinal || "", // ✅ الآن سترينغ أكيد
+          location: formData.location || formData.room || "",
+          maxMembers: Number(formData.maxMembers) || 0,
+          reminders: Array.isArray(formData.reminders)
+            ? formData.reminders
+            : [],
+          members: Array.isArray(formData.members) ? formData.members : [],
+          subscriptionDuration: mapDurationToBackend(
+            formData.subscriptionDuration
+          ),
+        };
+
+        console.log("🚀 جسم الإرسال النهائي (تعديل الكل):", fullUpdateBody);
+        console.log("🧩 editingBookingId:", editingBookingId);
+
+        await updateGeneralBookingAPI(editingBookingId, fullUpdateBody);
+
+        toast.success("تم تعديل الحجز بالكامل ✅");
+        handleClose();
+        onChange(); // اعادة الفetch
         setLoading(false);
         return;
       }
 
-      // 🟣 إذا تعديل
-if (isEditing && editingBookingId) {
-  let cleanedData = {};
+      // ---------------------------------
+      // حالة تعديل يوم واحد محدد
+      // ---------------------------------
+      if (!isGroupEdit && selectedBooking) {
+        const startTimeHHMM = formData.start?.split("T")[1]?.slice(0, 5); // "08:00"
+        const endTimeHHMM = formData.end?.split("T")[1]?.slice(0, 5); // "09:00"
 
-  if (isGroupEdit) {
-    // تعديل جماعي (كامل)
-    cleanedData = buildRequestBodyForBackend();
-    console.log("🟣 تعديل جماعي كامل — البيانات المرسلة:", cleanedData);
+        const singleUpdateBody = {
+          updateByDate: selectedBooking.dateOnly || selectedBooking.date,
+          timeStart: convertToBackendTimeFormat(startTimeHHMM, formData.start),
+          timeEnd: convertToBackendTimeFormat(endTimeHHMM, formData.end),
+          location: formData.location || formData.room || "",
+          service: formData.service || formData.title || "",
+          description: formData.description || "",
+          coachId: formData.coachId || formData.coach?.id || "",
+          maxMembers: Number(formData.maxMembers) || 0,
+          reminders: formData.reminders || [],
+          members: formData.members || [],
+          subscriptionDuration: mapDurationToBackend(
+            formData.subscriptionDuration
+          ),
+        };
 
-  } else {
-   // تعديل فردي (scheduleId واحد)
-const scheduleId = selectedBooking?._id || selectedBooking?.scheduleId;
+        console.log("🔵 تعديل جلسة واحدة - Body المرسل للباك:", singleUpdateBody);
 
-const toArabicAmPm = (iso) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  let hours = d.getHours();
-  const minutes = d.getMinutes().toString().padStart(2, "0");
-  const isPM = hours >= 12;
-  if (hours > 12) hours -= 12;
-  if (hours === 0) hours = 12;
-  return `${hours}:${minutes} ${isPM ? "م" : "ص"}`;
-};
+        await updateSingleScheduleAPI(editingBookingId, singleUpdateBody);
 
-// 🟣 استخدم بيانات الحجز الأصلية كنسخة احتياط
-const original = formData;
- // هذا booking يجيك من props (الحجز الكامل)
-
-// نبني البيانات المطلوبة حسب المطلوب من الباك
-const updatedData = {
-  scheduleId: selectedBooking?._id || selectedBooking?.scheduleId,
-  timeStart: toArabicAmPm(formData.start),
-  timeEnd: toArabicAmPm(formData.end),
-  location: formData.location || original.location,
-  service: formData.service || original.service,
-  description: formData.description || original.description,
-  coachId:
-    typeof formData.coachId === "object"
-      ? formData.coachId?.id
-      : formData.coachId ||
-        original.coach?._id ||
-        original.coachId,
-  maxMembers: formData.maxMembers || original.maxMembers,
-  reminders: formData.reminders || original.reminders || [],
-  members:
-    original.members?.map((m) =>
-      typeof m === "object" ? m._id : m
-    ) || [],
-  subscriptionDuration:
-    typeof formData.subscriptionDuration === "string"
-      ? formData.subscriptionDuration
-      : original.subscriptionDuration,
-};
-
-
-console.log("🟣 تعديل فردي (scheduleId):", updatedData);
-console.log("🚀 Payload sent to backend:", JSON.stringify(updatedData, null, 2));
-
-await updateSingleScheduleAPI(editingBookingId, updatedData);
-toast.success("تم تعديل الموعد الفردي بنجاح ✅");
-return;
-
-  }
-
-  const targetId =
-  formData.groupId || editingBookingId || selectedBooking?._id;
-
-console.log("🟣 إرسال تعديل: ", {
-  targetId,
-  isGroupEdit,
-  cleanedData,
-});
-
-await updateBookingAPI(targetId, cleanedData, isGroupEdit);
-
-
-  toast.success(
-    isGroupEdit
-      ? "تم تعديل جميع تكرارات الحجز بنجاح ✅"
-      : "تم تعديل الحجز الفردي بنجاح ✅"
-  );
-
-  handleClose();
-  onChange();
-  setLoading(false);
-  return;
-}
-
-
-      // 🟣 إذا إضافة جديدة
-      const bodyToSend = buildRequestBodyForBackend();
-      await createBookingAPI(bodyToSend);
-
-      toast.success("تم إضافة الحجز بنجاح ✅");
-
-      handleClose();
-      onChange();
-    } catch (err) {
-      console.error("❌ خطأ أثناء حفظ الحجز:", err);
-      toast.error("حدث خطأ أثناء حفظ الحجز");
-    } finally {
-      setLoading(false);
+        toast.success("تم تعديل هذا اليوم ✅");
+        handleClose();
+        onChange();
+        setLoading(false);
+        return;
+      }
     }
-  };
+
+    // fallback
+    setLoading(false);
+  } catch (err) {
+    console.error("❌ فشل الحفظ:", err.response?.data || err.message);
+    toast.error("فشل حفظ التعديلات");
+    setLoading(false);
+  }
+};
+
+
+
 
   // فتح المودال من الخارج (زر إضافة)
   useEffect(() => {
@@ -468,7 +457,20 @@ await updateBookingAPI(targetId, cleanedData, isGroupEdit);
       const formatted = formatBookingData(booking);
       setFullBookingData(booking); // 🟣 نخزّن نسخة كاملة من الحجز الأصلي
       setFormData(formatted);
-      setEditingBookingId(booking.groupId || booking._id);
+      // 🟣 بعد setFormData(formatted)
+const allEmployees = JSON.parse(localStorage.getItem("allEmployees") || "[]");
+const foundCoach = allEmployees.find(
+  (c) => c._id === (booking.coach?._id || booking.coach || booking.coachId)
+);
+if (foundCoach) {
+  const coachObj = {
+    id: foundCoach._id,
+    name: `${foundCoach.firstName || ""} ${foundCoach.lastName || ""}`.trim(),
+  };
+  setFormData((prev) => ({ ...prev, coach: coachObj, coachId: coachObj.id }));
+}
+
+setEditingBookingId(booking._id);
       setIsEditing(true);
       setIsGroupEdit(true);
       setSelectedBooking(null);
@@ -515,40 +517,46 @@ await updateBookingAPI(targetId, cleanedData, isGroupEdit);
                 {/* Dropdown للحجوزات الفردية */}
                 {/* Dropdown للحجوزات الفردية */}
 {isEditing && (
-  <div className="flex items-center gap-2 border px-3 py-1 rounded cursor-pointer bg-gray-100">
-    <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
-    <select
-    className="border rounded-md px-3 py-1 text-sm focus:outline-none"
-    value={selectedOption}
-    onChange={(e) => {
-      const value = e.target.value;
-      setSelectedOption(value);
+  <div className="relative w-[150px]">
+    <div className="flex items-center border border-gray-300 rounded-md bg-gray-50 h-9 px-2 cursor-pointer">
+      <CalenderIcon className="w-5 h-5 text-[var(--color-purple)] mr-2" />
+      <select
+        className="flex-1 bg-transparent text-sm focus:outline-none font-medium text-gray-700 cursor-pointer"
+        value={selectedOption}
+        onChange={(e) => {
+          const value = e.target.value;
+          setSelectedOption(value);
 
-      if (value === "all") {
-        // 🔹 رجّع البيانات الكاملة (تعديل الكل)
-        setFormData(formatBookingData(editingBooking)); 
-        setSelectedBooking(null);
-      } else {
-        // 🔹 جِيب الحجز الفرعي حسب التاريخ المختار من القائمة الثابتة
-        const found = scheduleOptions.find((s) => s.date === value);
-        if (found) handleSelectBooking(found);
-      }
-    }}
-  >
-    <option value="all">تعديل الكل</option>
-    {scheduleOptions.map((s) => (
-      <option key={s.date} value={s.date}>
-        {new Date(s.date).toLocaleDateString("ar-EG", {
-          weekday: "long",
-          day: "2-digit",
-          month: "2-digit",
-        })}
-      </option>
-    ))}
-  </select>
-
+          if (value === "all") {
+            if (fullBookingData) {
+              const restored = formatBookingData(fullBookingData);
+              setFormData(restored);
+              setSelectedBooking(null);
+              setIsGroupEdit(true);
+              console.log("🔁 تم استرجاع تعديل الكل:", restored);
+            }
+          } else {
+            const found = scheduleOptions.find((s) => s.date === value);
+            if (found) handleSelectBooking(found);
+          }
+        }}
+      >
+        <option value="all">تعديل الكل</option>
+        {scheduleOptions.map((s) => (
+          <option key={s.date} value={s.date}>
+            {new Date(s.date).toLocaleDateString("ar-EG", {
+              weekday: "long",
+              day: "2-digit",
+              month: "2-digit",
+            })}
+          </option>
+        ))}
+      </select>
+      
+    </div>
   </div>
 )}
+
 
               </div>
 

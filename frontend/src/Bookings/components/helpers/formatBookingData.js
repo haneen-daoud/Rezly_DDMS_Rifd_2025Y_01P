@@ -118,15 +118,29 @@ export const formatBookingData = (booking) => {
       ...booking,
 
       // ---- Step1 ----
-      title: booking.service || "",
-      service: booking.service || "",
-      room: booking.location || "",
-      location: booking.location || "",
-      coachId:
-        booking.coach?._id || booking.coachId || booking.coach || undefined,
+  title: booking.service || "",
+  service: booking.service || "",
 
-      maxMembers: booking.maxMembers,
-      description: booking.description || "",
+  // ✅ لو الموقع والعدد داخل أول schedule
+  room:
+    booking.location ||
+    firstSchedule.location ||
+    "",
+  location:
+    booking.location ||
+    firstSchedule.location ||
+    "",
+
+  coachId:
+    booking.coach?._id || booking.coachId || booking.coach || undefined,
+
+  // ✅ نفس الفكرة للـ maxMembers
+  maxMembers:
+    booking.maxMembers ||
+    firstSchedule.maxMembers ||
+    "",
+
+  description: booking.description || "",
 
       // ---- Step2 ----
       dateOnly: safeDateString,
