@@ -1,5 +1,6 @@
 import React from "react";
 import "./AttendanceTable.css";
+import tableArrowIcon from "../../icons/tableArrow.svg";
 
 const AttendanceTable = () => {
   const data = [
@@ -22,7 +23,12 @@ const AttendanceTable = () => {
     <div className="attendance-container">
       <div className="attendance-header ">
         <h2 className="table-title text-black ">سجل الحضور</h2>
-        <button className="back-btn">›</button>
+        <button className="back-btn"><img
+                  src={tableArrowIcon}
+                  alt="arrow"
+                  className="cursor-pointer"
+                
+                /></button>
       </div>
 
       <table className="attendance-table ">

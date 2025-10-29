@@ -11,6 +11,7 @@ export default function CoachSelector({
   showIcon = true,
   placeholderColor = "text-black",
   borderStyle = "#7E818C",
+  variant = "add",
 }) {
   const [openCoach, setOpenCoach] = useState(false);
   const [coachSearch, setCoachSearch] = useState("");
@@ -32,22 +33,26 @@ export default function CoachSelector({
         {showIcon && (
           <img src={trainerIcon} alt="trainer" className="absolute right-2" />
         )}
-        <span
-  className={`h-10 w-full flex items-center ${
-    showIcon ? "pr-8" : "pr-2"
-  } pl-2 ${
-    selectedCoach ? "text-black" : placeholderColor
-  } font-normal`}
->
-  {selectedCoach?.name || "اختر المدرب"}
-</span>
+         <span
+          className={`h-10 w-full flex items-center ${
+            showIcon ? "pr-8" : "pr-2"
+          } pl-2 font-normal ${
+            selectedCoach
+              ? variant === "event"
+                ? "text-black font-bold" // ✅ لما يكون بالأيفنت، الخط بولد
+                : "text-gray-800" // بالحجز العادي يضل فاتح
+              : placeholderColor
+          }`}
+        >
+          {selectedCoach?.name || "اختر المدرب"}
+        </span>
 
         <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
       </div>
 
       {openCoach && (
         <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-500/40 mt-1 shadow-[0_4px_12px_rgba(0,0,0,0.25)] z-50 text-[#000000]">
-          <div className="w-full h-full p-4 box-border overflow-y-auto">
+          <div className="w-full h-full p-4 box-border max-h-[250px] overflow-y-auto">
             {/* البحث */}
             <div className="relative w-full h-[30px] mb-2">
               <input
@@ -63,14 +68,22 @@ export default function CoachSelector({
             {/* إضافة جديد */}
             <div className="flex items-center gap-2 mb-2 cursor-pointer px-3 py-2 hover:bg-gray-100">
               <AddcircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
-              <span className="text-gray-800 font-normal">إضافة جديد</span>
+              <span
+  className={`font-normal ${
+    variant === "event" ? "text-black font-bold" : "text-gray-800"
+  }`}
+>
+  إضافة جديد
+</span>
+
             </div>
 
             {/* قائمة المدربين */}
             {filteredCoaches.length > 0 ? (
               filteredCoaches.map((coach, idx) => {
-                const isSelected = String(selectedCoach?.id || selectedCoach?._id) === String(coach.id || coach._id);
-
+                const isSelected =
+                  String(selectedCoach?.id || selectedCoach?._id) ===
+                  String(coach.id || coach._id);
 
                 return (
                   <div

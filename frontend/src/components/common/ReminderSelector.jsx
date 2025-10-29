@@ -34,6 +34,7 @@ const ReminderSelector = ({
     <div className="relative w-full">
       <label className="block font-bold text-sm mb-2">وقت إرسال التذكير</label>
 
+      {/* الحقل الرئيسي */}
       <div
         className="w-full h-10 flex items-center justify-between cursor-pointer px-3 rounded-md"
         style={{ border: `1px solid ${borderStyle}` }}
@@ -48,17 +49,15 @@ const ReminderSelector = ({
         <DownArrowIcon className="w-4 h-4 text-[var(--color-purple)]" />
       </div>
 
-      {/* قائمة الخيارات */}
+      {/* قائمة الخيارات Scrollable */}
       {openReminder && (
         <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-[16px] mt-1 z-50 shadow-lg">
-          <div className="w-full h-full p-4 box-border overflow-y-auto">
+          <div className="max-h-[90px] overflow-y-auto p-4 box-border">
             {options.map((option) => {
               const isSelected =
                 (option.value === "0" && selectedReminders.length === 0) ||
                 selectedReminders.includes(option.value);
               const Icon = option.icon;
-
-              console.log("📌 selectedReminders in ReminderSelector:", selectedReminders);
 
               return (
                 <div

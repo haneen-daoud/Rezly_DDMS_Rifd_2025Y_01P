@@ -58,7 +58,8 @@ const TimeRangePicker = ({
     startTime === "08:00" && endTime === "09:00" && !userChangedEnd;
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 h-10">
+
       {/* وقت البداية */}
       <select
   value={startTime}

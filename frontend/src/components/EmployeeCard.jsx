@@ -1,4 +1,3 @@
-
 import React from "react";
 import { toggleEmployeeStatus } from "../api";
 
@@ -11,7 +10,7 @@ export default function EmployeeCard({ emp, onDelete }) {
   const jobTitle = emp.jobTitle || "غير محدد";
   const phoneNumber = emp.phoneNumber || "غير متوفر";
   const email = emp.email || "غير متوفر";
-const image =
+  const image =
   emp.image ||
   (emp.gender === "أنثى"
     ? "https://res.cloudinary.com/dpv0cupet/image/upload/v1759785455/Ellipse_51_mlh4nx.svg"

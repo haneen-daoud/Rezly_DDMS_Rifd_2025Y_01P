@@ -1,34 +1,25 @@
+{/*}
 // src/pages/BookingsPage.jsx
 import React, { useState, useEffect } from "react";
-import { getAllBookingsAPI, deleteBookingAPI } from "../../api/bookingsApi";
-import AddBookingModal from "../../Bookings/components/AddBookingModal/AddBookingModal";
-import BookingsList from "../../Bookings/components/BookingsList";
-import ConfirmDeleteModal from "../../Bookings/components/ConfirmDeleteModal";
+import { getAllBookingsAPI } from "../api/bookingsApi";
+import { getAllCoachesAPI } from "../api/coachesApi";
+
+import AddBookingModal from "../Bookings/components/AddBookingModal/AddBookingModal";
+import BookingsList from "../Bookings/components/BookingsList";
 import { toast } from "react-toastify";
-import { useBookings } from "../../Bookings/BookingsContext";
+import ConfirmDeleteModal from "./components/ConfirmDeleteModal";
+import { deleteBookingAPI } from "../api/bookingsApi";
+import { useBookings } from "./BookingsContext";
 
-export default function BookingsPage({ bookings: filteredBookings }) {
+export default function BookingsPage() {
+  //const [bookings, setBookings] = useState([]);
   const { bookings, setBookings, fetchBookings, loading } = useBookings();
-
+  //const [loading, setLoading] = useState(true);
   const [deleteModalData, setDeleteModalData] = useState(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting] = useState(false); // 🔹 حالة اللودنج
 
-  // 🟣 تحميل البيانات عند أول فتح الصفحة
-  useEffect(() => {
-    fetchBookings();
-  }, []);
 
-  // 🌀 تحديث الحجوزات عند إضافة أو تعديل أو حذف
-  const handleDataChange = () => {
-    fetchBookings();
-  };
 
-  // 🟡 مراقبة التحديثات بالكونسول (اختياري)
-  useEffect(() => {
-    console.log(" الحجوزات بعد التحديث:", bookings);
-  }, [bookings]);
-
-  // 🔴 حذف حجز
   const handleDelete = async (booking, isGroup) => {
     try {
       setDeleting(true);
@@ -36,7 +27,7 @@ export default function BookingsPage({ bookings: filteredBookings }) {
       await deleteBookingAPI(idToDelete, isGroup);
       toast.success(isGroup ? "تم حذف جميع التكرارات ✅" : "تم حذف الحجز ✅");
       setDeleteModalData(null);
-      fetchBookings();
+      fetchBookings(); // تحديث البيانات
     } catch (err) {
       console.error(err);
       toast.error("حدث خطأ أثناء الحذف");
@@ -45,11 +36,26 @@ export default function BookingsPage({ bookings: filteredBookings }) {
     }
   };
 
-  // 🔹 عرض النتائج (مفلترة أو كاملة)
-  const displayBookings =
-    filteredBookings && Array.isArray(filteredBookings)
-      ? filteredBookings
-      : bookings;
+  // 📌 تحميل البيانات أول مرة
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  useEffect(() => {
+    const handleOpenAdd = () => setOpen(true);
+    window.addEventListener("openAddBooking", handleOpenAdd);
+    return () => window.removeEventListener("openAddBooking", handleOpenAdd);
+  }, []);
+
+  // 🌀 تحديث تلقائي بعد أي تعديل أو حذف أو إضافة
+  const handleDataChange = () => {
+    fetchBookings();
+  };
+
+  // 🔍 مراقبة الحجوزات بالكونسول (اختياري)
+  useEffect(() => {
+    console.log(" الحجوزات بعد التحديث:", bookings);
+  }, [bookings]);
 
   useEffect(() => {
     const handleOpenDeleteModal = (e) => setDeleteModalData(e.detail);
@@ -74,31 +80,36 @@ export default function BookingsPage({ bookings: filteredBookings }) {
           }}
         />
       )}
-
       <div className="p-6 flex flex-col gap-6">
-        {/* ✅ مودال الإضافة */}
         <AddBookingModal onChange={handleDataChange} />
 
-        {/* ✅ محتوى الصفحة */}
-        <div className="p-6 flex flex-col gap-6 overflow-visible relative z-0">
-
+        
+        <div className="flex flex-col gap-6">
           {loading ? (
             <div className="text-center py-12 text-gray-500">
               جارِ التحميل...
             </div>
-          ) : displayBookings.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
-              لا توجد حجوزات مطابقة 🔍
-            </div>
           ) : (
             <BookingsList
-              bookings={displayBookings}
+              bookings={bookings}
               loading={loading}
               onChange={handleDataChange}
             />
           )}
         </div>
+
+        {deleteModalData && (
+          <ConfirmDeleteModal
+            event={deleteModalData.booking}
+            isLoading={deleting}
+            onCancel={() => setDeleteModalData(null)}
+            onConfirm={() =>
+              handleDelete(deleteModalData.booking, deleteModalData.isGroup)
+            }
+          />
+        )}
       </div>
     </>
   );
 }
+*/}

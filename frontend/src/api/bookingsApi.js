@@ -1,215 +1,289 @@
-console.log("VITE_API_TOKEN =", import.meta.env.VITE_API_TOKEN);
-
+// src/api/bookingsApi.js
 import axios from "axios";
 
-const BASE = import.meta.env.VITE_API_BASE_URL || "https://rezly-ddms-rifd-2025y-01p.onrender.com/booking";
-const BASE_URL = "https://rezly-ddms-rifd-2025y-01p.onrender.com/booking";
+/* ----------------------------------------------------------
+    إعداد الاتصال مع السيرفر
+---------------------------------------------------------- */
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://rezly-ddms-rifd-2025y-01p.onrender.com/booking";
 
-const ACCESS_TOKEN = import.meta.env.VITE_API_TOKEN || "";
-const REFRESH_TOKEN = import.meta.env.VITE_API_REFRESH || "";
+const TOKEN = import.meta.env.VITE_API_TOKEN || "";
 
-console.log("API BASE:", BASE);
-console.log("ACCESS_TOKEN present?", !!ACCESS_TOKEN);
-console.log("ACCESS_TOKEN ASCII?", /^[\x00-\x7F]*$/.test(ACCESS_TOKEN));
+//  قراءة التوكن الحالي من localStorage أو من .env
+function getCurrentToken() {
+  const token =
+    localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
+  return token.startsWith("Bearer") ? token : `Bearer ${token.trim()}`;
+}
 
+//  إنشاء instance للـ axios
 const api = axios.create({
-  baseURL: BASE,
+  baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
+    Authorization: getCurrentToken(),
   },
 });
 
+// تحديث الهيدر ديناميكيًا قبل كل طلب
 api.interceptors.request.use((config) => {
-  config.headers = config.headers || {};
-
-  if (ACCESS_TOKEN) {
-    config.headers.Authorization = `Bearer ${ACCESS_TOKEN.trim()}`;
-  }
+  const token = getCurrentToken();
+  config.headers.Authorization = token;
   return config;
 });
 
-function parsemaxMembers(value) {
-  if (value == null) return 1;
-  const n = parseInt(String(value).replace(/\D+/g, ""), 10);
-  if (!isNaN(n) && n > 0) return n;
-  if (String(value).includes("غير")) return 9999;
-  return 1;
+/* ----------------------------------------------------------
+    استخراج بيانات المستخدم من التوكن
+---------------------------------------------------------- */
+export async function getUserFromToken() {
+  try {
+    const tokenStr = localStorage.getItem("authToken") || "";
+    const token = tokenStr.split(" ")[1];
+    if (!token) return null;
+
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const id = payload.id;
+
+    try {
+      const res = await axios.get(
+        "https://rezly-ddms-rifd-2025y-01p.onrender.com/auth/getAllEmployees",
+        {
+          headers: {
+            Authorization: tokenStr.startsWith("Bearer ")
+              ? tokenStr
+              : `Bearer ${tokenStr}`
+          }
+        }
+      );
+
+      const employees = res.data?.employees || [];
+      const found = employees.find(
+        (emp) =>
+          String(emp._id) === String(id) ||
+          String(emp.id) === String(id)
+      );
+
+      const role = found?.role || "Unknown";
+      console.log(" المستخدم الحالي:", { ...payload, role });
+      return { ...payload, role };
+    } catch (err) {
+      if (err.response?.status === 403 || err.response?.status === 401) {
+        console.log(" المستخدم الحالي: Coach (403/401)");
+        return { ...payload, role: "Coach" };
+      } else {
+        console.warn("⚠️ فشل جلب الموظفين:", err.message);
+        return { ...payload, role: "Unknown" };
+      }
+    }
+  } catch (err) {
+    console.error("❌ فشل قراءة التوكن:", err);
+    return null;
+  }
 }
 
-const convertTo12Hour = (t) => {
-  if (!t) return "08:00 ص";
-  const [hourStr, minuteStr] = t.split(":");
-  if (!hourStr || !minuteStr) return "08:00 ص";
-  let hour = parseInt(hourStr, 10);
-  const minute = parseInt(minuteStr, 10);
-  if (isNaN(hour) || isNaN(minute)) return "08:00 ص";
-  const ampm = hour >= 12 ? "م" : "ص";
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
-  return `${hour}:${minute.toString().padStart(2, "0")} ${ampm}`;
+/* ----------------------------------------------------------
+   دوال مساعدة داخلية
+---------------------------------------------------------- */
+
+// تحويل الوقت إلى 12 ساعة عربية
+const convertTo12Hour = (time) => {
+  if (!time) return "08:00 ص";
+  const [h, m] = time.split(":").map(Number);
+  let hour = h % 12 || 12;
+  const period = h >= 12 ? "م" : "ص";
+  return `${hour}:${String(m).padStart(2, "0")} ${period}`;
 };
 
-function formatPayload(raw) {
-  const date = raw.start ? raw.start.split("T")[0] : raw.date || "";
+// تحويل أيام الأسبوع للعربية ⇄ الإنجليزية
+const daysMap = {
+  أحد: "Sun",
+  إثنين: "Mon",
+  ثلاثاء: "Tue",
+  أربعاء: "Wed",
+  خميس: "Thu",
+  جمعة: "Fri",
+  سبت: "Sat",
+};
 
-  const daysMap = {
-    "أحد": "Sun",
-    "إثنين": "Mon",
-    "ثلاثاء": "Tue",
-    "أربعاء": "Wed",
-    "خميس": "Thu",
-    "جمعة": "Fri",
-    "سبت": "Sat",
-  };
-  const recurrenceEnglish = (raw.repeatDays || []).map(day => daysMap[day] || day);
+// تحويل مدة الاشتراك إلى صيغة السيرفر
+const durationMap = {
+  أسبوع: "1week",
+  أسبوعين: "2weeks",
+  "3 أسابيع": "3weeks",
+  شهر: "1month",
+  "3 أشهر": "3months",
+  "6 أشهر": "6months",
+  سنة: "1year",
+};
 
-  const durationMap = {
-    "أسبوع": "1week",
-    "أسبوعين": "2weeks",
-    "3 أسابيع": "3weeks",
-    "شهر": "1month",
-    "3 أشهر": "3months",
-    "6 أشهر": "6months",
-    "سنة": "1year",
-  };
-
-  const remindersMap = {
+// تحويل التذكير
+const remindersMap = {
   "0": "0",
   "30m": "30m",
   "1h": "1h",
   "1d": "1d",
 };
 
+// تنسيق البيانات قبل الإرسال للسيرفر
+function formatPayload(raw) {
+  const date = raw.start ? raw.start.split("T")[0] : raw.date || "";
+  const recurrence = (raw.repeatDays || []).map((d) => daysMap[d] || d);
 
   return {
     service: raw.title || raw.service || "",
     description: raw.description || "",
     coachId: raw.coachId || raw.coach || raw.trainerId || "",
     date,
-    timeStart: convertTo12Hour(raw.start ? raw.start.split("T")[1] : raw.timeStart),
-    timeEnd: convertTo12Hour(raw.end ? raw.end.split("T")[1] : raw.timeEnd),
+    timeStart: convertTo12Hour(raw.start?.split("T")[1] || raw.timeStart),
+    timeEnd: convertTo12Hour(raw.end?.split("T")[1] || raw.timeEnd),
     location: raw.room || raw.location || "",
     maxMembers: parseInt(raw.maxMembers) || 1,
-    recurrence: recurrenceEnglish,
-    subscriptionDuration: durationMap[raw.duration] || "1week",
-reminders:
-  Array.isArray(raw.reminders) && raw.reminders.length > 0
-    ? raw.reminders.map(r => remindersMap[r] || r)
-    : [],
+    recurrence,
+    subscriptionDuration: durationMap[raw.subscriptionDuration] || "1week",
+    reminders:
+      Array.isArray(raw.reminders) && raw.reminders.length
+        ? raw.reminders.map((r) => remindersMap[r] || r)
+        : [],
     members: raw.members || [],
   };
 }
 
+/* ----------------------------------------------------------
+    CRUD APIs (إنشاء / قراءة / تعديل / حذف)
+---------------------------------------------------------- */
 
-// Create booking (POST /booking/)
-export async function createBookingAPI(bookingData) {
-  const payload = formatPayload(bookingData);
-  console.log("Payload being sent to backend:", payload);
-
+// إنشاء حجز جديد (حسب الباك الجديد)
+export const createBookingAPI = async (bookingData) => {
   try {
-    const res = await api.post("/addBooking", payload);
-    return res.data; 
+    const { data } = await api.post("/addBooking", bookingData);
+    return data;
   } catch (err) {
-    console.error("Error creating booking:", err.response?.data || err.message);
-    throw new Error(
-      err.response?.data?.message ||
-      err.response?.data?.error ||
-      err.response?.data ||
-      err.message ||
-      "حدث خطأ أثناء إنشاء الحجز"
-    );
-  }
-}
-
-// Get all bookings (GET /booking/all_booking)
-export const getAllBookingsAPI = async () => {
-  try {
-    const res = await axios.get(`${BASE_URL}/all_booking`, {
-      headers: {
-        Authorization: `Bearer ${import.meta.env.VITE_API_TOKEN}`,
-      },
-    });
-    return res.data.data;
-  } catch (err) {
-    console.error("Error fetching all bookings:", err.response?.data || err);
+    handleApiError(err, "فشل إنشاء الحجز");
     throw err;
   }
 };
 
-// Get booking by ID (GET /booking/:id)
+
+// 🟣 جلب جميع الحجوزات
+export async function getAllBookingsAPI() {
+  try {
+    const res = await api.get("/all_booking");
+    return res.data.data;
+  } catch (err) {
+    console.error("خطأ أثناء جلب الحجوزات:", err.response?.data || err);
+    throw err;
+  }
+}
+
+// جلب حجز واحد حسب الـ ID
 export async function getBookingByIdAPI(id) {
   try {
     const res = await api.get(`/${id}`);
     return res.data;
   } catch (err) {
-    console.error("Error fetching booking by id:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || err.message || "فشل جلب تفاصيل الحجز");
-  }
-}
-
-// Update booking (PUT /booking/:id)
-export async function updateBookingAPI(id, updateData, isGroup = false) {
-  const payload = formatPayload(updateData);
-
-  try {
-    const url = isGroup ? `/${id}?updateGroup=true` : `/${id}`;
-    const res = await api.put(url, payload);
-    return res.data;
-  } catch (err) {
-    console.error("Error updating booking:", err.response?.data || err.message);
+    console.error("فشل جلب الحجز:", err.response?.data || err.message);
     throw new Error(
-      err.response?.data?.message || err.message || "فشل تحديث الحجز"
+      err.response?.data?.message || "فشل جلب تفاصيل الحجز"
     );
   }
 }
 
+// تعديل حجز
+export async function updateBookingAPI(id, updateData, isGroup = false) {
+  try {
+    // لو تعديل جماعي → نحضّر البيانات الكاملة بصيغة الباك
+    const payload = isGroup ? formatPayload(updateData) : updateData;
+
+  
+    const url = isGroup
+      ? `/${id}?updateGroup=true`
+      : `/${id}`;
+
+    console.log("📡 updateBookingAPI →", { url, payload });
+
+    const res = await api.put(url, payload);
+    return res.data;
+  } catch (err) {
+    console.error("❌ خطأ أثناء تحديث الحجز:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.message || "فشل تعديل الحجز");
+  }
+}
 
 
-// Delete booking (single or group)
+// تعديل موعد فردي داخل حجز جماعي باستخدام scheduleId
+export async function updateSingleScheduleAPI(bookingId, data) {
+  try {
+    const url = `/booking/${bookingId}`;
+    const res = await api.put(url, data);
+    return res.data;
+  } catch (err) {
+    console.error("خطأ أثناء تعديل موعد فردي:", err.response?.data || err.message);
+    throw new Error(err.response?.data?.message || "فشل تعديل الموعد الفردي");
+  }
+}
+
+
+
+// حذف حجز (واحد أو مجموعة)
 export async function deleteBookingAPI(id, isGroup = false) {
   try {
     const url = isGroup ? `/${id}?type=group` : `/${id}`;
     const res = await api.delete(url);
     return res.data;
   } catch (err) {
-    console.error("Error deleting booking:", err.response?.data || err.message);
+    console.error("خطأ أثناء حذف الحجز:", err.response?.data || err.message);
     throw new Error(
-      err.response?.data?.message || err.message || "فشل حذف الحجز"
+      err.response?.data?.message || "فشل حذف الحجز"
     );
   }
 }
 
+/* ----------------------------------------------------------
+   دوال إضافية
+---------------------------------------------------------- */
 
-// Filter bookings (GET /booking/filter)
+// فلترة الحجوزات
 export async function filterBookingsAPI(query = {}) {
   try {
     const res = await api.get("/filter", { params: query });
     return res.data;
   } catch (err) {
-    console.error("Error filtering bookings:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || err.message || "فشل فلترة الحجوزات");
+    console.error("فشل فلترة الحجوزات:", err.response?.data || err.message);
+    throw new Error("فشل فلترة الحجوزات");
   }
 }
 
-// Calendar view (GET /booking/calendar)
+// عرض الحجوزات على التقويم
 export async function calendarViewAPI() {
   try {
     const res = await api.get("/calendar");
     return res.data;
   } catch (err) {
-    console.error("Error fetching calendar view:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || err.message || "فشل جلب بيانات التقويم");
+    console.error("فشل جلب التقويم:", err.response?.data || err.message);
+    throw new Error("فشل جلب بيانات التقويم");
   }
 }
 
-// Cancel booking (PATCH /booking/cancel/:bookingId)
+// إلغاء الحجز
 export async function cancelBookingAPI(bookingId) {
   try {
     const res = await api.patch(`/cancel/${bookingId}`);
     return res.data;
   } catch (err) {
-    console.error("Error cancelling booking:", err.response?.data || err.message);
-    throw new Error(err.response?.data?.message || err.message || "فشل إلغاء الحجز");
+    console.error("فشل إلغاء الحجز:", err.response?.data || err.message);
+    throw new Error("فشل إلغاء الحجز");
+  }
+}
+
+// src/api/bookingsApi.js
+export async function getBookingsCountAPI() {
+  try {
+    const res = await api.get("/all_booking");
+    return res.data.metadata?.totalResults || 0; // إذا موجود ارجع العدد، وإلا 0
+  } catch (err) {
+    console.error("خطأ أثناء جلب عدد الحجوزات:", err.response?.data || err);
+    throw err;
   }
 }
 
@@ -222,4 +296,7 @@ export default {
   filterBookingsAPI,
   calendarViewAPI,
   cancelBookingAPI,
+  getBookingsCountAPI,
+  getUserFromToken,
+  updateSingleScheduleAPI
 };

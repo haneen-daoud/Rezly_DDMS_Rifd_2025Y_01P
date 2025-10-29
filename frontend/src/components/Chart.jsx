@@ -10,7 +10,7 @@ import {
   Bar,
 } from "recharts";
 
-const data = [
+const dailyData = [
   { day: "السبت", value: 26 },
   { day: "الأحد", value: 30 },
   { day: "الإثنين", value: 42 },
@@ -20,38 +20,69 @@ const data = [
   { day: "الجمعة", value: 50 },
 ];
 
+const weeklyData = [
+  { day: "الأسبوع 1", value: 120 },
+  { day: "الأسبوع 2", value: 150 },
+  { day: "الأسبوع 3", value: 180 },
+  { day: "الأسبوع 4", value: 200 },
+];
+
+const monthlyData = [
+  { day: "يناير", value: 400 },
+  { day: "فبراير", value: 380 },
+  { day: "مارس", value: 420 },
+  { day: "أبريل", value: 460 },
+  { day: "مايو", value: 500 },
+  { day: "يونيو", value: 480 },
+  { day: "يوليو", value: 530 },
+  { day: "أغسطس", value: 510 },
+  { day: "سبتمبر", value: 490 },
+  { day: "أكتوبر", value: 550 },
+  { day: "نوفمبر", value: 570 },
+  { day: "ديسمبر", value: 600 },
+];
+
 export default function Chart() {
-  const [chartType, setChartType] = useState("line"); // line | bar
+  const [chartType, setChartType] = useState("line");
+  const [filter, setFilter] = useState("الأسبوع");
 
   const toggleChartType = () => {
     setChartType(chartType === "line" ? "bar" : "line");
   };
 
-  // Base styles for buttons and select to match original design
-  const baseTextStyle =
-    "font-cairo text-[14px] font-semibold leading-[150%]  text-center";
+  const getData = () => {
+    if (filter === "اليوم") return dailyData;
+    if (filter === "الأسبوع") return weeklyData;
+    if (filter === "الشهر") return monthlyData;
+    return dailyData;
+  };
+
+  const data = getData();
 
   return (
-    <section className="bg-white rounded-[10px] p-4">
-      {/* Header */}
+    <section className="bg-white rounded-[10px] p-4 ">
       <div className="flex items-center justify-between mb-3">
-        {/* Tabs يمين */}
+        {/* Tabs */}
         <div className="flex gap-2">
           <button className={`tab-btn active `}>الزوار</button>
           <button className={`tab-btn `}>المبيعات</button>
         </div>
 
-        {/* Dropdown بالنص */}
-        <div>
-          <select className={`filter-select `}>
-            <option>اليوم</option>
-            <option selected>الأسبوع</option>
-            <option>الشهر</option>
-          </select>
-        </div>
+        {/* Select moved slightly to the left */}
 
-        {/* Filters يسار */}
+        {/* Filters */}
         <div className="flex gap-2 items-center">
+          <div className="">
+            <select
+              className={filter - `select`}
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <option>اليوم</option>
+              <option>الأسبوع</option>
+              <option>الشهر</option>
+            </select>
+          </div>
           <button
             className="filter-btn flex items-center gap-1"
             onClick={toggleChartType}
@@ -76,14 +107,17 @@ export default function Chart() {
               stroke="currentColor"
               strokeWidth="2"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
           <button className="filter-btn filter-btn2">...</button>
         </div>
       </div>
 
-      {/* Chart */}
       <ResponsiveContainer width="100%" height={250}>
         {chartType === "line" ? (
           <LineChart data={data}>
@@ -91,6 +125,7 @@ export default function Chart() {
               dataKey="day"
               interval={0}
               tick={{ fontSize: 11, fill: "#333", fontFamily: "Cairo" }}
+              padding={{ left: 15, right: 15 }}
             />
             <YAxis hide />
             <Tooltip />
@@ -108,6 +143,7 @@ export default function Chart() {
               dataKey="day"
               interval={0}
               tick={{ fontSize: 11, fill: "#333", fontFamily: "Cairo" }}
+              padding={{ left: 20, right: 20 }}
             />
             <YAxis hide />
             <Tooltip />

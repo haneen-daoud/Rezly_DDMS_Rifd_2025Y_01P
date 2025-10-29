@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Mail, MessageSquare, Link as LinkIcon, Copy, Phone } from "lucide-react";
 
-export default function HealthFormStep() {
-    const [selectedMethod, setSelectedMethod] = useState("email");
+export default function Step3Participant({ memberData, setMemberData }) {
+    const [selectedMethod, setSelectedMethod] = useState(memberData.sendMethod || "email");
+    const [selectedForm, setSelectedForm] = useState(memberData.healthForm || "");
 
-    const copyLink = () => {
+    useEffect(() => {
+        setMemberData({ ...memberData, sendMethod: selectedMethod, healthForm: selectedForm });
+    }, [selectedMethod, selectedForm]);
+
+    const copyLink = (e) => {
+        e.preventDefault(); 
         navigator.clipboard.writeText("https://Rezly/Form/");
         alert("تم نسخ الرابط  ");
     };
@@ -17,9 +23,13 @@ export default function HealthFormStep() {
                 <div className="flex flex-col gap-2">
                     <label className="text-[14px] font-[700] text-black">اختر الفورم الصحي</label>
                     <select
+                        value={selectedForm}
+                        onChange={(e) => setSelectedForm(e.target.value)}
                         className="w-full border border-gray-300 rounded-xl px-3 py-2 text-[12px] text-[color:var(--grey,#7E818C)] focus:outline-none focus:ring-2 focus:ring-purple-600"
                     >
-                        <option>مثال: الفورم الصحي العام</option>
+                        <option value="">مثال: الفورم الصحي العام</option>
+                        <option value="general">الفورم الصحي العام</option>
+                        <option value="specific">فورم خاص</option>
                     </select>
                 </div>
 
@@ -112,13 +122,9 @@ export default function HealthFormStep() {
                         </span>
                         <LinkIcon className="text-gray-400" size={18} />
                     </div>
-
-                   
                 </div>
 
             </form>
-
-
         </div>
     );
 }
