@@ -85,6 +85,16 @@ export async function getUserFromToken() {
 /* ----------------------------------------------------------
    دوال مساعدة داخلية
 ---------------------------------------------------------- */
+const getHeaders = () => {
+  const token = localStorage.getItem("accessToken");
+  return {
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+      "Content-Type": "application/json",
+    },
+  };
+};
+
 
 // تحويل الوقت إلى 12 ساعة عربية
 const convertTo12Hour = (time) => {
@@ -189,24 +199,15 @@ export async function getBookingByIdAPI(id) {
   }
 }
 
-export async function updateGeneralBookingAPI(bookingId, body) {
-  try {
-    const token =
-      localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
-
-    const res = await api.put(`/${bookingId}`, body, {
-      headers: {
-        Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    return res.data;
-  } catch (err) {
-    console.error("❌ خطأ في updateGeneralBookingAPI:", err.response?.data || err.message);
-    throw err;
+export const updateGeneralBookingAPI = async (id, body, mode = "") => {
+let url = `${BASE_URL}/${id}`;
+  if (mode === "updateAllSameGroup") {
+    url += "?updateAllSameGroup=true";
   }
-}
+  const res = await axios.put(url, body, getHeaders());
+  return res.data;
+};
+
 
 export async function updateSingleScheduleAPI(bookingId, body) {
   try {

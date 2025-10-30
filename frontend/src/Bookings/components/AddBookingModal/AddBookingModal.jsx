@@ -386,7 +386,12 @@ const handleSubmit = async (e) => {
         console.log("🚀 جسم الإرسال النهائي (تعديل الكل):", fullUpdateBody);
         console.log("🧩 editingBookingId:", editingBookingId);
 
-        await updateGeneralBookingAPI(editingBookingId, fullUpdateBody);
+        await updateGeneralBookingAPI(
+  fullBookingData?.groupId || editingBookingId,
+  fullUpdateBody,
+  "updateAllSameGroup"
+);
+
 
         toast.success("تم تعديل الحجز بالكامل ✅");
         handleClose();
