@@ -10,38 +10,51 @@ export default function Layout() {
   const [selectedTab, setSelectedTab] = useState("");
 
   const topbarTitle =
-    location.pathname === "/" 
-      ? "مرحباً بك في لوحة التحكم، نتمنى لك يوماً مثمراً!" 
+    location.pathname === "/dashboard"
+      ? "مرحباً بك في لوحة التحكم، نتمنى لك يوماً مثمراً!"
       : selectedTab;
 
   return (
     <div className="w-full min-h-screen bg-bg flex">
-      {/* Sidebar */}
+      {/* 🔹 Sidebar في الديسكتوب */}
       <div className="hidden lg:block">
-        <Sidebar onClose={() => setOpenSidebar(false)} onSelectTab={setSelectedTab} />
+        <Sidebar
+          onClose={() => setOpenSidebar(false)}
+          onSelectTab={setSelectedTab}
+        />
       </div>
 
-      {/* Drawer للموبايل */}
+      {/* 🔹 Drawer في الموبايل */}
       {openSidebar && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <>
+          {/* خلفية شفافة */}
           <div
-            className="absolute inset-0 bg-black/40"
+            className="fixed inset-0 bg-black/40 z-40 animate-fadeIn"
             onClick={() => setOpenSidebar(false)}
-          />
-          <div className="absolute left-0 top-0 w-64 h-full bg-bg p-4">
+          ></div>
+
+          {/* سايدبار متحرك من اليمين */}
+          <div
+            className={`fixed top-0 right-0 w-64 h-full bg-bg z-50 shadow-xl transform transition-transform duration-300 ${
+              openSidebar ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
             <Sidebar
               onClose={() => setOpenSidebar(false)}
               onSelectTab={setSelectedTab}
             />
           </div>
-        </div>
+        </>
       )}
 
-      {/* المحتوى */}
+      {/* 🔹 المحتوى الرئيسي */}
       <div className="flex flex-col w-full">
-        <Topbar title={topbarTitle} onMenuClick={() => setOpenSidebar(true)} />
+        {/* توب بار دائم */}
+        <Topbar
+          title={topbarTitle}
+          onMenuClick={() => setOpenSidebar(true)}
+        />
 
-        {/* 🟣 هنا فقط Provider واحد يلف كل Outlet */}
         <BookingsProvider>
           <main className="flex-1 p-6 w-full overflow-auto">
             <Outlet />

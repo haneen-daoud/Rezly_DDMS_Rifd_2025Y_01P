@@ -4,6 +4,7 @@ export default function RepeatSelector({
   selectedRepeat,
   selectedDays,
   setRepeatAndDays,
+  variant = "booking",
 }) {
   const days = ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"];
 
@@ -27,7 +28,15 @@ export default function RepeatSelector({
             <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-300 peer-checked:translate-x-5"></div>
           </div>
 
-          <span className="text-black text-sm font-normal">يوميًا</span>
+          <span
+            className={
+              variant === "event"
+                ? "text-[#000] text-[13px] font-bold"
+                : "text-[#000] text-[14px] font-normal"
+            }
+          >
+            يوميًا
+          </span>
         </label>
       </div>
 
@@ -77,7 +86,15 @@ export default function RepeatSelector({
                   </svg>
                 )}
               </span>
-              <span className="text-black">{day}</span>
+              <span
+                className={
+                  variant === "event"
+                    ? "text-[#000] text-[13px] font-bold"
+                    : "text-[#000] text-[14px] font-normal"
+                }
+              >
+                {day}
+              </span>
             </label>
           );
         })}

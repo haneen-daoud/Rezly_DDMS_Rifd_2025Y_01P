@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { step3Schema } from "../employeeValidation.js";
 
 const Step3Employee = forwardRef(({ data, onChange }, ref) => {
@@ -12,24 +12,27 @@ const Step3Employee = forwardRef(({ data, onChange }, ref) => {
     // validateField(field, value);
   };
 
-const validateAll = async () => {
-  try {
-    await step3Schema.validate(data, { abortEarly: false });
-    setLocalErrors({});
-    setShowErrors(true);
-    console.log("Step3 validation passed!");
-    return true;
-  } catch (err) {
-    const newErrors = {};
-    err.inner.forEach((e) => {
-      newErrors[e.path] = e.message;
-    });
-    setLocalErrors(newErrors);
-    setShowErrors(true);
-    console.log("Step3 validation failed:", newErrors);
-    return false;
-  }
-};
+  const validateAll = async () => {
+    try {
+      await step3Schema.validate(data, { abortEarly: false });
+      setLocalErrors({});
+      setShowErrors(true);
+      console.log("Step3 validation passed!");
+      return true;
+    } catch (err) {
+      const newErrors = {};
+      err.inner.forEach((e) => {
+        newErrors[e.path] = e.message;
+      });
+      setLocalErrors(newErrors);
+      setShowErrors(true);
+      console.log("Step3 validation failed:", newErrors);
+      return false;
+    }
+  };
+  useEffect(() => {
+    console.log("بيانات step3:", data);
+  }, [data]);
 
 
   useImperativeHandle(ref, () => ({
@@ -47,11 +50,10 @@ const validateAll = async () => {
           <select
             value={data.jobTitle || ""}
             onChange={(e) => handleChange("jobTitle", e.target.value)}
-            className={`w-full border rounded-xl px-3 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${
-              showErrors && localErrors.jobTitle
+            className={`w-full border rounded-xl px-3 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${showErrors && localErrors.jobTitle
                 ? "border-red-500 focus:ring-red-400"
                 : "border-gray-300 focus:ring-purple-500"
-            }`}
+              }`}
           >
             <option value="">المسمى الوظيفي</option>
             <option value="مطور">مطور</option>
@@ -66,21 +68,21 @@ const validateAll = async () => {
         {/* القسم */}
         <div className="flex flex-col gap-2">
           <label className="text-[14px] font-[700] text-black">
-            اختر القسم<span className="text-red-500">*</span>
+            القسم<span className="text-red-500">*</span>
           </label>
           <select
             value={data.department || ""}
             onChange={(e) => handleChange("department", e.target.value)}
-            className={`w-full border rounded-xl px-3 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${
-              showErrors && localErrors.department
+            className={`w-full border rounded-xl px-3 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${showErrors && localErrors.department
                 ? "border-red-500 focus:ring-red-400"
                 : "border-gray-300 focus:ring-purple-500"
-            }`}
+              }`}
           >
             <option value="">اختر القسم</option>
             <option value="HR">الموارد البشرية</option>
+            <option value="Administration">الادارة</option>
+
             <option value="تقنية المعلومات">تقنية المعلومات</option>
-            <option value="الادارة">الادارة</option>
           </select>
           {showErrors && localErrors.department && (
             <p className="text-red-500 text-[11px] mt-1">{localErrors.department}</p>
@@ -90,16 +92,15 @@ const validateAll = async () => {
         {/* نوع العقد */}
         <div className="flex flex-col gap-2">
           <label className="text-[14px] font-[700] text-black">
-            اختر نوع العقد<span className="text-red-500">*</span>
+            نوع العقد<span className="text-red-500">*</span>
           </label>
           <select
             value={data.contractType || ""}
             onChange={(e) => handleChange("contractType", e.target.value)}
-            className={`w-full border rounded-xl px-2.5 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${
-              showErrors && localErrors.contractType
+            className={`w-full border rounded-xl px-2.5 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${showErrors && localErrors.contractType
                 ? "border-red-500 focus:ring-red-400"
                 : "border-gray-300 focus:ring-purple-500"
-            }`}
+              }`}
           >
             <option value="">نوع العقد</option>
             <option value="كامل">دوام كامل</option>

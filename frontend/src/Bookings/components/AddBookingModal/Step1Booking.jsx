@@ -3,9 +3,14 @@ import axios from "axios";
 import CoachSelector from "../../../components/common/CoachSelector";
 import LocationSelector from "../../../components/common/LocationSelector";
 import MaxParticipantsSelector from "../../../components/common/MaxParticipantsSelector";
+import ParticipantsSelector from "../../../components/common/ParticipantsSelector";
+
 import downarrowIcon from "../../../icons/downarrow.svg";
 import SearchIcon from "../../../icons/search.svg?react";
 import AddcircleIcon from "../../../icons/addcircle.svg?react";
+import XIcon from "../../../icons/x.svg?react";
+
+import { getAllCoachesAPI } from "../../../api/coachesApi";
 
 export default function Step1Booking({
   formData,
@@ -14,6 +19,7 @@ export default function Step1Booking({
   setErrors,
   isIndividual = false,
   isCoach = false,
+  members = [],
 }) {
   const [coaches, setCoaches] = useState([]);
   const [openClass, setOpenClass] = useState(false);
@@ -21,61 +27,136 @@ export default function Step1Booking({
   const [classes, setClasses] = useState(["يوغا", "كارديو", "ملاكمة"]);
   const [rooms] = useState(["قاعة 1", "قاعة 2", "قاعة 3"]);
 
-  const isReadOnly = !!isIndividual; // 🟣 قفل الحقول لو تعديل فردي
+  // تأكد من إضافة اسم الحصة الحالية لقائمة الحصص عند فتح التعديل
+  useEffect(() => {
+    if (!formData?.title || formData.title.trim() === "") return;
+
+    setClasses((prev) => {
+      const normalizedPrev = prev.map((c) => c.trim().toLowerCase());
+      const normalizedTitle = formData.title.trim().toLowerCase();
+
+      // إذا مش موجود نضيفه
+      if (!normalizedPrev.includes(normalizedTitle)) {
+        return [...prev, formData.title.trim()];
+      }
+
+      // إذا موجود نرجّع القائمة بدون تعديل
+      return prev;
+    });
+  }, [formData?.title]);
+
+  const isReadOnly = !!isIndividual; // حقول مظللة لو تعديل فردي
 
   // جلب قائمة المدربين
   useEffect(() => {
-  const fetchCoaches = async () => {
-    try {
-      // ✅ استخدم التوكن الحقيقي من localStorage
-      const token =
-        localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
-
-      const res = await axios.get(
-        "https://rezly-ddms-rifd-2025y-01p.onrender.com/auth/getAllEmployees",
-        {
-          headers: {
-            Authorization: token.startsWith("Bearer")
-              ? token
-              : `Bearer ${token}`,
-          },
+    const loadCoachesInstantly = async () => {
+      try {
+        // يحمل مباشرة من localStorage عشان تظهر الأسماء فوراً
+        const local = JSON.parse(localStorage.getItem("allEmployees") || "[]");
+        if (Array.isArray(local) && local.length > 0) {
+          const formattedLocal = local.map((c) => ({
+            id: c._id || c.id,
+            name:
+              c.name ||
+              `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
+              "مدرب غير معروف",
+          }));
+          setCoaches(formattedLocal);
         }
-      );
 
-      // ✅ فلترة فقط المدربين
-      const coachList = res.data?.employees
-        ?.filter((emp) => emp.role === "Coach")
-        .map((emp) => ({
-          id: emp._id,
-          name: `${emp.firstName || ""} ${emp.lastName || ""}`.trim(),
-        })) || [];
+        // تحديث من السيرفر بخلفية الصفحة
+        const remote = await getAllCoachesAPI();
+        if (Array.isArray(remote) && remote.length > 0) {
+          const formattedRemote = remote.map((c) => ({
+            id: c._id || c.id,
+            name:
+              c.name ||
+              `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
+              "مدرب غير معروف",
+          }));
+          setCoaches(formattedRemote);
+          localStorage.setItem("allEmployees", JSON.stringify(remote));
+        }
+      } catch (err) {
+        console.error("[Step1Booking] فشل جلب المدربين:", err);
+      }
+    };
 
-      setCoaches(coachList);
-      console.log("✅ أسماء المدربين:", coachList.map((c) => c.name));
+    loadCoachesInstantly();
+  }, []);
 
-    } catch (err) {
-      console.error("❌ خطأ في جلب المدربين:", err.response?.data || err.message);
-    }
-  };
+  useEffect(() => {
+    const fetchMembersSmart = async () => {
+      try {
+        const token =
+          localStorage.getItem("authToken") ||
+          localStorage.getItem("token") ||
+          "";
+        const headers = { Authorization: `Bearer ${token}` };
 
-  fetchCoaches();
-}, []);
+        //  أول صفحة فوراً بتتحمل
+        const firstRes = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL2}/auth/getAllMembers?page=1`,
+          { headers }
+        );
+        const firstList = firstRes.data?.members || firstRes.data?.data || [];
+        const formattedFirst = firstList.map((m) => ({
+          id: m._id,
+          name:
+            `${m.firstName || ""} ${m.lastName || ""}`.trim() ||
+            m.userName ||
+            "مشترك بدون اسم",
+        }));
 
+        // باقي الصفحات بالخلفية
+        let page = 2;
+        let all = [...firstList];
+        let hasMore = true;
+
+        while (hasMore) {
+          const res = await axios.get(
+            `${
+              import.meta.env.VITE_API_BASE_URL2
+            }/auth/getAllMembers?page=${page}`,
+            { headers }
+          );
+          const list = res.data?.members || res.data?.data || [];
+          if (Array.isArray(list) && list.length > 0) {
+            all = [...all, ...list];
+            page++;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        const formattedAll = all.map((m) => ({
+          id: m._id,
+          name:
+            `${m.firstName || ""} ${m.lastName || ""}`.trim() ||
+            m.userName ||
+            "مشترك بدون اسم",
+        }));
+      } catch (err) {
+        console.error(" فشل جلب المشتركين:", err);
+      }
+    };
+
+    fetchMembersSmart();
+  }, []);
 
   const handleClassSelect = (cls) => {
-  if (isReadOnly) return;
+    if (isReadOnly) return;
 
-  setFormData((prev) => ({
-    ...prev,
-    title: cls,
-    service: cls, // 🟣 ضروري للباك (هو اللي بنبعت بـ PUT)
-  }));
+    setFormData((prev) => ({
+      ...prev,
+      title: cls,
+      service: cls,
+    }));
 
-  setOpenClass(false);
-  setClassSearch("");
-  if (errors?.title) setErrors((prev) => ({ ...prev, title: null }));
-};
-
+    setOpenClass(false);
+    setClassSearch("");
+    if (errors?.title) setErrors((prev) => ({ ...prev, title: null }));
+  };
 
   const handleAddNewClass = () => {
     if (isReadOnly) return;
@@ -86,18 +167,48 @@ export default function Step1Booking({
     }
   };
 
-// 🟣 إغلاق القوائم عند الضغط خارجها
-useEffect(() => {
-  const handleClickOutside = (e) => {
-    // إذا العنصر المفتوح مو جزء من العنصر اللي تم الضغط عليه
-    if (!e.target.closest(".dropdown-step1")) {
-      setOpenClass(false);
-    }
-  };
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+  // إغلاق القوائم عند الضغط خارجها
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".dropdown-step1")) {
+        setOpenClass(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
+  useEffect(() => {
+    if (!Array.isArray(formData?.members) || formData.members.length === 0) {
+      return;
+    }
+    if (!Array.isArray(members) || members.length === 0) {
+      return;
+    }
+
+    const enriched = formData.members.map((m) => {
+      const id = typeof m === "object" ? m.id || m._id : m;
+      const full = members.find((mm) => mm.id === id || mm._id === id);
+
+      if (full) {
+        return {
+          ...m,
+          id,
+          name:
+            full.name ||
+            `${full.firstName || ""} ${full.lastName || ""}`.trim() ||
+            full.userName ||
+            "مشترك بدون اسم",
+        };
+      }
+      return { id, name: "مشترك بدون اسم" };
+    });
+
+    setFormData((prev) => ({
+      ...prev,
+      members: enriched,
+    }));
+  }, [members, formData?.members?.length]);
 
   return (
     <div className="flex justify-center bg-white w-full text-black text-[14px]">
@@ -110,8 +221,14 @@ useEffect(() => {
           <div
             className={`w-full h-10 rounded-[8px] flex items-center justify-between relative border ${
               errors?.title ? "border-red-500" : "border-gray-300"
-            } ${isReadOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "cursor-pointer"}`}
-            onClick={() => !isReadOnly && setOpenClass(!openClass)}
+            } ${
+              isReadOnly
+                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                : "cursor-pointer"
+            }`}
+            onClick={() => {
+              if (!isIndividual) setOpenClass(!openClass);
+            }}
           >
             <span
               className={`h-10 pr-3 pl-2 w-full flex items-center ${
@@ -139,9 +256,20 @@ useEffect(() => {
                     placeholder="ابحث عن حصة..."
                     value={classSearch}
                     onChange={(e) => setClassSearch(e.target.value)}
-                    className="w-full h-8 rounded-md pr-8 pl-3 border border-gray-200 focus:outline-none text-gray-800 placeholder-gray-400"
+                    className="w-full h-8 rounded-md pr-8 pl-8 border border-gray-200 focus:outline-none text-gray-800 placeholder-gray-400"
                   />
+
                   <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-4 h-4 text-[var(--color-purple)]" />
+
+                  {classSearch && (
+                    <XIcon
+                      alt="clear"
+                      className="absolute top-1/2 left-2 -translate-y-1/2 w-3.5 h-3.5 cursor-pointer opacity-80 hover:opacity-100 text-[var(--color-purple)]"
+                      onClick={() => {
+                        setClassSearch("");
+                      }}
+                    />
+                  )}
                 </div>
 
                 {classSearch && !classes.includes(classSearch) && (
@@ -174,15 +302,16 @@ useEffect(() => {
                       >
                         {cls}
                         <div
-  className={`w-4 h-4 flex items-center justify-center rounded-full border-2 ${
-    isSelected ? "border-[var(--color-purple)]" : "border-[var(--color-purple)]"
-  }`}
->
-  {isSelected && (
-    <div className="w-2 h-2 rounded-full bg-[var(--color-purple)]"></div>
-  )}
-</div>
-
+                          className={`w-4 h-4 flex items-center justify-center rounded-full border-2 ${
+                            isSelected
+                              ? "border-[var(--color-purple)]"
+                              : "border-[var(--color-purple)]"
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="w-2 h-2 rounded-full bg-[var(--color-purple)]"></div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -200,7 +329,7 @@ useEffect(() => {
         </div>
 
         {/* الوصف */}
-        <div >
+        <div>
           <label className="block font-bold text-sm mb-1">
             الوصف <span className="text-red-500">*</span>
           </label>
@@ -209,16 +338,20 @@ useEffect(() => {
             placeholder="أدخل الوصف"
             value={formData.description || ""}
             onChange={(e) => {
-              if (isReadOnly) return;
+              if (isIndividual) return;
               setFormData({ ...formData, description: e.target.value });
               if (errors?.description)
                 setErrors((prev) => ({ ...prev, description: null }));
             }}
-            readOnly={isReadOnly}
-            disabled={isReadOnly}
+            readOnly={isIndividual}
+            disabled={isIndividual}
             className={`w-full h-10 border rounded-md px-3 focus:outline-none placeholder-gray-400 ${
               errors?.description ? "border-red-500" : "border-gray-300"
-            } ${isReadOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"}`}
+            } ${
+              isReadOnly
+                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                : "bg-white"
+            }`}
           />
           {errors?.description && (
             <p className="text-red-500 text-xs mt-1">{errors.description}</p>
@@ -228,11 +361,10 @@ useEffect(() => {
         {/* المدرب */}
         {!isCoach && (
           <>
-            <div className={`${isReadOnly ? "opacity-50 pointer-events-none" : ""}`}>
+            <div>
               <CoachSelector
                 selectedCoach={formData.coach}
                 setSelectedCoach={(coach) => {
-                  if (isReadOnly) return;
                   setFormData({ ...formData, coachId: coach.id, coach });
                   if (errors?.coach)
                     setErrors((prev) => ({ ...prev, coach: null }));
@@ -249,16 +381,15 @@ useEffect(() => {
         )}
 
         {/* القاعة */}
-        <div className={`${isReadOnly ? "opacity-50 pointer-events-none" : ""}`}>
+        <div>
           <LocationSelector
             selectedLocation={formData.room}
             setSelectedLocation={(loc) => {
-              if (isReadOnly) return;
               setFormData((prev) => ({
-  ...prev,
-  room: loc,
-  location: loc, // 🟣 هذا الحقل اللي الباك بيستخدمه
-}));
+                ...prev,
+                room: loc,
+                location: loc,
+              }));
 
               if (errors?.room) setErrors((prev) => ({ ...prev, room: null }));
             }}
@@ -273,15 +404,14 @@ useEffect(() => {
         )}
 
         {/* عدد المشتركين */}
-        <div className={`${isReadOnly ? "opacity-50 pointer-events-none" : ""}`}>
+        <div>
           <MaxParticipantsSelector
             selectedMax={formData.maxMembers}
             setSelectedMax={(value) => {
-              if (isReadOnly) return;
               setFormData((prev) => ({
-  ...prev,
-  maxMembers: Number(value), // 🟣 تأكيد إنه دايمًا رقم
-}));
+                ...prev,
+                maxMembers: Number(value),
+              }));
 
               if (errors?.maxMembers)
                 setErrors((prev) => ({ ...prev, maxMembers: null }));
@@ -291,12 +421,30 @@ useEffect(() => {
               { label: "5 مشتركين", value: 5 },
               { label: "10 مشتركين", value: 10 },
               { label: "20 مشتركاً", value: 20 },
-              { label: "إدخال مخصص", value: "custom" },
               { label: "غير محدود", value: Infinity },
+              { label: "إدخال مخصص", value: "custom" },
             ]}
             borderColor={errors?.maxMembers ? "red" : "#D1D5DB"}
           />
         </div>
+
+        {/* المشتركين */}
+        <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+          <label className="text-[12px] font-bold leading-[18px]">
+            المشتركين
+          </label>
+          <div className="relative w-[343px]">
+            <ParticipantsSelector
+              variant="booking"
+              showLabel={false}
+              showIcon={false}
+              booking={formData}
+              setBooking={setFormData}
+              membersList={members}
+            />
+          </div>
+        </div>
+
         {errors?.maxMembers && (
           <p className="text-red-500 text-xs mt-1">{errors.maxMembers}</p>
         )}

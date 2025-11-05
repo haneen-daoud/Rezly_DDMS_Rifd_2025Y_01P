@@ -8,6 +8,7 @@ import BookingIcon from "../icons/booking.svg?react";
 import MembersIcon from "../icons/addpeople.svg?react";
 import BookingNumberIcon from "../icons/bookingNumber.svg?react";
 import MembersNumberIcon from "../icons/people.svg?react";
+import { BookingsProvider } from "../Bookings/BookingsContext.jsx";
 
 const tabs = ["الحجوزات", "المشتركين", "سجل الحضور", "التقارير", "الإعدادات"];
 

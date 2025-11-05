@@ -1,5 +1,6 @@
 // src/Bookings/components/CalendarPage.jsx
 import React, { useRef, useState } from "react";
+import axios from "axios";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -11,7 +12,7 @@ import MiniCalender from "../../components/MiniCalender/MiniCalender";
 
 import "./Calender.css";
 
-import CalenderIcon from "../../icons/calender.svg";
+import CalenderIcon from "../../icons/calender.svg?react";
 import ReSizeIcon from "../../icons/resize.svg";
 import RightArrowIcon from "../../icons/rightarrow.svg";
 import LeftArrowIcon from "../../icons/leftarrow.svg";
@@ -34,18 +35,59 @@ export default function CalendarView() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [fullScreenMode, setFullScreenMode] = useState(false);
 
+    // 🎨 ألوان الحجز الأربعة
+  const bookingColors = [
+    { bg: "#DCFCE7", border: "#22C55E", text: "#14532D" }, // أخضر
+    { bg: "#EDE9FE", border: "#8B5CF6", text: "#4C1D95" }, // بنفسجي
+    { bg: "#DBEAFE", border: "#3B82F6", text: "#1E3A8A" }, // أزرق
+    { bg: "#FEF3C7", border: "#F59E0B", text: "#92400E" }, // أصفر
+  ];
+
+    // 🎨 توزيع الألوان الأربعة بشكل دائري وثابت بالكاش
+const getBookingColor = (bookingId) => {
+  const storedColors = JSON.parse(localStorage.getItem("bookingColors") || "{}");
+  const colorList = bookingColors;
+  
+  // لو الحجز له لون مسبق، رجّعه مباشرة
+  if (storedColors[bookingId]) return storedColors[bookingId];
+
+  // نقرأ العدّاد الحالي من الكاش
+  let colorCounter = parseInt(localStorage.getItem("colorCounter") || "0", 10);
+
+  // نحدد اللون بناءً على العداد (0 → أول لون، 1 → ثاني...)
+  const color = colorList[colorCounter % colorList.length];
+
+  // نحدّث العدّاد ونسجّله بالكاش
+  colorCounter = (colorCounter + 1) % colorList.length;
+  localStorage.setItem("colorCounter", colorCounter.toString());
+
+  // نخزّن اللون لهذا الحجز
+  storedColors[bookingId] = color;
+  localStorage.setItem("bookingColors", JSON.stringify(storedColors));
+
+  return color;
+};
+
+
+
   // ---- تحويل الحجوزات إلى أحداث FullCalendar ----
   // دالة مساعدة لتحويل الوقت العربي "9:30 ص" -> "09:30"
   const parseArabicTime = (timeStr) => {
     if (!timeStr) return "00:00";
     // بعض الحجوزات عندك تخزّن "1:30 م" (space) أو "1:30م" - نغطي الحالتين
-    const cleaned = timeStr.replace(/\u200E/g, "").replace(/\s+/g, " ").trim();
+    const cleaned = timeStr
+      .replace(/\u200E/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
     const parts = cleaned.split(" ");
     let timePart = parts[0] ?? cleaned;
     let period = parts[1] ?? "";
 
     // إذا الفترة مدموِجة (مثلاً "2:30م") نفصل الأرقام عن الحرف
-    if (!period && /[ابتثجحخدذرزسشصضطظعغفقكلمنهويمص]/i.test(timePart.slice(-1))) {
+    if (
+      !period &&
+      /[ابتثجحخدذرزسشصضطظعغفقكلمنهويمص]/i.test(timePart.slice(-1))
+    ) {
       // لو آخر حرف عربي افصل
       const match = timePart.match(/^(.+?)([^\d:]+)$/);
       if (match) {
@@ -68,47 +110,54 @@ export default function CalendarView() {
     if (period === "AM" && hour === 12) hour = 0;
 
     // pad
-    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(
+      2,
+      "0"
+    )}`;
   };
 
   // 🟣 الآن كل schedule داخل booking يتحول إلى Event مستقل
-const events = (bookings || [])
-  .flatMap((booking) => {
-    if (!booking.schedules || booking.schedules.length === 0) return [];
+  const events = (bookings || []).flatMap((booking, index) => {
+  if (!booking.schedules || booking.schedules.length === 0) return [];
 
-    return booking.schedules.map((s) => {
-      const parseArabicTime = (timeStr) => {
-        if (!timeStr) return "00:00";
-        const hasPM = /م/.test(timeStr);
-        const hasAM = /ص/.test(timeStr);
-        const clean = timeStr.replace(/[^\d:]/g, "");
-        const [hStr, mStr] = clean.split(":");
-        let h = parseInt(hStr || "0", 10);
-        const m = parseInt(mStr || "0", 10);
-        if (hasPM && h < 12) h += 12;
-        if (hasAM && h === 12) h = 0;
-        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-      };
+  return booking.schedules.map((s, sIndex) => {
+    // 🎨 كل schedule له لون خاص حسب الـ _id
+    const colorData = getBookingColor(s._id);
 
-      const safeDate = new Date(s.date);
-      const dateStr = safeDate.toISOString().split("T")[0];
-      const start = `${dateStr}T${parseArabicTime(s.timeStart)}`;
-      const end = `${dateStr}T${parseArabicTime(s.timeEnd)}`;
+    const parseArabicTime = (timeStr) => {
+      if (!timeStr) return "00:00";
+      const hasPM = /م/.test(timeStr);
+      const hasAM = /ص/.test(timeStr);
+      const clean = timeStr.replace(/[^\d:]/g, "");
+      const [hStr, mStr] = clean.split(":");
+      let h = parseInt(hStr || "0", 10);
+      const m = parseInt(mStr || "0", 10);
+      if (hasPM && h < 12) h += 12;
+      if (hasAM && h === 12) h = 0;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    };
 
-      return {
-        id: s._id,
-        title: booking.service || "حجز",
-        start,
-        end,
-        extendedProps: {
-          coach: booking.coach?.name || "لا يوجد مدرب",
-          participants: booking.membersCount ?? 0,
-          room: s.location || booking.location || "",
-          rawBooking: booking,
-        },
-      };
-    });
+    const safeDate = new Date(s.date);
+    const dateStr = safeDate.toISOString().split("T")[0];
+    const start = `${dateStr}T${parseArabicTime(s.timeStart)}`;
+    const end = `${dateStr}T${parseArabicTime(s.timeEnd)}`;
+
+    return {
+      id: s._id,
+      title: booking.service || "حجز",
+      start,
+      end,
+      extendedProps: {
+        coach: booking.coach?.name || "لا يوجد مدرب",
+        participants: booking.membersCount ?? 0,
+        room: s.location || booking.location || "",
+        rawBooking: booking,
+        color: colorData, // 🎨 كل schedule الآن له لون خاص
+      },
+    };
   });
+});
+
 
 
   // ---- دوال التحكم ----
@@ -133,8 +182,14 @@ const events = (bookings || [])
           typeof updatedBooking.coach === "object"
             ? updatedBooking.coach.id
             : updatedBooking.coachId || "",
-        timeStart: updatedBooking.timeStart || updatedBooking.start?.split("T")[1]?.slice(0,5) || "",
-        timeEnd: updatedBooking.timeEnd || updatedBooking.end?.split("T")[1]?.slice(0,5) || "",
+        timeStart:
+          updatedBooking.timeStart ||
+          updatedBooking.start?.split("T")[1]?.slice(0, 5) ||
+          "",
+        timeEnd:
+          updatedBooking.timeEnd ||
+          updatedBooking.end?.split("T")[1]?.slice(0, 5) ||
+          "",
         recurrence: updatedBooking.recurrence || updatedBooking.days || [],
         repeat: updatedBooking.repeat || "",
       };
@@ -142,7 +197,11 @@ const events = (bookings || [])
       await updateBookingAPI(updatedBooking._id, cleanedData);
 
       // تحديث محلي
-      setBookings((prev) => prev.map((b) => (b._id === updatedBooking._id ? { ...b, ...cleanedData } : b)));
+      setBookings((prev) =>
+        prev.map((b) =>
+          b._id === updatedBooking._id ? { ...b, ...cleanedData } : b
+        )
+      );
 
       toast.success("تم تعديل الحجز بنجاح ✅");
       setSelectedBooking(null);
@@ -152,17 +211,74 @@ const events = (bookings || [])
     }
   };
 
-  const handleDeleteBooking = async (bookingToDelete) => {
-    try {
-      await deleteBookingAPI(bookingToDelete._id);
-      setBookings((prev) => prev.filter((b) => b._id !== bookingToDelete._id));
-      toast.success("تم حذف الحجز ✅");
-      setSelectedBooking(null);
-    } catch (err) {
-      console.error("خطأ أثناء الحذف:", err);
-      toast.error("حدث خطأ أثناء حذف الحجز");
+  // 🟣 حذف الحجز الفردي من الكاليندر (schedule واحد فقط)
+// 🟣 حذف الحجز الفردي من الكاليندر (schedule واحد فقط)
+const handleDeleteBooking = async (bookingToDelete) => {
+  try {
+    const token =
+    localStorage.getItem("authToken") ||
+    (localStorage.getItem("token")
+      ? `Bearer ${localStorage.getItem("token")}`
+      : `Bearer ${import.meta.env.VITE_API_TOKEN}`) ||
+    "";
+
+    const scheduleId = bookingToDelete?.selectedScheduleId;
+    const bookingId = bookingToDelete?._id;
+
+    if (!bookingId || !scheduleId) {
+      toast.error("لم يتم تحديد الحجز الفردي بشكل صحيح ❌");
+      return;
     }
-  };
+
+    // 🚀 طلب حذف فردي فعلي من الباك
+    const url = `https://rezly-ddms-rifd-2025y-01p.onrender.com/booking/${bookingId}?scheduleId=${scheduleId}`;
+    const res = await axios.delete(url, {
+      headers: {
+        Authorization: token.startsWith("Bearer")
+          ? token
+          : `Bearer ${token}`,
+      },
+    });
+
+    console.log("🟢 تم حذف الحجز الفردي بنجاح:", res.data);
+
+    // 🧹 حذف الجدول من الواجهة مباشرة
+    setBookings((prev) => {
+  const updated = prev
+    .map((b) =>
+      b._id === bookingId
+        ? {
+            ...b,
+            schedules: b.schedules?.filter((s) => s._id !== scheduleId),
+          }
+        : b
+    )
+    .filter((b) => b.schedules?.length > 0);
+
+  // ✅ نحفظ نسخة مباشرة بالكاش المحلي
+  localStorage.setItem("cachedBookings", JSON.stringify(updated));
+  return updated;
+});
+
+// ❌ ما منعمل fetchBookings مباشرة بعد الحذف
+// 🕐 نعطي السيرفر وقت يسجل التغيير
+setTimeout(() => {
+  // تحديث خفيف بعد 2 ثانية
+  fetchBookings();
+}, 2000);
+
+    toast.success("تم حذف الحجز لليوم المحدد ✅");
+    setSelectedBooking(null);
+  } catch (err) {
+    console.error("❌ خطأ أثناء حذف الحجز الفردي:", err.response?.data || err.message);
+    toast.error(
+      err.response?.data?.message || "حدث خطأ أثناء حذف الحجز الفردي ❌"
+    );
+  }
+};
+
+
+
 
   // عرض الحدث عند النقر عليه
   const onEventClick = (info) => {
@@ -174,10 +290,15 @@ const events = (bookings || [])
     <>
       <div
         className={`${
-          fullScreenMode ? "fixed inset-0 z-50 p-4 bg-white flex flex-col" : "relative w-full h-full"
+          fullScreenMode
+            ? "fixed inset-0 z-50 p-4 bg-white flex flex-col"
+            : "relative w-full h-full"
         }`}
       >
-        <div className="bg-white rounded-[16px] overflow-hidden flex-1 flex flex-col" dir="rtl">
+        <div
+          className="bg-white rounded-[16px] overflow-hidden flex-1 flex flex-col"
+          dir="rtl"
+        >
           {/* الهيدر */}
           <div className="grid grid-cols-[50px_1fr]">
             <div className="border-l border-[#eee] w-[46px] pt-[12px]"></div>
@@ -189,15 +310,23 @@ const events = (bookings || [])
                     onClick={() => setShowDatePicker(!showDatePicker)}
                     className="h-[32px] w-auto px-2 flex items-center gap-2 rounded-[8px] font-semibold bg-[#F8F9FA] border-0 outline-none"
                   >
-                    <img src={CalenderIcon} alt="calender" />
+                    <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
                     <span className="font-cairo text-[14px] font-bold text-black truncate">
-                      {currentDate.toLocaleDateString("ar-en", { day: "numeric", month: "short" })}
+                      {currentDate.toLocaleDateString("ar-en", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                     </span>
                     <img src={DownArrowIcon} alt="downarrow" />
                   </button>
                   {showDatePicker && (
                     <div className="absolute top-full left-0 z-30">
-                      <MiniCalender currentDate={currentDate} handleDateChange={handleDateChange} />
+                      <MiniCalender
+                        currentDate={currentDate}
+                        handleDateChange={handleDateChange}
+                        variant = "calender"
+                        hideTodayHighlight={false}
+                      />
                     </div>
                   )}
                 </div>
@@ -210,16 +339,35 @@ const events = (bookings || [])
                   >
                     <img src={RightArrowIcon} alt="rightarrow" />
                     <span className="font-cairo text-[14px] font-[700] text-black">
-                      {view === "timeGridDay" ? "اليوم" : view === "timeGridWeek" ? "أسبوع" : "شهر"}
+                      {view === "timeGridDay"
+                        ? "اليوم"
+                        : view === "timeGridWeek"
+                        ? "أسبوع"
+                        : "شهر"}
                     </span>
                     <img src={LeftArrowIcon} alt="leftarrow" />
                   </button>
 
                   {showViewMenu && (
                     <div className="absolute z-30 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg w-24">
-                      <div className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black" onClick={() => handleChangeView("timeGridDay")}>يوم</div>
-                      <div className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black" onClick={() => handleChangeView("timeGridWeek")}>أسبوع</div>
-                      <div className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black" onClick={() => handleChangeView("dayGridMonth")}>شهر</div>
+                      <div
+                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
+                        onClick={() => handleChangeView("timeGridDay")}
+                      >
+                        يوم
+                      </div>
+                      <div
+                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
+                        onClick={() => handleChangeView("timeGridWeek")}
+                      >
+                        أسبوع
+                      </div>
+                      <div
+                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
+                        onClick={() => handleChangeView("dayGridMonth")}
+                      >
+                        شهر
+                      </div>
                     </div>
                   )}
                 </div>
@@ -256,40 +404,48 @@ const events = (bookings || [])
             slotDuration="00:30:00"
             events={events}
             eventClick={(info) => {
-  const scheduleId = info.event.id;
-  const foundBooking = bookings.find((b) =>
-    b.schedules?.some((s) => s._id === scheduleId)
-  );
+              const scheduleId = info.event.id;
+              const foundBooking = bookings.find((b) =>
+                b.schedules?.some((s) => s._id === scheduleId)
+              );
 
-  if (foundBooking) {
-    setSelectedBooking({
-      ...foundBooking,
-      selectedScheduleId: scheduleId,
-      selectedSchedule: foundBooking.schedules.find((s) => s._id === scheduleId),
-    });
-  } else {
-    console.warn("❌ لم يتم العثور على الحجز لهذا الـ schedule:", scheduleId);
-  }
-}}
+              console.log("🟣 [CalendarView] تم الضغط على الإيفنت:", {
+  scheduleId,
+  foundBooking,
+  selectedSchedule: foundBooking?.schedules.find((s) => s._id === scheduleId)
+});
 
-
+              if (foundBooking) {
+                setSelectedBooking({
+                  ...foundBooking,
+                  selectedScheduleId: scheduleId,
+                  selectedSchedule: foundBooking.schedules.find(
+                    (s) => s._id === scheduleId
+                  ),
+                });
+              } else {
+                console.warn(
+                  "❌ لم يتم العثور على الحجز لهذا الـ schedule:",
+                  scheduleId
+                );
+              }
+            }}
             eventContent={(eventInfo) => {
-              
+              const color = eventInfo.event.extendedProps.color || {};
               return (
                 <div
                   className="p-2 rounded border-r-4 w-full h-full truncate"
                   style={{
-                    background: "#DBEAFE",
-                    borderColor: "#3B82F6",
-                    color: "#1E3A8A",
-                    fontFamily: "Cairo",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                  }}
+        background: color.bg || "#DBEAFE",
+        borderColor: color.border || "#3B82F6",
+        color: color.text || "#1E3A8A",
+        fontFamily: "Cairo",
+        fontSize: "12px",
+        fontWeight: "600",
+      }}
                 >
                   <div className="opacity-90">{eventInfo.timeText}</div>
                   <div className="truncate">{eventInfo.event.title}</div>
-                  
                 </div>
               );
             }}

@@ -7,21 +7,26 @@ export default function EmployeeCardTab() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-
-  const fetchEmployees = async () => {
+const fetchEmployees = async () => {
   try {
-    const data = await getAllEmployees();
+    setLoading(true);
 
-    if (data.employees) {
-      //   فلترة فقط الموظفين النشطين
-      const activeEmployees = data.employees.filter(emp => emp.active !== false);
-      setEmployees(activeEmployees);
-    } else {
-      setEmployees([]);
+    const cached = localStorage.getItem("employees_cache");
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      setEmployees(parsed);
+      setLoading(false); 
     }
+
+    const data = await getAllEmployees();
+    const activeEmployees = data.employees?.filter(emp => emp.active !== false) || [];
+
+    localStorage.setItem("employees_cache", JSON.stringify(activeEmployees));
+
+    setEmployees(activeEmployees);
   } catch (err) {
-    console.error(err);
-    setEmployees([]);
+    console.error("❌ خطأ أثناء جلب الموظفين:", err);
+    if (!employees.length) setEmployees([]);
   } finally {
     setLoading(false);
   }
@@ -61,7 +66,7 @@ export default function EmployeeCardTab() {
 
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen" dir="rtl">
+    <div className="sm-p-6 p-0 bg-gray-50 min-h-screen" dir="rtl">
 
 
       <div className="flex flex-wrap gap-6">

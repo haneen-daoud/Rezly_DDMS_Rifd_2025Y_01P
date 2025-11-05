@@ -40,10 +40,9 @@ const Signup = () => {
       setLoading(true);
       await signup(formData);
       alert("تم إنشاء الحساب بنجاح!");
-      navigate("/"); // تحويل المستخدم لصفحة تسجيل الدخول
+      navigate("/");
     } catch (error) {
       console.error("خطأ أثناء التسجيل:", error);
-      console.log("Signup error:", error.response?.data || error);
       alert(
         error.response?.data?.message ||
           "حدث خطأ أثناء التسجيل، حاول مرة أخرى"
@@ -54,15 +53,33 @@ const Signup = () => {
   };
 
   return (
-    <div className="flex h-screen font-[Cairo] items-stretch justify-center gap-8">
+    <div
+      className="flex font-[Cairo] justify-center items-start gap-8"
+      style={{
+        height: "150vh", // ارتفاع الصفحة يكفي لكل المحتوى
+        overflow: "hidden", // يمنع أي scroll
+        paddingTop: "20px", // مسافة بسيطة من الأعلى
+      }}
+    >
       {/* نموذج التسجيل */}
-      <div className="flex flex-col items-center justify-start gap-5 flex-1 max-w-md p-8 mt-[-30px]">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "10px",
+          flex: 1,
+          maxWidth: "600px",
+          padding: "2rem",
+          height: "auto", // ارتفاع طبيعي حسب المحتوى
+        }}
+      >
         <div className="mb-4 flex justify-center w-full">
           <img src={Logo} alt="logo" className="logo" />
         </div>
 
-        <h2 className="text-3xl font-bold text-black mb-1">إنشاء حساب</h2>
-        <p className="text-lg font-bold text-[#7E818C] mb-4 text-center">
+        <h2 className="text-3xl font-bold text-black mb-3">إنشاء حساب</h2>
+        <p className="text-lg font-bold text-[#7E818C] mb-5 text-center">
           ابدأ تجربتك مع نظامنا الذكي لإدارة الجيم
         </p>
 
@@ -71,8 +88,8 @@ const Signup = () => {
           className="w-full text-right text-sm font-bold"
         >
           {/* اسم المستخدم */}
-          <div className="mb-3">
-            <label className="block mb-1">اسم المستخدم</label>
+          <div className="mb-4">
+            <label className="block mb-2">اسم المستخدم</label>
             <div className="relative w-full">
               <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
               <input
@@ -203,7 +220,7 @@ const Signup = () => {
             {loading ? "جاري الإنشاء..." : "إنشاء حساب"}
           </button>
 
-          <p className="text-center text-sm text-gray-600 mt-3">
+          <p className="text-center text-sm text-gray-600 mt-3 mb-2">
             لديك حساب بالفعل؟{" "}
             <button
               type="button"
@@ -216,18 +233,16 @@ const Signup = () => {
         </form>
       </div>
 
-      {/* خلفية الواجهة */}
+      {/* خلفية البنفسجية */}
       <div
         style={{
-          width: "680px",
-          height: "904px",
-          flexShrink: 0,
           backgroundImage: `url(${SignupBg})`,
+          width: "680px",
+          height: "120vh",
           backgroundSize: "cover",
-          backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          borderRadius: "46px",
-          alignSelf: "center",
+          borderRadius: "30px",
+          marginLeft: "1px",
         }}
       ></div>
     </div>

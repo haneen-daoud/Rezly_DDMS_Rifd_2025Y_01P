@@ -1,10 +1,13 @@
 import React, { useState } from "react";
+import { useBookings } from "../BookingsContext";
 import CalenderIcon from "../../icons/calender.svg?react";
 import HourIcon from "../../icons/hour.svg?react";
 import MembersIcon from "../../icons/members.svg?react";
 import ShareIcon from "../../icons/share.svg?react";
 import DeleteIcon from "../../icons/delete.svg?react";
 import EditIcon from "../../icons/address.svg?react";
+import DetailsIcon from "../../icons/circle-arrow-left.svg?react";
+
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import { deleteBookingAPI } from "../../api/bookingsApi";
 import { toast } from "react-toastify";
@@ -24,32 +27,90 @@ export default function BookingCard({
   onChange,
 }) {
   if (!bookingGroup.length) return null;
+  const { role } = useBookings();
+  const isAdmin = (role || "").toLowerCase() === "admin";
 
-  // أول حجز كممثل للجروب
+  // 🔹 أول حجز كممثل للجروب (للتفاصيل العامة)
   const booking = bookingGroup[0];
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   /* ==========================
-      معالجة البيانات من الباك الجديد
+      استخراج أقرب موعد قادم
+  =========================== */
+  const allSchedules = bookingGroup.flatMap((b) =>
+    (b.schedules || []).map((s) => ({
+      parentId: b._id,
+      service: b.service,
+      coach: s.coach || b.coach,
+      location: s.location || b.location,
+      maxMembers: s.maxMembers || b.maxMembers,
+      members: s.members || b.members || [],
+      membersCount: s.members?.length || b.membersCount || 0,
+      timeStart: s.timeStart,
+      timeEnd: s.timeEnd,
+      date: s.date ? new Date(s.date) : null,
+    }))
+  );
+
+  const today = new Date();
+  const upcomingSchedule =
+    allSchedules
+      .filter((s) => s.date && s.date >= today)
+      .sort((a, b) => a.date - b.date)[0] ||
+    allSchedules.sort((a, b) => b.date - a.date)[0]; // fallback لأقرب مضى
+
+  const upcomingDateLabel = upcomingSchedule?.date
+    ? upcomingSchedule.date.toLocaleDateString("ar-EG", {
+        day: "numeric",
+        month: "long",
+      })
+    : "غير محدد";
+
+  // 🟣 استخراج اسم المدرب الصحيح
+  let coachName = "مدرب غير معروف";
+  if (upcomingSchedule?.coach) {
+    if (typeof upcomingSchedule.coach === "object") {
+      coachName =
+        upcomingSchedule.coach.name ||
+        `${upcomingSchedule.coach.firstName || ""} ${
+          upcomingSchedule.coach.lastName || ""
+        }`.trim() ||
+        "مدرب غير معروف";
+    } else if (typeof upcomingSchedule.coach === "string") {
+      // 🟢 نحاول نجيب الاسم من الحجز الأصلي لو المدرب جاي كـ ID
+      const foundCoach = booking.coachList?.find?.(
+        (c) =>
+          c.id === upcomingSchedule.coach || c._id === upcomingSchedule.coach
+      );
+      coachName =
+        foundCoach?.name ||
+        `${foundCoach?.firstName || ""} ${foundCoach?.lastName || ""}`.trim() ||
+        booking.coach?.name ||
+        "مدرب غير معروف";
+    }
+  }
+
+  const timeStart = upcomingSchedule?.timeStart || "غير محدد";
+  const timeEnd = upcomingSchedule?.timeEnd || "";
+  const membersCount = upcomingSchedule?.membersCount || 0;
+  const maxMembers = upcomingSchedule?.maxMembers || 0;
+  const membersList = upcomingSchedule?.members || [];
+
+  /* ==========================
+      بيانات الحجز الكامل
   =========================== */
   const schedules = booking.schedules || [];
   const firstSchedule = schedules[0] || {};
 
-  // 🗓️ التاريخ
   const startDate = booking.startDate
     ? new Date(booking.startDate)
     : firstSchedule.date
     ? new Date(firstSchedule.date)
     : null;
 
-  // 🕓 الوقت
-  const timeStart = firstSchedule.timeStart || "غير محدد";
-  const timeEnd = firstSchedule.timeEnd || "";
-
-  // 🗓️ الأيام (dayOfWeek)
   const dayNames = [
     "الأحد",
     "الإثنين",
@@ -59,6 +120,7 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
     "الجمعة",
     "السبت",
   ];
+
   const repeatDays =
     schedules.length > 0
       ? Array.from(
@@ -105,7 +167,7 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   } else if (["completed", "منتهي"].includes(booking.status)) {
     statusText = "منتهي";
     statusColor = "bg-gray-100 text-gray-700";
-  } else if (booking.membersCount >= booking.maxMembers) {
+  } else if (membersCount >= maxMembers && maxMembers !== 0) {
     statusText = "ممتلئ";
     statusColor = "bg-blue-100 text-blue-700";
   }
@@ -114,15 +176,10 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   return (
     <div className="w-full max-w-[370px] rounded-[16px] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] p-4 flex flex-col justify-between transition-transform duration-300 hover:scale-[1.03] hover:shadow-[0_4px_12px_rgba(0,0,0,0.25)] relative z-0">
-
-      {/* 🔹 صورة المدرب */}
-      {booking.coach?.image && (
-        <img
-          src={booking.coach.image}
-          alt={booking.coach.name}
-          className="absolute top-3 left-3 w-10 h-10 rounded-full object-cover border-2 border-white shadow-md"
-        />
-      )}
+      {/* 🟣 الموعد القادم */}
+      <div className="absolute top-0 left-0 bg-[var(--color-purple)] text-white text-[14px] px-4 py-1 rounded-tl-[16px] font-semibold min-w-[160px] text-center">
+        الموعد القادم {upcomingDateLabel}
+      </div>
 
       {/* العنوان والمدرب */}
       <div>
@@ -132,9 +189,7 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
           </h3>
           <div className="w-6 h-6"></div>
         </div>
-        <p className="text-sm text-gray-600">
-          {booking.coach?.name || "لا يوجد مدرب"}
-        </p>
+        <p className="text-sm text-gray-600">{coachName}</p>
       </div>
 
       {/* الأيام والتاريخ */}
@@ -145,7 +200,7 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
         </div>
 
         <div className="flex gap-2">
-          {repeatDays.slice(0, 3).map((d, i) => (
+          {repeatDays.slice(0, 2).map((d, i) => (
             <span
               key={i}
               className="px-3 py-1 rounded-full text-xs font-semibold"
@@ -183,15 +238,12 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-2">
           <MembersIcon className="w-6 h-6 text-[var(--color-purple)]" />
-          {/* العدد */}
           <span className="text-sm font-semibold text-gray-700">
-            {booking.membersCount}/{booking.maxMembers || firstSchedule.maxMembers || 0}
-
+            {membersCount}/{maxMembers}
           </span>
 
-          {/* صور المشتركين */}
           <div className="flex -space-x-2">
-            {(booking.members || []).slice(0, 3).map((m, i) => (
+            {membersList.slice(0, 3).map((m, i) => (
               <div key={i} className="relative group">
                 <img
                   src={m.image || "/default-user.jpg"}
@@ -205,9 +257,9 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
                 )}
               </div>
             ))}
-            {booking.members?.length > 3 && (
+            {membersList.length > 3 && (
               <span className="text-xs text-gray-500 ml-1">
-                +{booking.members.length - 3}
+                +{membersList.length - 3}
               </span>
             )}
           </div>
@@ -222,8 +274,9 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
       {/* الأزرار */}
       <div className="mt-4 flex items-center justify-between gap-2">
-        <button className="flex-1 bg-[#F4F4F4] text-[#000] text-sm font-semibold py-2 rounded-[12px] hover:bg-gray-200 transition">
-          عرض التفاصيل
+        <button className="flex-1 flex items-center justify-center gap-2 bg-[#F4F4F4] text-[#000] text-sm font-semibold py-2 rounded-[12px] hover:bg-gray-200 transition">
+          <span>عرض التفاصيل</span>
+          <DetailsIcon className="w-4 h-4 text-[var(--color-purple)]" />
         </button>
 
         <button
@@ -237,26 +290,23 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
           <ShareIcon className="w-5 h-5 text-[#000]" />
         </button>
 
-        {/* النقاط الثلاث */}
         <div className="relative">
           <button
-  onClick={(e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMenuPosition({
-      top: rect.bottom + 12,
-      left: rect.left - 100,
-    });
-    setOpenMenu(openMenu === index ? null : index);
-  }}
-  className="w-10 h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
->
-  <span className="text-xl leading-none text-[#000]">⋯</span>
-</button>
-
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setMenuPosition({
+                top: rect.bottom + 12,
+                left: rect.left - 100,
+              });
+              setOpenMenu(openMenu === index ? null : index);
+            }}
+            className="w-10 h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
+          >
+            <span className="text-xl leading-none text-[#000]">⋯</span>
+          </button>
 
           {openMenu === index && (
-  <div className="absolute bg-white rounded-lg flex flex-col z-[9999] shadow-lg border border-[#7E818C66] p-2 left-[-100px] top-[calc(100%+12px)] w-[174px]">
-
+            <div className="absolute bg-white rounded-lg flex flex-col z-[9999] shadow-lg border border-[#7E818C66] p-2 left-[-100px] top-[calc(100%+12px)] w-[174px]">
               <button
                 onClick={() => {
                   window.dispatchEvent(
@@ -275,16 +325,18 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
                 تعديل الحجز
               </button>
 
-              <button
-                onClick={() => {
-                  setShowDeleteModal(true);
-                  setOpenMenu(null);
-                }}
-                className="flex items-center gap-2 text-right text-[14px] font-semibold text-red-500 hover:text-red-700"
-              >
-                <DeleteIcon className="w-4 h-4" />
-                حذف الحجز
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(true);
+                    setOpenMenu(null);
+                  }}
+                  className="flex items-center gap-2 text-right text-[14px] font-semibold text-red-500 hover:text-red-700"
+                >
+                  <DeleteIcon className="w-4 h-4" />
+                  حذف الحجز
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -292,29 +344,28 @@ const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
       {/* ✅ مودال الحذف */}
       {showDeleteModal &&
-  ReactDOM.createPortal(
-    <ConfirmDeleteModal
-      event={booking}
-      isLoading={deleting}
-      onCancel={() => setShowDeleteModal(false)}
-      onConfirm={async () => {
-        try {
-          setDeleting(true);
-          await deleteBookingAPI(booking._id);
-          toast.success("تم حذف الحجز ✅");
-          setShowDeleteModal(false);
-          onChange?.();
-        } catch (err) {
-          console.error(err);
-          toast.error("حدث خطأ أثناء الحذف");
-        } finally {
-          setDeleting(false);
-        }
-      }}
-    />,
-    document.body
-  )}
-
+        ReactDOM.createPortal(
+          <ConfirmDeleteModal
+            event={booking}
+            isLoading={deleting}
+            onCancel={() => setShowDeleteModal(false)}
+            onConfirm={async () => {
+              try {
+                setDeleting(true);
+                await deleteBookingAPI(booking._id);
+                toast.success("تم حذف الحجز ✅");
+                setShowDeleteModal(false);
+                onChange?.();
+              } catch (err) {
+                console.error(err);
+                toast.error("حدث خطأ أثناء الحذف");
+              } finally {
+                setDeleting(false);
+              }
+            }}
+          />,
+          document.body
+        )}
     </div>
   );
 }

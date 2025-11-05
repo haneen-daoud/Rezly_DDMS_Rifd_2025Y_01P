@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from "react";
+import HourIcon from "../../icons/hour.svg?react";
 
 const TimeRangePicker = ({
   startTime: initialStart,
   endTime: initialEnd,
   onChange,
   variant = "event",
+  showIcons = false,
+  isAddMode = false,
 }) => {
   const [startTime, setStartTime] = useState(initialStart || "08:00");
   const [endTime, setEndTime] = useState(initialEnd || "09:00");
 
-  // 👇 لتحديد إذا المستخدم غيّر النهاية يدويًا
+  // لتحديد إذا المستخدم غيّر النهاية يدويًا
   const [userChangedEnd, setUserChangedEnd] = useState(false);
 
-  // تحديث النهاية تلقائيًا ساعة بعد البداية (إذا المستخدم ما غيّرها)
+  // تحديث النهاية تلقائيًا ساعة بعد البداية (فقط عند الإنشاء الجديد)
   useEffect(() => {
-    if (!userChangedEnd && startTime) {
+    const isNewBooking =
+      (!initialStart || initialStart === "08:00") &&
+      (!initialEnd || initialEnd === "09:00");
+
+    if (isNewBooking && !userChangedEnd && startTime) {
       const [hour, minute] = startTime.split(":").map(Number);
       let endHour = hour + 1;
       if (endHour >= 24) endHour = 23;
@@ -27,7 +34,25 @@ const TimeRangePicker = ({
     }
   }, [startTime]);
 
-  // تمرير القيم للأب
+  // منع النهاية أن تكون قبل البداية
+  useEffect(() => {
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    const startMins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+
+    if (endMins <= startMins) {
+      const newEndMins = startMins + 60; // زيدي ساعة
+      const newEndHour = Math.floor(newEndMins / 60);
+      const newEndMin = newEndMins % 60;
+      const newEnd = `${String(newEndHour).padStart(2, "0")}:${String(
+        newEndMin
+      ).padStart(2, "0")}`;
+
+      setEndTime(newEnd);
+    }
+  }, [startTime, endTime]);
+
   useEffect(() => {
     onChange({ start: startTime, end: endTime });
   }, [startTime, endTime]);
@@ -49,36 +74,48 @@ const TimeRangePicker = ({
   };
 
   const options = generateOptions();
-
   const borderColor =
     variant === "booking" ? "border-black/10" : "border-[#7E818C]";
 
-  // 👇 تحديد إذا الوقت افتراضي (للون الرمادي)
+  const hasInitialValues = Boolean(initialStart || initialEnd);
+
   const isDefault =
-    startTime === "08:00" && endTime === "09:00" && !userChangedEnd;
+    isAddMode &&
+    startTime === "08:00" &&
+    endTime === "09:00" &&
+    !userChangedEnd;
 
   return (
     <div className="flex items-center gap-1 h-10">
-
       {/* وقت البداية */}
-      <select
-  value={startTime}
-  onChange={(e) => {
-    setStartTime(e.target.value);
-  }}
-  className={`h-10 pr-2 pl-2 w-full rounded-md border ${borderColor} focus:outline-none appearance-none font-normal ${
-    isDefault ? "text-gray-400" : "text-black"
-  }`}
->
+      <div className="relative w-full">
+        {showIcons && (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--color-purple)]">
+            <HourIcon className="w-5 h-5 text-[var(--color-purple)]" />
+          </span>
+        )}
+        <select
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          className={`h-10 w-full rounded-md border ${borderColor} pr-${
+            showIcons ? 8 : 2
+          } pl-2 focus:outline-none appearance-none ${
+            isDefault
+              ? "text-gray-400 font-normal text-[14px]"
+              : variant === "event"
+              ? "font-bold text-[14px] text-[#000]"
+              : "font-normal text-[14px] text-[#000]"
+          }`}
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-
-     <svg
+      <svg
         width="70"
         height="70"
         viewBox="0 0 30 30"
@@ -92,23 +129,35 @@ const TimeRangePicker = ({
       </svg>
 
       {/* وقت النهاية */}
-      <select
-  value={endTime}
-  onChange={(e) => {
-    setEndTime(e.target.value);
-    setUserChangedEnd(true);
-  }}
-  className={`h-10 pr-2 pl-2 w-full rounded-md border ${borderColor} focus:outline-none appearance-none font-normal ${
-    isDefault ? "text-gray-400" : "text-black"
-  }`}
->
-
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
+      <div className="relative w-full">
+        {showIcons && (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--color-purple)]">
+            <HourIcon className="w-5 h-5 text-[var(--color-purple)]" />
+          </span>
+        )}
+        <select
+          value={endTime}
+          onChange={(e) => {
+            setEndTime(e.target.value);
+            setUserChangedEnd(true);
+          }}
+          className={`h-10 w-full rounded-md border ${borderColor} pr-${
+            showIcons ? 8 : 2
+          } pl-2 focus:outline-none appearance-none ${
+            isDefault
+              ? "text-gray-400 font-normal text-[14px]"
+              : variant === "event"
+              ? "font-bold text-[13px] text-[#000]"
+              : "font-normal text-[14px] text-[#000]"
+          }`}
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import MiniCalender from "../../../components/MiniCalender/MiniCalender";
 import TimeRangePicker from "../../../components/common/TimeRangePicker";
 import ReminderSelector from "../../../components/common/ReminderSelector";
-import calenderIcon from "../../../icons/calender.svg";
+import CalenderIcon from "../../../icons/calender.svg?react";
 import downarrowIcon from "../../../icons/downarrow.svg";
 import durationIcon from "../../../icons/duration.svg";
 import DeleteIcon from "../../../icons/Delete.svg?react";
@@ -13,43 +13,30 @@ export default function Step2Booking({
   errors,
   setErrors,
   isEditing,
-  isIndividual = false, // ← بيجي من AddBookingModal لتحديد نوع التعديل
+  isIndividual = false,
 }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [openDuration, setOpenDuration] = useState(false);
+  const [openUpDuration, setOpenUpDuration] = useState(false);
   const [daysSchedule, setDaysSchedule] = useState(
     formData.daysSchedule?.length ? formData.daysSchedule : []
   );
 
   useEffect(() => {
-  console.log("🟡 [Step2Booking] formData.daysSchedule عند الدخول:", formData.daysSchedule);
-  console.log("🟡 [Step2Booking] state daysSchedule قبل التحديث:", daysSchedule);
-}, [formData]);
-
-  // 🟣 كل ما يتغير formData.daysSchedule، نحدّث state الداخلي
-// ✅ إعادة تهيئة الخطوة كل ما يتغير formData بالكامل (مش بس daysSchedule)
-// ✅ يشغل مرة واحدة عند الدخول أو لو تغيّر daysSchedule من الخارج
-useEffect(() => {
-  if (Array.isArray(formData?.daysSchedule)) {
-    setDaysSchedule(formData.daysSchedule);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [formData.daysSchedule]);
-
-// ✅ لما نغيّر داخليًا، نحدّث formData بدون حلقة
-useEffect(() => {
-  setFormData((prev) => {
-    if (JSON.stringify(prev.daysSchedule) === JSON.stringify(daysSchedule)) {
-      return prev; // ما نحدّث لو ما تغيّر فعليًا
+    if (Array.isArray(formData?.daysSchedule)) {
+      setDaysSchedule(formData.daysSchedule);
     }
-    return { ...prev, daysSchedule };
-  });
-}, [daysSchedule]);
+  }, [formData.daysSchedule]);
 
+  useEffect(() => {
+    setFormData((prev) => {
+      if (JSON.stringify(prev.daysSchedule) === JSON.stringify(daysSchedule)) {
+        return prev;
+      }
+      return { ...prev, daysSchedule };
+    });
+  }, [daysSchedule]);
 
-
-
-  // ✅ خريطة اليوم العربي الكاملة لتوحيد العرض والقيمة
   const allDays = [
     { short: "سبت", full: "السبت" },
     { short: "أحد", full: "الأحد" },
@@ -98,18 +85,42 @@ useEffect(() => {
   const dateDisplay =
     formData.dateOnly || (formData.start ? formData.start.split("T")[0] : "");
 
-useEffect(() => {
-  // ✅ أول ما يتغير formData، نحدّث daysSchedule والتواريخ داخلياً
-  if (formData) {
-    setDaysSchedule(formData.daysSchedule || []);
-  }
-}, [formData]);
+  useEffect(() => {
+    // أول ما يتغير formData، نحدّث daysSchedule والتواريخ داخلياً
+    if (formData) {
+      setDaysSchedule(formData.daysSchedule || []);
+    }
+  }, [formData]);
 
+  // إغلاق القوائم عند الضغط خارجها
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const isInsideCalendar = e.target.closest(".calendar-popup");
+      const isInsideDuration = e.target.closest(".duration-dropdown");
+      const isInsideReminder = e.target.closest(".reminder-dropdown");
+      const isInsideStep2 = e.target.closest(".dropdown-step2");
+
+      if (
+        !isInsideCalendar &&
+        !isInsideDuration &&
+        !isInsideReminder &&
+        !isInsideStep2
+      ) {
+        setShowCalendar(false);
+        setOpenDuration(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {}, [isEditing]);
 
   return (
     <div className="flex flex-col gap-4 w-full items-center font-bold text-black text-[14px]">
-      {/* 📅 تاريخ البدء */}
-      <div className="w-[344px]">
+      {/* تاريخ البدء */}
+      <div className="relative w-[344px] flex flex-col dropdown-step2">
         <label className="block font-bold text-sm mb-2">
           تاريخ البدء <span className="text-red-500">*</span>
         </label>
@@ -119,11 +130,10 @@ useEffect(() => {
               errors?.dateOnly ? "border-red-500" : "border-gray-300"
             }`}
           >
-            <img
-              src={calenderIcon}
-              alt="calender"
-              className="absolute right-2"
-            />
+            <span className="absolute right-2 top-1/2 -translate-y-1/2">
+              <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
+            </span>
+
             <input
               type="text"
               value={dateDisplay}
@@ -135,6 +145,8 @@ useEffect(() => {
             {showCalendar && (
               <div className="absolute top-full left-0 mt-2 z-30 w-60">
                 <MiniCalender
+                  variant="step2"
+                  hideTodayHighlight={false}
                   currentDate={
                     formData.dateOnly ? new Date(formData.dateOnly) : new Date()
                   }
@@ -149,12 +161,14 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* ⌛ مدة الاشتراك */}
+      {/* مدة الاشتراك */}
       {!isIndividual && (
-        <div className="relative w-[344px]">
+        <div className="relative w-[344px] dropdown-step2">
           <label className="block font-bold text-sm mb-2">
             مدة الاشتراك <span className="text-red-500">*</span>
           </label>
+
+          {/* الحقل الرئيسي */}
           <div
             onClick={() => setOpenDuration(!openDuration)}
             className={`w-full h-10 rounded-md flex items-center justify-between px-2 cursor-pointer border ${
@@ -166,59 +180,84 @@ useEffect(() => {
             <span
               className={`h-10 w-full flex items-center pl-2 ${
                 formData.subscriptionDuration ? "text-black" : "text-gray-400"
-              } font-normal`}
+              } font-normal text-[14px]`}
             >
               {formData.subscriptionDuration || "اختر مدة الاشتراك"}
             </span>
+
             <img
               src={downarrowIcon}
               alt="downarrow"
               className="absolute left-2 w-4 h-4 pointer-events-none"
             />
           </div>
+
+          {/* القائمة المنسدلة */}
           {openDuration && (
-            <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-300 mt-1 shadow z-50">
-              {durationOptions.map((option, idx) => {
-                const selected = formData.subscriptionDuration === option;
-                return (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
-                    onClick={() => {
-                      setFormData({
-                        ...formData,
-                        duration: option,
-                        subscriptionDuration: option,
-                      });
-                      setOpenDuration(false);
-                      if (errors?.subscriptionDuration)
-                        setErrors((prev) => ({
-                          ...prev,
-                          subscriptionDuration: null,
-                        }));
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={durationIcon}
-                        alt="duration"
-                        className="w-4 h-4"
-                      />
-                      <span
-                        className={
+            <div
+              className={`absolute left-0 w-full bg-white rounded-[16px] border border-gray-300 shadow-lg z-50 ${
+                openUpDuration
+                  ? "bottom-[calc(100%-28px)] mb-1"
+                  : "top-full mt-1"
+              }`}
+            >
+              <div className="p-3">
+                {durationOptions.map((option, idx) => {
+                  const selected = formData.subscriptionDuration === option;
+                  return (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between h-[36px] px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
+                      onClick={() => {
+                        setFormData({
+                          ...formData,
+                          duration: option,
+                          subscriptionDuration: option,
+                        });
+                        setOpenDuration(false);
+                        if (errors?.subscriptionDuration)
+                          setErrors((prev) => ({
+                            ...prev,
+                            subscriptionDuration: null,
+                          }));
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={durationIcon}
+                          alt="duration"
+                          className="w-4 h-4 text-[var(--color-purple)]"
+                        />
+                        <span
+                          className={`text-[12px] ${
+                            selected
+                              ? "font-semibold text-[#000]"
+                              : "font-normal text-[#000]"
+                          }`}
+                        >
+                          {option}
+                        </span>
+                      </div>
+
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                           selected
-                            ? "font-bold text-black"
-                            : "font-normal text-gray-800"
-                        }
+                            ? "border-[var(--color-purple)]"
+                            : "border-gray-400"
+                        }`}
                       >
-                        {option}
-                      </span>
+                        {selected && (
+                          <div className="w-2 h-2 rounded-full bg-[var(--color-purple)]"></div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
+
+          {/* رسالة الخطأ */}
           {errors?.subscriptionDuration && (
             <p className="text-red-500 text-xs mt-1">
               {errors.subscriptionDuration}
@@ -227,117 +266,120 @@ useEffect(() => {
         </div>
       )}
 
-      {/* 🗓️ جدول الأيام أو تعديل فردي */}
-<div className="w-[344px] flex flex-col gap-3">
-  {!isIndividual && (
-    <div className="flex items-center justify-between mb-1">
-      <label className="block font-bold text-sm">
-        جدول المواعيد <span className="text-red-500">*</span>
-      </label>
+      {/* جدول الأيام أو تعديل فردي */}
+      <div className="w-[344px] flex flex-col gap-3 ">
+        {!isIndividual && (
+          <div className="flex items-center justify-between mb-1">
+            <label className="block font-bold text-sm">
+              جدول المواعيد <span className="text-red-500">*</span>
+            </label>
 
-      <button
-        onClick={handleAddDay}
-        type="button"
-        className="text-[var(--color-purple)] font-semibold text-sm flex items-center gap-1 hover:underline"
-      >
-        <span className="text-lg leading-none">＋</span>
-        <span>إضافة يوم جديد</span>
-      </button>
-    </div>
-  )}
-
-  {isIndividual && (
-    <label className="block font-bold text-sm mb-1">
-      تعديل وقت الحجز <span className="text-red-500">*</span>
-    </label>
-  )}
-
-  {/* ✅ تعديل حجز فردي */}
-  {isIndividual ? (
-    <div className="flex flex-col gap-2">
-      <TimeRangePicker
-        startTime={formData.start?.split("T")[1]?.slice(0, 5) || "08:00"}
-        endTime={formData.end?.split("T")[1]?.slice(0, 5) || "09:00"}
-        onChange={({ start, end }) => {
-          const dateBase =
-            formData.dateOnly || new Date().toISOString().split("T")[0];
-          setFormData({
-            ...formData,
-            start: `${dateBase}T${start}`,
-            end: `${dateBase}T${end}`,
-          });
-        }}
-        variant="booking"
-      />
-    </div>
-  ) : (
-    <>
-      {daysSchedule.length === 0 ? (
-        <p className="text-gray-400 text-sm text-center py-3">
-          لم تتم إضافة أي يوم بعد
-        </p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {daysSchedule.map((row, index) => (
-            <div
-              key={index}
-              className="flex items-center gap-2 text-[13px] font-normal"
+            <button
+              onClick={handleAddDay}
+              type="button"
+              className="text-[var(--color-purple)] font-semibold text-sm flex items-center gap-1 hover:underline"
             >
-              {/* اليوم */}
-              <select
-                value={row.day}
-                onChange={(e) => handleChange(index, "day", e.target.value)}
-                className="flex-1 h-9 rounded-md border border-gray-300 px-2 text-sm focus:outline-none"
-              >
-                <option value="">اختر اليوم</option>
-                {allDays.map((d) => (
-                  <option key={d.short} value={d.short}>
-                    {d.full}
-                  </option>
+              <span className="text-lg leading-none">＋</span>
+              <span>إضافة يوم جديد</span>
+            </button>
+          </div>
+        )}
+
+        {isIndividual && (
+          <label className="block font-bold text-sm mb-1">
+            تعديل وقت الحجز <span className="text-red-500">*</span>
+          </label>
+        )}
+
+        {/* تعديل حجز فردي */}
+        {isIndividual ? (
+          <div className="flex flex-col gap-2">
+            <TimeRangePicker
+              startTime={formData.start?.split("T")[1]?.slice(0, 5) || "08:00"}
+              endTime={formData.end?.split("T")[1]?.slice(0, 5) || "09:00"}
+              onChange={({ start, end }) => {
+                const dateBase =
+                  formData.dateOnly || new Date().toISOString().split("T")[0];
+                setFormData({
+                  ...formData,
+                  start: `${dateBase}T${start}`,
+                  end: `${dateBase}T${end}`,
+                });
+              }}
+              variant="booking"
+            />
+          </div>
+        ) : (
+          <>
+            {daysSchedule.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-3">
+                لم تتم إضافة أي يوم بعد
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {daysSchedule.map((row, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 text-[13px] font-normal"
+                  >
+                    {/* اليوم */}
+                    <select
+                      value={row.day}
+                      onChange={(e) =>
+                        handleChange(index, "day", e.target.value)
+                      }
+                      className="flex-1 h-9 rounded-md border border-gray-300 px-2 text-sm focus:outline-none"
+                    >
+                      <option value="">اختر اليوم</option>
+                      {allDays.map((d) => (
+                        <option key={d.short} value={d.short}>
+                          {d.full}
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* الوقت */}
+                    <div className="flex-[1.5]">
+                      <TimeRangePicker
+                        isAddMode={!isEditing}
+                        startTime={row.start}
+                        endTime={row.end}
+                        onChange={({ start, end }) => {
+                          handleChange(index, "start", start);
+                          handleChange(index, "end", end);
+                        }}
+                        variant="booking"
+                      />
+                    </div>
+
+                    {/* حذف اليوم */}
+                    <button
+                      onClick={() => handleDeleteDay(index)}
+                      className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-md"
+                    >
+                      <DeleteIcon className="w-4 h-4 text-red-500" />
+                    </button>
+                  </div>
                 ))}
-              </select>
-
-              {/* الوقت */}
-              <div className="flex-[1.5]">
-                <TimeRangePicker
-                  startTime={row.start}
-                  endTime={row.end}
-                  onChange={({ start, end }) => {
-                    handleChange(index, "start", start);
-                    handleChange(index, "end", end);
-                  }}
-                  variant="booking"
-                />
               </div>
+            )}
+          </>
+        )}
+      </div>
 
-              {/* حذف اليوم */}
-              <button
-                onClick={() => handleDeleteDay(index)}
-                className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-md"
-              >
-                <DeleteIcon className="w-4 h-4 text-red-500" />
-              </button>
-            </div>
-          ))}
+      {/* التذكير */}
+      <div className="w-[344px] mt-3 dropdown-step2 reminder-dropdown">
+        <div className="relative w-full">
+          <ReminderSelector
+            selectedReminders={formData.reminders || []}
+            setSelectedReminders={(newReminders) => {
+              setFormData((prev) => ({
+                ...prev,
+                reminders: newReminders,
+              }));
+            }}
+          />
         </div>
-      )}
-    </>
-  )}
-</div>
-
-
-      {/* 🔔 التذكير */}
-      <div className="w-[344px] mt-3">
-        <ReminderSelector
-  selectedReminders={formData.reminders || []}
-  setSelectedReminders={(newReminders) => {
-    setFormData((prev) => ({
-      ...prev,
-      reminders: newReminders,
-    }));
-  }}
-/>
-
       </div>
     </div>
   );

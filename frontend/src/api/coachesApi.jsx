@@ -5,8 +5,13 @@ const BASE_URL = "https://rezly-ddms-rifd-2025y-01p.onrender.com";
 // ✅ نستخدم التوكن من localStorage بدل .env
 export const getAllCoachesAPI = async () => {
   try {
-    const token =
-      localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
+    // ✅ قراءة ذكية للتوكن (تدعم authToken أو token من Login)
+const token =
+  localStorage.getItem("authToken") ||
+  (localStorage.getItem("token")
+    ? `Bearer ${localStorage.getItem("token")}`
+    : import.meta.env.VITE_API_TOKEN) ||
+  "";
 
     const res = await axios.get(`${BASE_URL}/auth/getAllEmployees?role=Coach`, {
       headers: {
