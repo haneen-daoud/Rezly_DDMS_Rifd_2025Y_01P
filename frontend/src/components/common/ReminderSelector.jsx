@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import DownArrowIcon from "../../icons/downarrow.svg?react";
 import MuteIcon from "../../icons/mute.svg?react";
 import NotificationIcon from "../../icons/notification.svg?react";
@@ -11,8 +11,32 @@ const ReminderSelector = ({
   borderStyle = "#D1D5DB",
   placeholderColor = "text-gray-400",
   variant = "booking",
+  showLabel = true,
 }) => {
   const [openReminder, setOpenReminder] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const ref = useRef(null);
+
+  // إغلاق عند الضغط خارجها
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpenReminder(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // تحديد الاتجاه (لفوق أو لتحت)
+  useEffect(() => {
+    if (openReminder && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      setOpenUp(spaceBelow < 200 && spaceAbove > spaceBelow);
+    }
+  }, [openReminder]);
 
   const options = [
     { value: "0", label: "عدم التذكير", icon: MuteIcon },
@@ -28,11 +52,13 @@ const ReminderSelector = ({
           .map((r) => options.find((o) => o.value === r)?.label || r)
           .join(", ");
 
-  const displayColor = "text-black";
-
   return (
-    <div className="relative w-full">
-      <label className="block font-bold text-sm mb-2">وقت إرسال التذكير</label>
+    <div ref={ref} className="relative w-full">
+      {showLabel && (
+        <label className="block font-bold text-sm mb-2">
+          وقت إرسال التذكير
+        </label>
+      )}
 
       {/* الحقل الرئيسي */}
       <div
@@ -44,15 +70,33 @@ const ReminderSelector = ({
           {showIconInInput && selectedReminders.length > 0 && (
             <NotificationIcon className="w-4 h-4 text-[var(--color-purple)]" />
           )}
-          <span className={`${displayColor} font-normal`}>{displayLabel}</span>
+          <span
+            className={`${
+              selectedReminders.length > 0 || displayLabel === "عدم التذكير"
+                ? variant === "event"
+                  ? "font-bold text-[14px] text-[#000]"
+                  : "font-normal text-[14px] text-[#000]"
+                : "text-gray-400 font-normal text-[14px]"
+            }`}
+          >
+            {displayLabel}
+          </span>
         </div>
         <DownArrowIcon className="w-4 h-4 text-[var(--color-purple)]" />
       </div>
 
-      {/* قائمة الخيارات Scrollable */}
+      {/* القائمة */}
       {openReminder && (
-        <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-[16px] mt-1 z-50 shadow-lg">
-          <div className="max-h-[90px] overflow-y-auto p-4 box-border">
+        <div
+          className={`absolute left-0 w-full bg-white border border-gray-300 rounded-[16px] shadow-lg z-50 ${
+            openUp
+              ? showLabel
+                ? "bottom-[calc(100%-28px)] mb-1"
+                : "bottom-full mb-1"
+              : "top-full mt-1"
+          }`}
+        >
+          <div className="max-h-[160px] overflow-y-auto p-3 box-border">
             {options.map((option) => {
               const isSelected =
                 (option.value === "0" && selectedReminders.length === 0) ||
@@ -62,15 +106,14 @@ const ReminderSelector = ({
               return (
                 <div
                   key={option.value}
-                  className="flex items-center justify-between h-[32px] px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
-                  onClick={() => {
+                  className="flex items-center justify-between h-[32px] px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     let updated = [...selectedReminders];
-
                     if (option.value === "0") {
                       updated = [];
                     } else {
                       updated = updated.filter((r) => r !== "0");
-
                       if (updated.includes(option.value)) {
                         updated = updated.filter((r) => r !== option.value);
                       } else {
@@ -78,23 +121,25 @@ const ReminderSelector = ({
                       }
                     }
                     setSelectedReminders(updated);
-                    setOpenReminder(false);
                   }}
                 >
                   <div className="flex items-center gap-2">
                     <Icon className="w-4 h-4 text-[var(--color-purple)]" />
-                    <span>{option.label}</span>
+                    <span
+                      className={`text-[12px] ${
+                        isSelected
+                          ? "font-semibold text-black"
+                          : "font-normal text-black"
+                      }`}
+                    >
+                      {option.label}
+                    </span>
                   </div>
-
                   <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                      isSelected
-                        ? "border-[var(--color-purple)]"
-                        : "border-gray-400"
-                    }`}
+                    className={`w-4 h-4 rounded-full border-2 border-[var(--color-purple)] flex items-center justify-center`}
                   >
                     {isSelected && (
-                      <div className="w-3 h-3 rounded-full bg-[var(--color-purple)]"></div>
+                      <div className="w-2 h-2 rounded-full bg-[var(--color-purple)]"></div>
                     )}
                   </div>
                 </div>

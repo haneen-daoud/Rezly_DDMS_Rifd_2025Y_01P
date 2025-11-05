@@ -13,20 +13,24 @@ export default function BookingsPage({ bookings: filteredBookings }) {
   const [deleteModalData, setDeleteModalData] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  {/*
   // 🟣 تحميل البيانات عند أول فتح الصفحة
   useEffect(() => {
     fetchBookings();
   }, []);
+*/}
 
   // 🌀 تحديث الحجوزات عند إضافة أو تعديل أو حذف
   const handleDataChange = () => {
     fetchBookings();
   };
 
+  {/*}
   // 🟡 مراقبة التحديثات بالكونسول (اختياري)
   useEffect(() => {
     console.log(" الحجوزات بعد التحديث:", bookings);
   }, [bookings]);
+*/}
 
   // 🔴 حذف حجز
   const handleDelete = async (booking, isGroup) => {

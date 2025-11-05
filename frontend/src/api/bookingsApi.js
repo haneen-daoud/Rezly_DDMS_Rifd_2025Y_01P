@@ -8,16 +8,23 @@ const BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   "https://rezly-ddms-rifd-2025y-01p.onrender.com/booking";
 
-const TOKEN = import.meta.env.VITE_API_TOKEN || "";
-
-//  قراءة التوكن الحالي من localStorage أو من .env
+/* ----------------------------------------------------------
+   قراءة ذكية للتوكن من localStorage أو .env
+---------------------------------------------------------- */
 function getCurrentToken() {
   const token =
-    localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
+    localStorage.getItem("authToken") ||
+    (localStorage.getItem("token")
+      ? `Bearer ${localStorage.getItem("token")}`
+      : `Bearer ${import.meta.env.VITE_API_TOKEN}`) ||
+    "";
+
   return token.startsWith("Bearer") ? token : `Bearer ${token.trim()}`;
 }
 
-//  إنشاء instance للـ axios
+/* ----------------------------------------------------------
+   إنشاء instance لـ axios
+---------------------------------------------------------- */
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -26,77 +33,64 @@ const api = axios.create({
   },
 });
 
-// تحديث الهيدر ديناميكيًا قبل كل طلب
+// ✅ تحديث الهيدر قبل كل طلب
 api.interceptors.request.use((config) => {
-  const token = getCurrentToken();
-  config.headers.Authorization = token;
+  config.headers.Authorization = getCurrentToken();
   return config;
 });
 
 /* ----------------------------------------------------------
     استخراج بيانات المستخدم من التوكن
 ---------------------------------------------------------- */
+// 🔁 استبدلي الدالة كاملة بهذا الإصدار
+// ✅ دالة قراءة المستخدم والدور من التوكن JWT مباشرة
 export async function getUserFromToken() {
   try {
-    const tokenStr = localStorage.getItem("authToken") || "";
-    const token = tokenStr.split(" ")[1];
-    if (!token) return null;
-
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const id = payload.id;
-
-    try {
-      const res = await axios.get(
-        "https://rezly-ddms-rifd-2025y-01p.onrender.com/auth/getAllEmployees",
-        {
-          headers: {
-            Authorization: tokenStr.startsWith("Bearer ")
-              ? tokenStr
-              : `Bearer ${tokenStr}`
-          }
-        }
-      );
-
-      const employees = res.data?.employees || [];
-      const found = employees.find(
-        (emp) =>
-          String(emp._id) === String(id) ||
-          String(emp.id) === String(id)
-      );
-
-      const role = found?.role || "Unknown";
-      console.log(" المستخدم الحالي:", { ...payload, role });
-      return { ...payload, role };
-    } catch (err) {
-      if (err.response?.status === 403 || err.response?.status === 401) {
-        console.log(" المستخدم الحالي: Coach (403/401)");
-        return { ...payload, role: "Coach" };
-      } else {
-        console.warn("⚠️ فشل جلب الموظفين:", err.message);
-        return { ...payload, role: "Unknown" };
-      }
+    const tokenStr =
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("token") ||
+      "";
+    if (!tokenStr) {
+      console.warn("⚠️ لا يوجد توكن في localStorage");
+      return null;
     }
+
+    // نظّفي الصيغة (لو كانت 'Bearer ...')
+    const token = tokenStr.startsWith("Bearer ")
+      ? tokenStr.split(" ")[1]
+      : tokenStr;
+
+    // فكّي الـ payload
+    const base64Payload = token.split(".")[1];
+    if (!base64Payload) {
+      console.error("❌ شكل التوكن غير صالح:", token);
+      return null;
+    }
+
+    const decoded = JSON.parse(atob(base64Payload));
+    console.log("🧩 محتوى التوكن المفكوك:", decoded);
+
+    // خدي منه المعلومات المتوفرة
+    const id =
+      decoded.id || decoded._id || decoded.userId || decoded.sub || null;
+    const role = (decoded.role || decoded.userRole || "").toLowerCase();
+
+    const user = { id, role };
+    localStorage.setItem("currentUser", JSON.stringify(user));
+    console.log("✅ المستخدم الحالي (من التوكن):", user);
+
+    return user;
   } catch (err) {
-    console.error("❌ فشل قراءة التوكن:", err);
+    console.error("❌ فشل فك التوكن:", err);
     return null;
   }
 }
 
+
+
 /* ----------------------------------------------------------
    دوال مساعدة داخلية
 ---------------------------------------------------------- */
-const getHeaders = () => {
-  const token = localStorage.getItem("accessToken");
-  return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "Content-Type": "application/json",
-    },
-  };
-};
-
-
-// تحويل الوقت إلى 12 ساعة عربية
 const convertTo12Hour = (time) => {
   if (!time) return "08:00 ص";
   const [h, m] = time.split(":").map(Number);
@@ -105,7 +99,6 @@ const convertTo12Hour = (time) => {
   return `${hour}:${String(m).padStart(2, "0")} ${period}`;
 };
 
-// تحويل أيام الأسبوع للعربية ⇄ الإنجليزية
 const daysMap = {
   أحد: "Sun",
   إثنين: "Mon",
@@ -116,7 +109,6 @@ const daysMap = {
   سبت: "Sat",
 };
 
-// تحويل مدة الاشتراك إلى صيغة السيرفر
 const durationMap = {
   أسبوع: "1week",
   أسبوعين: "2weeks",
@@ -127,7 +119,6 @@ const durationMap = {
   سنة: "1year",
 };
 
-// تحويل التذكير
 const remindersMap = {
   "0": "0",
   "30m": "30m",
@@ -135,7 +126,7 @@ const remindersMap = {
   "1d": "1d",
 };
 
-// تنسيق البيانات قبل الإرسال للسيرفر
+// تنسيق بيانات الحجز قبل الإرسال
 function formatPayload(raw) {
   const date = raw.start ? raw.start.split("T")[0] : raw.date || "";
   const recurrence = (raw.repeatDays || []).map((d) => daysMap[d] || d);
@@ -160,20 +151,19 @@ function formatPayload(raw) {
 }
 
 /* ----------------------------------------------------------
-    CRUD APIs (إنشاء / قراءة / تعديل / حذف)
+    CRUD APIs
 ---------------------------------------------------------- */
 
-// إنشاء حجز جديد (حسب الباك الجديد)
+// 🟢 إنشاء حجز جديد
 export const createBookingAPI = async (bookingData) => {
   try {
     const { data } = await api.post("/addBooking", bookingData);
     return data;
   } catch (err) {
-    handleApiError(err, "فشل إنشاء الحجز");
+    console.error("❌ فشل إنشاء الحجز:", err.response?.data || err.message);
     throw err;
   }
 };
-
 
 // 🟣 جلب جميع الحجوزات
 export async function getAllBookingsAPI() {
@@ -186,52 +176,64 @@ export async function getAllBookingsAPI() {
   }
 }
 
-// جلب حجز واحد حسب الـ ID
+// 🔵 جلب حجز واحد
 export async function getBookingByIdAPI(id) {
   try {
     const res = await api.get(`/${id}`);
     return res.data;
   } catch (err) {
     console.error("فشل جلب الحجز:", err.response?.data || err.message);
-    throw new Error(
-      err.response?.data?.message || "فشل جلب تفاصيل الحجز"
-    );
+    throw new Error(err.response?.data?.message || "فشل جلب تفاصيل الحجز");
   }
 }
 
-export const updateGeneralBookingAPI = async (id, body, mode = "") => {
-let url = `${BASE_URL}/${id}`;
-  if (mode === "updateAllSameGroup") {
-    url += "?updateAllSameGroup=true";
-  }
-  const res = await axios.put(url, body, getHeaders());
-  return res.data;
-};
-
-
-export async function updateSingleScheduleAPI(bookingId, body) {
+// 🟡 تعديل حجز كامل
+export async function updateGeneralBookingAPI(groupId, body) {
   try {
-    const token =
-      localStorage.getItem("authToken") || import.meta.env.VITE_API_TOKEN || "";
+    const token = getCurrentToken();
+    const res = await axios.put(
+      `https://rezly-ddms-rifd-2025y-01p.onrender.com/booking/${groupId}?updateAllSameGroup=true`,
+      body,
+      {
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return res.data;
+  } catch (err) {
+    console.error(
+      "❌ خطأ في updateGeneralBookingAPI:",
+      err.response?.data || err.message
+    );
+    throw err;
+  }
+}
 
-    // body لازم يحتوي على updateByDate, timeStart, timeEnd, location, ...الخ
-    const res = await api.put(`/${bookingId}`, body, {
+// 🔵 تعديل تكرار مفرد
+export async function updateSingleScheduleAPI(bookingId, body, scheduleId) {
+  try {
+    const token = getCurrentToken();
+    const url = `https://rezly-ddms-rifd-2025y-01p.onrender.com/booking/${bookingId}?scheduleId=${scheduleId}`;
+    console.log("🔹 PUT →", url);
+
+    const res = await axios.put(url, body, {
       headers: {
-        Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
+        Authorization: token,
         "Content-Type": "application/json",
       },
     });
-
+    console.log("✅ Schedule updated:", res.data);
     return res.data;
   } catch (err) {
-    console.error("❌ خطأ في updateSingleScheduleAPI:", err.response?.data || err.message);
+    console.error("❌ خطأ أثناء التعديل:", err.response?.data || err.message);
     throw err;
   }
 }
 
 
-
-// حذف حجز (واحد أو مجموعة)
+// 🔴 حذف حجز
 export async function deleteBookingAPI(id, isGroup = false) {
   try {
     const url = isGroup ? `/${id}?type=group` : `/${id}`;
@@ -239,9 +241,7 @@ export async function deleteBookingAPI(id, isGroup = false) {
     return res.data;
   } catch (err) {
     console.error("خطأ أثناء حذف الحجز:", err.response?.data || err.message);
-    throw new Error(
-      err.response?.data?.message || "فشل حذف الحجز"
-    );
+    throw new Error(err.response?.data?.message || "فشل حذف الحجز");
   }
 }
 
@@ -282,17 +282,49 @@ export async function cancelBookingAPI(bookingId) {
   }
 }
 
-// src/api/bookingsApi.js
+// جلب عدد الحجوزات
 export async function getBookingsCountAPI() {
   try {
     const res = await api.get("/all_booking");
-    return res.data.metadata?.totalResults || 0; // إذا موجود ارجع العدد، وإلا 0
+    return res.data.metadata?.totalResults || 0;
   } catch (err) {
     console.error("خطأ أثناء جلب عدد الحجوزات:", err.response?.data || err);
     throw err;
   }
 }
+/* -----------------------------------*/
 
+
+const BASE2_URL = "https://rezly-ddms-rifd-2025y-01p.onrender.com";
+
+// ✅ جلب المشتركين مع دعم البحث
+export const searchMembersAPI = async (search = "") => {
+  try {
+    const token =
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("token") ||
+      "";
+
+    const res = await axios.get(`${BASE2_URL}/auth/getAllMembers`, {
+      params: { search },
+      headers: {
+        Authorization: token.startsWith("Bearer")
+          ? token
+          : `Bearer ${token}`,
+      },
+    });
+
+    return res.data?.members || [];
+
+  } catch (err) {
+    console.error("❌ خطأ أثناء البحث عن المشتركين:", err.response?.data || err.message);
+    return [];
+  }
+};
+
+/* ----------------------------------------------------------
+   التصدير العام
+---------------------------------------------------------- */
 export default {
   createBookingAPI,
   getAllBookingsAPI,
@@ -304,5 +336,6 @@ export default {
   getBookingsCountAPI,
   getUserFromToken,
   updateSingleScheduleAPI,
-  updateGeneralBookingAPI
+  updateGeneralBookingAPI,
+  searchMembersAPI,
 };

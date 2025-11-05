@@ -4,10 +4,12 @@ import axios from "axios";
 import TimeRangePicker from "../../components/common/TimeRangePicker";
 import CoachSelector from "../../components/common/CoachSelector";
 import LocationSelector from "../../components/common/LocationSelector";
-import RepeatSelector from "../../components/common/RepeatSelector";
 import ReminderSelector from "../../components/common/ReminderSelector";
 import ColorSelector from "../../components/common/ColorSelector";
+import MaxParticipantsSelector from "../../components/common/MaxParticipantsSelector";
 import ParticipantsSelector from "../../components/common/ParticipantsSelector";
+import { getAllCoachesAPI } from "../../api/coachesApi"; // تأكدي إنه مستورد فوق
+import { updateSingleScheduleAPI } from "../../api/bookingsApi";
 
 import MembersIcon from "../../icons/members.svg?react";
 import AddCircleIcon from "../../icons/addcircle.svg?react";
@@ -15,9 +17,15 @@ import SearchIcon from "../../icons/search.svg?react";
 import MiniCalender from "../../components/MiniCalender/MiniCalender";
 import DeleteIcon from "../../icons/Delete.svg?react";
 import CloseIcon from "../../icons/close.svg";
+import AddressIcon from "../../icons/address.svg?react";
+import DiscIcon from "../../icons/disc.svg?react";
+import CalenderIcon from "../../icons/calender.svg?react";
+
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 import { toast } from "react-toastify";
 import { useBookings } from "../BookingsContext";
+import { getAllMembers } from "../../api"; // ✅ أضيفي هذا الاستيراد بالأعلى بعد axios
 
 export default function EventModal({
   booking, // ✅ استقبل الحجز مباشرة
@@ -31,91 +39,292 @@ export default function EventModal({
   const [memberSearch, setMemberSearch] = useState("");
   const [coaches, setCoaches] = useState([]);
 
-  const { bookings, setBookings } = useBookings(); // من الكونتست
+  const { bookings, setBookings, role } = useBookings(); // من الكونتست
+  const isAdmin = (role || "").toLowerCase() === "admin";
+
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const locations = ["قاعة 1", "قاعة 2", "قاعة 3", "قاعة 4"];
-  const members = ["مشترك 1", "مشترك 2", "مشترك 3", "مشترك 4", "مشترك 5"];
 
+  // تحت useState:
+  const [members, setMembers] = useState([]);
+
+  // داخل useEffect جديد:
   useEffect(() => {
-    if (!booking) return;
-
-    // لو ما في start/end نشتقهم من timeStart / timeEnd
-    if (!booking.start && booking.timeStart) {
-      const dateStr = new Date(booking.date).toISOString().split("T")[0];
-
-      const convertTime = (timeStr) => {
-        if (!timeStr) return "00:00";
-        let [time, period] = timeStr.split(" ");
-        let [hours, minutes] = time.split(":").map(Number);
-        if (period === "م" && hours < 12) hours += 12;
-        if (period === "ص" && hours === 12) hours = 0;
-        return `${hours.toString().padStart(2, "0")}:${minutes
-          .toString()
-          .padStart(2, "0")}`;
-      };
-
-      const start = convertTime(booking.timeStart);
-      const end = convertTime(booking.timeEnd);
-
-      setBooking({
-        ...booking,
-        start: `${dateStr}T${start}`,
-        end: `${dateStr}T${end}`,
-        repeat: booking.recurrence ? "weekly" : "none",
-        days: booking.recurrence || [],
-      });
-    }
-  }, [booking]);
-
-  console.log("Event is: ", booking);
-  // جلب المدربين من الباك
-  useEffect(() => {
-    const fetchCoaches = async () => {
+    const fetchMembersSmart = async () => {
       try {
-        const token = import.meta.env.VITE_API_TOKEN;
-        const res = await axios.get(
-          "https://rezly-ddms-rifd-2025y-01p.onrender.com/auth/getAllEmployees",
-          { headers: { Authorization: `Bearer ${token}` } }
+        // 🟣 التوكن من اللوكل ستورج
+        const token =
+          localStorage.getItem("authToken") ||
+          localStorage.getItem("token") ||
+          "";
+
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        };
+
+        // 🟣 أول صفحة فورية
+        const firstRes = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL2}/auth/getAllMembers?page=1`,
+          { headers }
         );
-        const coachList = res.data.employees
-          .filter((emp) => emp.role === "Coach")
-          .map((emp) => ({
-            id: emp._id,
-            name: `${emp.firstName} ${emp.lastName}`,
-          }));
-        setCoaches(coachList);
+        const firstList = firstRes.data?.members || firstRes.data?.data || [];
+
+        const formattedFirst = firstList.map((m) => ({
+          id: m._id,
+          name:
+            `${m.firstName || ""} ${m.lastName || ""}`.trim() ||
+            m.userName ||
+            "مشترك بدون اسم",
+        }));
+        setMembers(formattedFirst);
+
+        console.log("⚡ تم جلب الصفحة الأولى:", formattedFirst.length);
+
+        // 🟣 نكمّل باقي الصفحات بالخلفية
+        let page = 2;
+        let all = [...firstList];
+        let hasMore = true;
+
+        while (hasMore) {
+          const res = await axios.get(
+            `${
+              import.meta.env.VITE_API_BASE_URL2
+            }/auth/getAllMembers?page=${page}`,
+            { headers }
+          );
+          const list = res.data?.members || res.data?.data || [];
+          if (Array.isArray(list) && list.length > 0) {
+            all = [...all, ...list];
+            page++;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        const formattedAll = all.map((m) => ({
+          id: m._id,
+          name:
+            `${m.firstName || ""} ${m.lastName || ""}`.trim() ||
+            m.userName ||
+            "مشترك بدون اسم",
+        }));
+
+        setMembers(formattedAll);
+        console.log("✅ تم جلب جميع الصفحات:", formattedAll.length);
       } catch (err) {
-        console.error("خطأ في جلب المدربين:", err);
+        console.error("❌ فشل جلب المشتركين:", err.response?.data || err);
       }
     };
-    fetchCoaches();
+
+    fetchMembersSmart();
   }, []);
 
-  // تحديث المدرب لو كان ID فقط
+  // 🟣 إكمال أسماء المشتركين بعد جلبهم من الباك
   useEffect(() => {
-    if (!booking || coaches.length === 0) return;
-    let updatedCoach = booking.coach;
-    if (typeof booking.coach === "string") {
-      const found = coaches.find((c) => c.id === booking.coach);
-      if (found) updatedCoach = found;
-    } else if (booking.coach?.id) {
-      const found = coaches.find((c) => c.id === booking.coach.id);
-      if (found) updatedCoach = found;
+    if (!Array.isArray(booking?.members) || booking.members.length === 0)
+      return;
+    if (!Array.isArray(members) || members.length === 0) return;
+
+    const enriched = booking.members.map((m) => {
+      const id = typeof m === "object" ? m.id || m._id : m;
+      const full = members.find((mm) => mm.id === id || mm._id === id);
+
+      // 🟣 نحاول أولاً من قاعدة members العامة
+      if (full) {
+        return {
+          ...m,
+          id,
+          name:
+            `${full.firstName || ""} ${full.lastName || ""}`.trim() ||
+            full.userName ||
+            full.name ||
+            "مشترك بدون اسم",
+        };
+      }
+
+      // 🟣 ولو مش موجود أصلاً في القائمة العامة — fallback من البيانات الأصلية نفسها
+      const safeName =
+        typeof m === "object"
+          ? m.name ||
+            `${m.firstName || ""} ${m.lastName || ""}`.trim() ||
+            m.userName ||
+            "مشترك بدون اسم"
+          : "مشترك بدون اسم";
+
+      return typeof m === "object"
+        ? { ...m, id, name: safeName }
+        : { id, name: safeName };
+    });
+
+    setBooking((prev) => ({ ...prev, members: enriched }));
+  }, [members, booking?.members?.length]);
+
+  useEffect(() => {
+    // 🟣 إذا المودال لسه ما فتح أو تم تهيئته مسبقاً، ما نعيد التحميل
+    if (!booking || initialized) return;
+
+    console.log("🟢 [EventModal] البيانات اللي وصلت للمودال:", booking);
+
+    const s = booking.selectedSchedule || {};
+    const dateOnly = s.date ? s.date.split("T")[0] : "";
+
+    const parseTime = (t) => {
+      if (!t) return "00:00";
+      const trimmed = t.trim();
+      let [time, period] = trimmed.split(" ");
+      if (!period && /م/.test(trimmed)) period = "م";
+      if (!period && /ص/.test(trimmed)) period = "ص";
+      const [hStr, mStr] = time.split(":");
+      let h = parseInt(hStr || "0", 10);
+      const m = parseInt(mStr || "0", 10);
+      if (period === "م" && h < 12) h += 12;
+      if (period === "ص" && h === 12) h = 0;
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    };
+
+    const startTime = parseTime(s.timeStart);
+    const endTime = parseTime(s.timeEnd);
+
+    // 🔹 تحديد المدرب الصحيح
+    // 🔹 استخرج كائن المدرب الصحيح
+    let coachObj = null;
+
+    // 🟣 أولاً: لو عندنا مدرب في الـ booking نفسه، استخدمه مباشرة لتفادي التأخير
+    if (booking.coach && booking.coach.name) {
+      coachObj = booking.coach;
     }
-    if (updatedCoach !== booking.coach)
-      setBooking({ ...booking, coach: updatedCoach });
-  }, [coaches]);
+    // 🟣 أو لو عندنا كائن داخل schedule
+    else if (typeof s.coach === "object" && s.coach !== null) {
+      coachObj = {
+        id: s.coach._id || s.coach.id,
+        name:
+          s.coach.name ||
+          `${s.coach.firstName || ""} ${s.coach.lastName || ""}`.trim() ||
+          "مدرب غير معروف",
+      };
+    }
+    // 🟣 أو لو الـ coach جاي كـ ID
+    else if (typeof s.coach === "string" && s.coach.trim() !== "") {
+      // نحاول نلاقيه من القائمة الحالية لو جاهزة
+      const foundCoach = coaches.find(
+        (c) => String(c.id).trim() === String(s.coach).trim()
+      );
+      coachObj = foundCoach
+        ? foundCoach
+        : { id: s.coach, name: "مدرب غير معروف" };
+    }
+    // 🟣 وأخيرًا fallback
+    else {
+      coachObj = { id: "", name: "مدرب غير معروف" };
+    }
+
+    // 🎨 استرجاع اللون من الكاش
+    let colorFromCache = {};
+    try {
+      const storedColors = JSON.parse(
+        localStorage.getItem("bookingColors") || "{}"
+      );
+      const key = booking.selectedScheduleId || booking._id;
+      const colorData = storedColors[key];
+      if (colorData) {
+        colorFromCache = {
+          bg: colorData.bg,
+          border: colorData.border,
+          text: colorData.text,
+        };
+      }
+    } catch (err) {
+      console.warn("⚠️ فشل جلب اللون من الكاش:", err);
+    }
+
+    // ✅ تحديث booking مرة واحدة فقط
+    setBooking((prev) => ({
+      ...prev,
+      coach: coachObj,
+      coachId: coachObj.id,
+      location: s.location || prev.location || "",
+      room: s.location || prev.location || "",
+      reminders: s.reminders || prev.reminders || [],
+      maxMembers: s.maxMembers || prev.maxMembers || 0,
+      members: s.members || prev.members || [],
+      participants: s.members || prev.participants || [],
+      date: dateOnly,
+      timeStart: startTime,
+      timeEnd: endTime,
+      start: `${dateOnly}T${startTime}`,
+      end: `${dateOnly}T${endTime}`,
+      ...colorFromCache,
+    }));
+
+    // ✅ علّمي إنه تم تحميل المودال لمرة واحدة فقط
+    setInitialized(true);
+  }, [booking, coaches]);
+
+  console.log("Event is: ", booking);
+
+  // ✅ جلب قائمة المدربين (نفس منطق Step1Booking)
+  useEffect(() => {
+    const loadCoachesInstantly = async () => {
+      try {
+        // ✅ أولاً: حمّل مباشرة من localStorage لتظهر الأسماء فوراً
+        const local = JSON.parse(localStorage.getItem("allEmployees") || "[]");
+        if (Array.isArray(local) && local.length > 0) {
+          const formattedLocal = local.map((c) => ({
+            id: c._id || c.id,
+            name:
+              c.name ||
+              `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
+              "مدرب غير معروف",
+          }));
+          setCoaches(formattedLocal);
+          console.log(
+            "⚡ [EventModal] المدربين من localStorage:",
+            formattedLocal
+          );
+        }
+
+        // ✅ ثانياً: بالتوازي، نعمل تحديث من السيرفر بخلفية الصفحة
+        const remote = await getAllCoachesAPI();
+        if (Array.isArray(remote) && remote.length > 0) {
+          const formattedRemote = remote.map((c) => ({
+            id: c._id || c.id,
+            name:
+              c.name ||
+              `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
+              "مدرب غير معروف",
+          }));
+          setCoaches(formattedRemote);
+          console.log(
+            "✅ [EventModal] المدربين بعد تحديث السيرفر:",
+            formattedRemote
+          );
+          // 🔹 احفظ نسخة جديدة بالكاش
+          localStorage.setItem("allEmployees", JSON.stringify(remote));
+        }
+      } catch (err) {
+        console.error("❌ [EventModal] فشل جلب المدربين:", err);
+      }
+    };
+
+    loadCoachesInstantly();
+  }, []);
 
   // تغيير التاريخ
   const handleDateChange = (date) => {
     const dateStr = date.toISOString().split("T")[0];
     const startTime = booking.start?.split("T")[1] || "08:00";
     const endTime = booking.end?.split("T")[1] || "09:00";
+
     setBooking({
       ...booking,
+      date: dateStr, // ✅ نخزن التاريخ الجديد
       start: `${dateStr}T${startTime}`,
       end: `${dateStr}T${endTime}`,
     });
+
     setShowCalendar(false);
   };
 
@@ -181,17 +390,184 @@ export default function EventModal({
       .padStart(2, "0")}`;
   };
 
+  const [updatedMembers, setUpdatedMembers] = useState([]);
+
+  // 🟣 تعديل الحجز الفردي (schedule)
+  // 🟣 تعديل الحجز الفردي (schedule)
+  const handleUpdateSingleSchedule = async () => {
+    try {
+      const bookingId = booking._id;
+      const scheduleId = booking.selectedScheduleId;
+
+      if (!bookingId || !scheduleId) {
+        toast.error("لم يتم تحديد الحجز أو اليوم بشكل صحيح ❌");
+        return;
+      }
+
+      // 🔹 تحويل الوقت لصيغة الباك
+      const toArabic12h = (time24) => {
+        if (!time24) return "";
+        let [h, m] = time24.split(":").map(Number);
+        const isPM = h >= 12;
+        if (h === 0) h = 12;
+        else if (h > 12) h -= 12;
+        const suffix = isPM ? "م" : "ص";
+        return `${h}:${String(m).padStart(2, "0")} ${suffix}`;
+      };
+
+      // 🟣 قبل بناء الـ updateBody، نظّف المشتركين من اللي عليهم _tempRemoved
+      if (Array.isArray(booking.members)) {
+        booking.members = booking.members.filter((m) => {
+          const memberObj =
+            typeof m === "object"
+              ? m
+              : (booking.allMembers || []).find(
+                  (mm) => mm._id === m || mm.id === m
+                );
+          return !memberObj?._tempRemoved;
+        });
+      }
+
+      // 🟣 تنظيف المشتركين قبل الإرسال للبك
+      let cleanedMembers = Array.isArray(booking.members)
+        ? [...booking.members]
+        : [];
+
+      // 1️⃣ احذف أي عضو عليه _tempRemoved
+      cleanedMembers = cleanedMembers.filter((m) => {
+        const obj = typeof m === "object" ? m : null;
+        return !obj?._tempRemoved;
+      });
+
+      // 2️⃣ خذ فقط الـ IDs (حتى لو العضو كائن)
+      cleanedMembers = cleanedMembers
+        .map((m) => (typeof m === "object" ? m._id || m.id : m))
+        .filter(Boolean);
+
+      // 3️⃣ لو في duplicates بسبب الإضافة المحلية، نشيلهم
+      cleanedMembers = [...new Set(cleanedMembers)];
+
+      // ✅ خزّنيهم بالـ booking نفسه قبل البناء
+      booking.members = cleanedMembers;
+
+      // 🔹 بناء جسم الطلب مثل ما بدو الباك
+      const updateBody = {
+        coach:
+          typeof booking.coach === "object"
+            ? booking.coach.id
+            : booking.coachId || "",
+        location: booking.location || "",
+        maxMembers: Number(booking.maxMembers) || 0,
+        reminders: Array.isArray(booking.reminders) ? booking.reminders : [],
+        timeStart: toArabic12h(booking.start?.split("T")[1]?.slice(0, 5)),
+        timeEnd: toArabic12h(booking.end?.split("T")[1]?.slice(0, 5)),
+        date: booking.date || booking.start?.split("T")[0], // ✅ نرسل التاريخ الجديد
+        dayOfWeek: new Date(booking.date || booking.start).getDay(), // ✅ رقم اليوم ليتحدث بالباك
+        members: (updatedMembers.length
+          ? updatedMembers
+          : booking.members || []
+        )
+          .filter((m) => !m._tempRemoved)
+          .map((m) => (typeof m === "object" ? m._id || m.id : m))
+          .filter(Boolean),
+      };
+
+      console.log("🚀 إرسال تعديل فردي:", updateBody);
+
+      await updateSingleScheduleAPI(bookingId, updateBody, scheduleId);
+
+      toast.success("تم تعديل الحجز الفردي بنجاح ✅");
+
+      // 🔄 تحديث الحالة محليًا
+      setBookings((prev) =>
+        prev.map((b) =>
+          b._id === bookingId
+            ? {
+                ...b,
+                schedules: b.schedules.map((s) =>
+                  s._id === scheduleId
+                    ? {
+                        ...s,
+                        ...updateBody,
+                        coach: booking.coach, // ✅ نحدّث كائن المدرب الجديد كلياً
+                      }
+                    : s
+                ),
+                // ✅ ولو عندنا كائن coach عام للحجز نفسه نحدّثه أيضاً
+                coach: booking.coach,
+              }
+            : b
+        )
+      );
+
+      // 🎨 حفظ اللون بالكاش فقط عند الحفظ
+      try {
+        const storedColors = JSON.parse(
+          localStorage.getItem("bookingColors") || "{}"
+        );
+        const key = booking.selectedScheduleId || booking._id;
+        if (key && booking.bg) {
+          storedColors[key] = {
+            bg: booking.bg,
+            border: booking.border,
+            text: booking.text,
+          };
+          localStorage.setItem("bookingColors", JSON.stringify(storedColors));
+        }
+      } catch (err) {
+        console.warn("⚠️ فشل حفظ اللون عند الحفظ:", err);
+      }
+
+      closeModal();
+    } catch (err) {
+      const msg = err.response?.data?.message || "حدث خطأ أثناء التعديل ❌";
+      if (msg.includes("conflict") || msg.includes("محجوز")) {
+        toast.error("⚠️ لا يمكن تغيير التاريخ، في تعارض بنفس الوقت!");
+      } else {
+        toast.error(msg);
+      }
+      console.error(
+        "❌ فشل تعديل الحجز الفردي:",
+        err.response?.data || err.message
+      );
+    }
+  };
+
+  // ✅ تحديث اسم المدرب تلقائيًا بعد جلب قائمة المدربين
+  useEffect(() => {
+    if (!booking || !booking.coach || !booking.coach.id) return;
+
+    // إذا الاسم الحالي "مدرب غير معروف" وكان عندنا قائمة مدربين
+    if (booking.coach.name === "مدرب غير معروف" && coaches.length > 0) {
+      const foundCoach = coaches.find(
+        (c) => String(c.id).trim() === String(booking.coach.id).trim()
+      );
+
+      if (foundCoach) {
+        console.log("🔁 تحديث اسم المدرب تلقائيًا:", foundCoach.name);
+        setBooking((prev) => ({
+          ...prev,
+          coach: foundCoach,
+          coachId: foundCoach.id,
+        }));
+      }
+    }
+  }, [coaches]);
+
   return (
     <div className="fixed inset-0 z-[4000] flex justify-center items-center">
-      <div className="w-[361px] h-full bg-white rounded-[16px] flex flex-col overflow-hidden p-6 gap-2 shadow-lg text-right text-black font-bold font-cairo">
+      <div className="w-[361px] h-full bg-white rounded-[16px] flex flex-col overflow-hidden shadow-lg text-right text-black font-cairo p-[24px]">
         {/* Header */}
-        <div className="w-full h-8 flex items-center justify-between">
-          <h3 className="text-[16px] font-bold">تفاصيل الموعد</h3>
+        <div className="w-[313px] h-[40px] flex items-center justify-between mb-[8px]">
+          <h3 className="text-[16px] font-bold">تفاصيل الحجز</h3>
           <div className="flex items-center gap-2">
-            <DeleteIcon
-              className="w-8 h-8 text-red-500"
-              onClick={handleDeleteBooking}
-            />
+            {isAdmin && (
+              <DeleteIcon
+                className="w-8 h-8 text-red-500 cursor-pointer"
+                onClick={() => setShowConfirm(true)}
+              />
+            )}
+
             <img
               src={CloseIcon}
               alt="close"
@@ -202,164 +578,266 @@ export default function EventModal({
         </div>
 
         {/* المحتوى */}
-        <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto flex flex-col items-center gap-[16px] scrollbar-hide">
           {/* العنوان */}
-          <div className="h-[66px] flex flex-col justify-between">
-            <label className="block font-bold text-sm">العنوان</label>
-            <input
-              type="text"
-              value={booking.service || ""}
-              onChange={(e) =>
-                setBooking({ ...booking, service: e.target.value })
-              }
-              placeholder="مثال: يوغا"
-              className="h-10 w-full pr-2 pl-2 rounded-md border border-gray-400 focus:outline-none"
-            />
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              اسم الحصة
+            </label>
+            <div className="relative">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2">
+                <AddressIcon className="w-5 h-5 text-[var(--color-purple)]" />
+              </span>
+
+              <input
+                type="text"
+                value={booking.service || ""}
+                readOnly
+                disabled
+                className="h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2 text-[14px] font-bold text-[#000] bg-white focus:outline-none"
+              />
+            </div>
           </div>
 
           {/* الوصف */}
-          <div className="h-[66px] flex flex-col justify-between">
-            <label className="block font-bold text-sm">الوصف (اختياري)</label>
-            <textarea
-              value={booking.description || ""}
-              onChange={(e) =>
-                setBooking({ ...booking, description: e.target.value })
-              }
-              placeholder="....."
-              className="h-10 w-full pr-2 pl-2 rounded-md border border-gray-400 focus:outline-none"
-            />
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              الوصف
+            </label>
+            <div className="relative">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2">
+                <DiscIcon className="w-5 h-5 text-[var(--color-purple)]" />
+              </span>
+
+              <input
+                type="text"
+                value={booking.description || ""}
+                readOnly
+                disabled
+                className="h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2 text-[14px] font-bold text-[#000] bg-white focus:outline-none"
+              />
+            </div>
           </div>
 
           {/* التاريخ */}
-          <div className="h-[66px] flex flex-col justify-between">
-            <label className="block font-bold text-sm">التاريخ</label>
-            <input
-              type="text"
-              value={booking.start?.split("T")[0] || ""}
-              readOnly
-              onClick={() => setShowCalendar(!showCalendar)}
-              className="h-10 w-full pr-2 pl-2 rounded-md border border-gray-400 focus:outline-none"
-            />
-            {showCalendar && (
-              <div className="absolute top-full left-0 mt-2 z-50">
-                <MiniCalender
-                  currentDate={
-                    booking.start ? new Date(booking.start) : new Date()
-                  }
-                  handleDateChange={handleDateChange}
-                />
-              </div>
-            )}
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              التاريخ
+            </label>
+            <div className="relative">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2">
+                <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
+              </span>
+
+              <input
+                type="text"
+                value={booking.start?.split("T")[0] || ""}
+                readOnly
+                onClick={() => setShowCalendar(!showCalendar)}
+                className="h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2 text-[14px] font-bold text-[#000] bg-white focus:outline-none cursor-pointer"
+              />
+
+              {showCalendar && (
+                <div
+                  className="absolute top-full left-0 z-50"
+                  onClick={() => setShowCalendar(false)}
+                >
+                  <div
+                    className="bg-white p-2 rounded-lg shadow-lg"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MiniCalender
+  variant="event"
+  hideTodayHighlight={false}
+  currentDate={
+    booking.start ? new Date(booking.start) : new Date()
+  }
+  handleDateChange={handleDateChange}
+/>
+
+
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* الوقت */}
-          <div className="h-[66px] flex flex-col justify-between">
-            <label className="block font-bold text-sm">الوقت</label>
-            <TimeRangePicker
-              startTime={
-                booking.start
-                  ? booking.start.split("T")[1]?.slice(0, 5)
-                  : normalizeTime(booking.timeStart)
-              }
-              endTime={
-                booking.end
-                  ? booking.end.split("T")[1]?.slice(0, 5)
-                  : normalizeTime(booking.timeEnd)
-              }
-              onChange={handleTimeChange}
-            />
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              الوقت
+            </label>
+            <div className="relative">
+              {/* مساحة أيقونة يمين لو بدك تضيفي لاحقًا */}
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" />
+              <div className="w-[313px]">
+                <TimeRangePicker
+                  key={`${booking.start}-${booking.end}`}
+                  startTime={
+                    booking.start
+                      ? booking.start.split("T")[1]?.slice(0, 5)
+                      : booking.timeStart
+                  }
+                  endTime={
+                    booking.end
+                      ? booking.end.split("T")[1]?.slice(0, 5)
+                      : booking.timeEnd
+                  }
+                  onChange={handleTimeChange}
+                  showIcons={true} // ✅ رح يفعّل الأيقونات داخل الحقول فقط في الإيفنت مودال
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="h-[66px] flex flex-col justify-between">
-            {/* المكان */}
-            <LocationSelector
-              selectedLocation={booking.location}
-              setSelectedLocation={(room) =>
-                setBooking({ ...booking, location: room })
-              }
-              locationsList={locations}
-            />
+          {/* القاعة */}
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              القاعة
+            </label>
+            <div className="relative">
+              {/* مساحة الأيقونة يمين */}
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
+              <LocationSelector
+                variant="event"
+                showLabel={false}
+                selectedLocation={booking.location}
+                setSelectedLocation={(room) =>
+                  setBooking({ ...booking, location: room })
+                }
+                locationsList={locations}
+              />
+            </div>
           </div>
 
-          <div className="h-[66px] flex flex-col justify-between">
-            {/* المدرب */}
-            <CoachSelector
-            variant="event"
-              selectedCoach={booking.coach}
-              setSelectedCoach={(coach) =>
-                setBooking({ ...booking, coach, coachId: coach.id })
-              }
-              coachesList={coaches}
-            />
+          {/* المدرب */}
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              اسم المدرب
+            </label>
+            <div className="relative">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
+              <CoachSelector
+                showLabel={false}
+                variant="event"
+                selectedCoach={booking.coach}
+                setSelectedCoach={(coach) =>
+                  setBooking({ ...booking, coach, coachId: coach.id })
+                }
+                coachesList={coaches}
+              />
+            </div>
           </div>
 
-          <div className="h-[66px] flex flex-col justify-between">
-            {/* المشتركين */}
-            <ParticipantsSelector booking={booking} setBooking={setBooking} />
+          {/* الحد الأقصى للمشتركين */}
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              الحد الأقصى للمشتركين
+            </label>
+            <div className="relative">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
+              <MaxParticipantsSelector
+                variant="event"
+                showLabel={false}
+                showIcon={true} // ✅ الأيقونة رح تبين جوّا الحقل فقط هون
+                selectedMax={booking.maxMembers || 0}
+                setSelectedMax={(value) =>
+                  setBooking({ ...booking, maxMembers: Number(value) })
+                }
+                options={[
+                  { label: "1 مشترك", value: 1 },
+                  { label: "5 مشتركين", value: 5 },
+                  { label: "10 مشتركين", value: 10 },
+                  { label: "20 مشتركاً", value: 20 },
+                  { label: "غير محدود", value: Infinity },
+                  { label: "إدخال مخصص", value: "custom" },
+                ]}
+              />
+            </div>
           </div>
 
-          <div className="h-[40px]">
-            {/* اللون */}
+          {/* المشتركين */}
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              المشتركين
+            </label>
+            <div className="relative">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
+              <ParticipantsSelector
+                variant="event"
+                showLabel={false}
+                showIcon={true} // ✅ الأيقونة داخل الحقل
+                booking={booking}
+                setBooking={setBooking}
+                membersList={members}
+                onMembersChange={(newList) => setUpdatedMembers(newList)}
+              />
+            </div>
+          </div>
+
+          {/* اللون */}
+          <div className="w-[313px] h-10 flex items-center">
             <ColorSelector
               selectedColor={{
                 bg: booking.bg,
                 border: booking.border,
                 text: booking.text,
               }}
-              setSelectedColor={(c) => setBooking({ ...booking, ...c })}
-            />
-          </div>
-
-          <div className="h-[70px] flex flex-col justify-between">
-            {/* التكرار */}
-            <RepeatSelector
-              selectedRepeat={booking.repeat || "none"}
-              selectedDays={convertDaysToArabic(
-                booking.days || booking.recurrence || []
-              )}
-              setRepeatAndDays={(repeat, daysArabic) => {
-                // نحول الأيام من عربي لإنجليزي وقت الحفظ
-                const reverseDaysMap = Object.fromEntries(
-                  Object.entries(daysMap).map(([en, ar]) => [ar, en])
-                );
-                const daysEnglish = daysArabic.map(
-                  (d) => reverseDaysMap[d] || d
-                );
-
-                setBooking({
-                  ...booking,
-                  repeat,
-                  days: daysEnglish,
-                  recurrence: daysEnglish,
-                });
-              }}
-            />
-          </div>
-
-          <div className="h-[66px] flex flex-col justify-between">
-            {/* التذكير */}
-            <ReminderSelector
-              selectedReminders={booking.reminders || []}
-              setSelectedReminders={(rem) =>
-                setBooking({ ...booking, reminders: rem })
+              setSelectedColor={(c) =>
+                setBooking({ ...booking, ...c, __colorChanged: true })
               }
-              showIconInInput
-              borderStyle="#7E818C"
-              placeholderColor="text-gray-400"
             />
+          </div>
+
+          {/* التذكير */}
+          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px] mb-[8px]">
+            <label className="text-[12px] font-bold leading-[18px]">
+              التذكير
+            </label>
+            <div className="relative">
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
+              <ReminderSelector
+                variant="event"
+                showLabel={false}
+                selectedReminders={booking.reminders || []}
+                setSelectedReminders={(rem) =>
+                  setBooking({ ...booking, reminders: rem })
+                }
+                showIconInInput
+                borderStyle="#7E818C"
+                placeholderColor="text-gray-400"
+              />
+            </div>
           </div>
         </div>
 
         {/* حفظ */}
         <div className="pt-2">
           <button
-            className="w-full h-10 bg-purple-600 text-white rounded-md hover:bg-purple-800 font-semibold"
-            onClick={() => handleSaveBooking(booking)}
+            className="w-[313px] h-10 bg-[#6A0EAD] text-white rounded-[8px] font-bold text-[14px] hover:bg-[#5A0CA0] transition"
+            onClick={handleUpdateSingleSchedule}
           >
             حفظ
           </button>
         </div>
       </div>
+
+      {isAdmin && showConfirm && (
+        <ConfirmDeleteModal
+          event={booking.selectedSchedule || booking}
+          isLoading={deleting}
+          onCancel={() => setShowConfirm(false)}
+          onConfirm={async () => {
+            try {
+              setDeleting(true);
+              await handleDeleteBooking(); // نفس الدالة الحالية
+              setShowConfirm(false);
+            } finally {
+              setDeleting(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

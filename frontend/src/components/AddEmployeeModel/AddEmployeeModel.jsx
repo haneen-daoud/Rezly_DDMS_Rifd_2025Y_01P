@@ -155,10 +155,6 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
     }
   };
 
-
-
-
-
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/25 z-50">
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-[849px] h-[712px] flex flex-col p-6 text-right overflow-hidden relative">
@@ -222,7 +218,7 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
                         {index < activeStep ? "✓" : index + 1}
                       </div>
                       <span
-                        className={`text-sm font-medium ${index <= activeStep
+                        className={`text-sm hidden sm:inline font-medium ${index <= activeStep
                           ? "text-[var(--color-purple)]"
                           : "text-gray-500"
                           }`}

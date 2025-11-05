@@ -2,14 +2,21 @@ import React from "react";
 
 const StatCard = ({ title, value, icon }) => {
   return (
-    <div className="flex flex-col items-start  px-4 py-6 gap-[10px] rounded-xl shadow bg-white">
-      
-      <div className="flex w-full justify-between items-start">
-        <p className="text-black text-[12px] py-1 font-cairo leading-[18px] break-words font-[700]">{title}</p>
-        <img src={icon} alt={title} className="w-[46px] h-[48px]" />
+    <div
+      className="
+        flex flex-col justify-between px-4 py-4 rounded-[16px] 
+        bg-white sm:bg-white lg:bg-white 
+        shadow-none sm:shadow-[0_2px_8px_rgba(0,0,0,0.08)] 
+        transition-all
+      "
+    >
+      <div className="flex w-full justify-between items-center">
+        <p className="text-black text-[13px] font-cairo font-[700] leading-[18px]">
+          {title}
+        </p>
+        <img src={icon} alt={title} className="w-[36px] h-[36px]" />
       </div>
-
-      <p className="text-[28px] font-bold text-black">{value}</p>
+      <p className="text-[24px] font-bold text-black mt-2">{value}</p>
     </div>
   );
 };

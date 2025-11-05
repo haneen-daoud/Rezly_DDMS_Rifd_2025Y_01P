@@ -60,102 +60,114 @@ export default function Chart() {
   const data = getData();
 
   return (
-    <section className="bg-white rounded-[10px] p-4 ">
-      <div className="flex items-center justify-between mb-3">
-        {/* Tabs */}
-        <div className="flex gap-2">
-          <button className={`tab-btn active `}>الزوار</button>
-          <button className={`tab-btn `}>المبيعات</button>
-        </div>
+    <section className="bg-white rounded-[16px] p-4 sm:p-6 w-full overflow-hidden">
+  {/* 🔹 Header */}
+  <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
+    {/* Tabs */}
+    <div className="flex gap-2">
+      <button
+        className="text-[13px] sm:text-[14px] font-[700] text-white bg-[var(--color-purple)] 
+        px-4 py-[6px] rounded-md border border-[var(--color-purple)] min-w-[80px] text-center"
+      >
+        الزوار
+      </button>
 
-        {/* Select moved slightly to the left */}
+      <button
+        className="text-[13px] sm:text-[14px] font-[600] text-[var(--color-purple)] 
+        border border-[var(--color-purple)] px-4 py-[6px] rounded-md bg-transparent hover:bg-[#f9f9f9] min-w-[80px] text-center"
+      >
+        المبيعات
+      </button>
+    </div>
 
-        {/* Filters */}
-        <div className="flex gap-2 items-center">
-          <div className="">
-            <select
-              className={filter - `select`}
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              <option>اليوم</option>
-              <option>الأسبوع</option>
-              <option>الشهر</option>
-            </select>
-          </div>
-          <button
-            className="filter-btn flex items-center gap-1"
-            onClick={toggleChartType}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M2 2C2.36667 2 2.66699 2.30033 2.66699 2.66699V12C2.66699 12.3666 2.96649 12.6668 3.33301 12.667H14C14.3666 12.667 14.6668 12.9665 14.667 13.333C14.667 13.6997 14.3667 14 14 14H3.33301C2.22649 13.9998 1.33301 13.1066 1.33301 12V2.66699C1.33301 2.30033 1.63333 2 2 2ZM12.9795 4.31348C13.1195 4.17351 13.3397 4.12712 13.5264 4.20703C13.713 4.28036 13.833 4.46699 13.833 4.66699V11.333C13.833 11.6063 13.6063 11.833 13.333 11.833H4C3.72667 11.833 3.5 11.6063 3.5 11.333V9.33301C3.50008 9.19978 3.55322 9.07276 3.64648 8.97949L6.97949 5.64648C7.17278 5.4532 7.49318 5.4533 7.68652 5.64648L9.66699 7.62695L12.9795 4.31348Z"
-                fill="var(--color-purple)"
-              />
-            </svg>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-3 h-3 ml-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-          <button className="filter-btn filter-btn2">...</button>
-        </div>
-      </div>
+    {/* Filters */}
+    <div className="flex items-center gap-2">
+      <select
+        className="border border-[#ddd] text-[13px] sm:text-[14px] rounded-md px-2 py-[6px] focus:outline-none h-[36px]"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      >
+        <option>اليوم</option>
+        <option>الأسبوع</option>
+        <option>الشهر</option>
+      </select>
 
-      <ResponsiveContainer width="100%" height={250}>
-        {chartType === "line" ? (
-          <LineChart data={data}>
-            <XAxis
-              dataKey="day"
-              interval={0}
-              tick={{ fontSize: 11, fill: "#333", fontFamily: "Cairo" }}
-              padding={{ left: 15, right: 15 }}
-            />
-            <YAxis hide />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="var(--color-purple)"
-              strokeWidth={3}
-              dot
-            />
-          </LineChart>
-        ) : (
-          <BarChart data={data}>
-            <XAxis
-              dataKey="day"
-              interval={0}
-              tick={{ fontSize: 11, fill: "#333", fontFamily: "Cairo" }}
-              padding={{ left: 20, right: 20 }}
-            />
-            <YAxis hide />
-            <Tooltip />
-            <Bar
-              dataKey="value"
-              fill="var(--color-purple)"
-              barSize={30}
-              radius={[6, 6, 0, 0]}
-            />
-          </BarChart>
-        )}
-      </ResponsiveContainer>
-    </section>
+      <button
+        className="border border-[#ddd] rounded-md h-[36px] w-[36px] flex items-center justify-center hover:bg-[#f9f9f9]"
+        onClick={toggleChartType}
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M2 2C2.36667 2 2.66699 2.30033 2.66699 2.66699V12C2.66699 12.3666 2.96649 12.6668 3.33301 12.667H14C14.3666 12.667 14.6668 12.9665 14.667 13.333C14.667 13.6997 14.3667 14 14 14H3.33301C2.22649 13.9998 1.33301 13.1066 1.33301 12V2.66699C1.33301 2.30033 1.63333 2 2 2ZM12.9795 4.31348C13.1195 4.17351 13.3397 4.12712 13.5264 4.20703C13.713 4.28036 13.833 4.46699 13.833 4.66699V11.333C13.833 11.6063 13.6063 11.833 13.333 11.833H4C3.72667 11.833 3.5 11.6063 3.5 11.333V9.33301C3.50008 9.19978 3.55322 9.07276 3.64648 8.97949L6.97949 5.64648C7.17278 5.4532 7.49318 5.4533 7.68652 5.64648L9.66699 7.62695L12.9795 4.31348Z"
+            fill="var(--color-purple)"
+          />
+        </svg>
+      </button>
+
+      <button
+        className="border border-[#ddd] rounded-md h-[36px] w-[36px] flex items-center justify-center hover:bg-[#f9f9f9] text-[#7E818C] text-[18px]"
+      >
+        ...
+      </button>
+    </div>
+  </div>
+
+  {/* 🔹 الرسم البياني */}
+  <div className="w-full h-[180px] sm:h-[220px] md:h-[250px]">
+    <ResponsiveContainer width="100%" height="100%">
+      {chartType === "line" ? (
+        <LineChart data={data}>
+          <XAxis
+            dataKey="day"
+            interval={0}
+            tick={{
+              fontSize: window.innerWidth < 640 ? 9 : 11,
+              fill: "#333",
+              fontFamily: "Cairo",
+            }}
+            padding={{ left: 15, right: 15 }}
+          />
+          <YAxis hide />
+          <Tooltip />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="var(--color-purple)"
+            strokeWidth={3}
+            dot
+          />
+        </LineChart>
+      ) : (
+        <BarChart data={data}>
+          <XAxis
+            dataKey="day"
+            interval={0}
+            tick={{
+              fontSize: window.innerWidth < 640 ? 9 : 11,
+              fill: "#333",
+              fontFamily: "Cairo",
+            }}
+            padding={{ left: 20, right: 20 }}
+          />
+          <YAxis hide />
+          <Tooltip />
+          <Bar
+            dataKey="value"
+            fill="var(--color-purple)"
+            barSize={window.innerWidth < 640 ? 18 : 30}
+            radius={[6, 6, 0, 0]}
+          />
+        </BarChart>
+      )}
+    </ResponsiveContainer>
+  </div>
+</section>
+
   );
 }

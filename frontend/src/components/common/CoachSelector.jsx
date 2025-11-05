@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import downarrowIcon from "../../icons/downarrow.svg";
 import SearchIcon from "../../icons/search.svg?react";
-import AddcircleIcon from "../../icons/addcircle.svg?react";
 import trainerIcon from "../../icons/trainer.svg";
 
 export default function CoachSelector({
@@ -12,9 +11,22 @@ export default function CoachSelector({
   placeholderColor = "text-black",
   borderStyle = "#7E818C",
   variant = "add",
+  showLabel = true,
 }) {
   const [openCoach, setOpenCoach] = useState(false);
   const [coachSearch, setCoachSearch] = useState("");
+  const ref = useRef(null);
+
+  // إغلاق الدروب داون عند الضغط خارجه
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpenCoach(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const filteredCoaches = Array.isArray(coachesList)
     ? coachesList.filter((c) =>
@@ -23,8 +35,12 @@ export default function CoachSelector({
     : [];
 
   return (
-    <div className="relative">
-      <label className="block font-bold text-sm mb-2">اسم المدرب</label>
+    <div ref={ref} className="relative">
+      {showLabel && (
+        <label className="block font-bold text-sm mb-2">اسم المدرب</label>
+      )}
+
+      {/* الحقل الرئيسي */}
       <div
         className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer relative"
         onClick={() => setOpenCoach(!openCoach)}
@@ -33,15 +49,16 @@ export default function CoachSelector({
         {showIcon && (
           <img src={trainerIcon} alt="trainer" className="absolute right-2" />
         )}
-         <span
+
+        <span
           className={`h-10 w-full flex items-center ${
             showIcon ? "pr-8" : "pr-2"
-          } pl-2 font-normal ${
+          } pl-2 ${
             selectedCoach
               ? variant === "event"
-                ? "text-black font-bold" // ✅ لما يكون بالأيفنت، الخط بولد
-                : "text-gray-800" // بالحجز العادي يضل فاتح
-              : placeholderColor
+                ? "font-bold text-[14px] text-[#000]"
+                : "font-normal text-[14px] text-[#000]"
+              : `${placeholderColor} font-normal text-[14px]`
           }`}
         >
           {selectedCoach?.name || "اختر المدرب"}
@@ -50,6 +67,7 @@ export default function CoachSelector({
         <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
       </div>
 
+      {/* القائمة */}
       {openCoach && (
         <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-500/40 mt-1 shadow-[0_4px_12px_rgba(0,0,0,0.25)] z-50 text-[#000000]">
           <div className="w-full h-full p-4 box-border max-h-[250px] overflow-y-auto">
@@ -63,19 +81,6 @@ export default function CoachSelector({
                 className="w-full h-full rounded-[8px] border border-gray-500 px-3 pr-10 focus:outline-none placeholder-gray-400 text-gray-800"
               />
               <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
-            </div>
-
-            {/* إضافة جديد */}
-            <div className="flex items-center gap-2 mb-2 cursor-pointer px-3 py-2 hover:bg-gray-100">
-              <AddcircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
-              <span
-  className={`font-normal ${
-    variant === "event" ? "text-black font-bold" : "text-gray-800"
-  }`}
->
-  إضافة جديد
-</span>
-
             </div>
 
             {/* قائمة المدربين */}
@@ -104,6 +109,7 @@ export default function CoachSelector({
                     >
                       {coach.name}
                     </span>
+
                     <div className="w-5 h-5 rounded-full border-2 border-[var(--color-purple)] flex items-center justify-center">
                       {isSelected && (
                         <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-purple)]"></div>

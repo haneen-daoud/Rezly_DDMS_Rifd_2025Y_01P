@@ -10,23 +10,24 @@ export default function ColorSelector({ selectedColor, setSelectedColor }) {
   ];
 
   return (
-    <div className="flex items-center gap-4">
-      <label className="flex items-center gap-2 block font-bold text-sm w-[52px] h-[18px] mb-2">
-        <ColorIcon
-          className="w-4 h-4"
-          style={{ color: "var(--color-purple)" }}
-        />
+    <div className="flex items-center gap-4 w-full h-10">
+      {/* أيقونة اللون + كلمة اللون */}
+      <div className="flex items-center gap-2">
+        <ColorIcon className="w-4 h-4 text-[var(--color-purple)]" />
+        <span className="text-[12px] font-bold text-[#000] leading-[18px]">
+          اللون
+        </span>
+      </div>
 
-        <span>اللون</span>
-      </label>
-      <div className="flex gap-4">
+      {/* الدوائر */}
+      <div className="flex items-center gap-3">
         {colors.map((c, i) => {
           const isSelected = selectedColor?.bg === c.bg;
           return (
             <button
               key={i}
               onClick={() => setSelectedColor(c)}
-              className="relative w-5 h-5 rounded-full flex-shrink-0 transition-all duration-200 flex items-center justify-center"
+              className="relative w-5 h-5 rounded-full flex items-center justify-center transition-all duration-200"
               style={{ padding: 0, border: "none" }}
             >
               <div
