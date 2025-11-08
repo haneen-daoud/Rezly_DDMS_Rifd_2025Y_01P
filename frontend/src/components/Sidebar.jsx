@@ -1,72 +1,155 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import Homesidebar from "../assets/icon/homesidebar.svg";
 import Employeeside from "../assets/icon/employeeside.svg";
 import WalletSide from "../assets/icon/walletSide.svg";
 import Booking from "../assets/icon/booking.svg";
 import Setting from "../assets/icon/setting.svg";
+import DownArrow from "../icons/downarrow.svg?react";
 import Logo from "../assets/icon/rezly-logo.svg";
 
-export default function Sidebar({ onClose, onSelectTab }) {
+export default function Sidebar({ onClose, onSelectTab, setActiveSubTab }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // فتح/إغلاق القوائم الفرعية 
+  const [openMenus, setOpenMenus] = useState({
+    clients: false,
+    employees: false,
+  });
+
+  const subTabs = {
+    clients: ["الحجوزات", "المشتركين", "سجل الحضور", "التقارير", "الإعدادات"],
+    employees: ["الموظفين", "الصلاحيات", "التقارير", "الإعدادات"],
+  };
+
   const menu = [
     { to: "/dashboard", label: "الصفحة الرئيسية", icon: Homesidebar },
-    { to: "/dashboard/clients", label: "إدارة العملاء", icon: Booking },
-    { to: "/dashboard/employees", label: "طاقم العمل", icon: Employeeside },
+    { to: "/dashboard/clients", label: "إدارة العملاء", icon: Booking, key: "clients" },
+    { to: "/dashboard/employees", label: "طاقم العمل", icon: Employeeside, key: "employees" },
     { to: "/dashboard/finance", label: "المالية", icon: WalletSide },
     { to: "/dashboard/setting", label: "الإعدادات", icon: Setting },
   ];
 
+  const toggleSubMenu = (key) => {
+    setOpenMenus((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleMainClick = (item) => {
+    navigate(item.to);
+    onSelectTab && onSelectTab(item.label);
+    onClose && onClose();
+  };
+
+  const handleSubTabClick = (mainKey, tab) => {
+  navigate(`/dashboard/${mainKey}`, { replace: true });
+  setActiveSubTab && setActiveSubTab(tab);
+  onSelectTab && onSelectTab(tab);
+  onClose && onClose();
+};
+
+
+
+  const isActive = (path) => {
+    if (path === "/dashboard") {
+      return location.pathname === "/dashboard";
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <aside
-      className="w-64 bg-bg p-3 flex flex-col min-h-screen overflow-y-auto font-cairo transition-all duration-300"
+      className="
+        w-[212px]
+        bg-[#F8F8F8]
+        flex flex-col
+        min-h-screen
+        overflow-y-auto
+        font-cairo
+        px-6
+        pt-4
+        pb-6
+      "
       dir="rtl"
     >
-      {/* 🔹 اللوجو */}
-      <div className="logo p-3 flex justify-center items-center border-b border-[#eee] mb-3">
-        <img src={Logo} alt="logo" className="w-32 h-auto" />
+      {/* اللوجو */}
+      <div className="flex justify-center items-center mb-[18px] mt-[-4px]">
+        <img src={Logo} alt="logo" className="h-[57px] w-auto object-contain" />
       </div>
 
-      {/* 🔹 القوائم */}
-      <nav className="flex-1">
-        <ul className="space-y-3">
-          {menu.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={item.to === "/dashboard"}
-                onClick={() => {
-                  onSelectTab && onSelectTab(item.label);
-                  onClose && onClose(); // لإغلاق السايدبار بالموبايل
-                }}
-                className={({ isActive }) =>
-                  `w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 
-                  ${
-                    isActive
-                      ? "bg-white text-black font-[700]"
-                      : "text-[var(--color-greytext)] hover:bg-white"
-                  }`
-                }
+      {/* القوائم */}
+      <nav className="flex-1 flex flex-col gap-2 mt-0">
+        {menu.map((item) => (
+          <div key={item.to}>
+            {/* العنصر الرئيسي */}
+            <div
+              className={`
+                flex items-center justify-between h-[54px] px-3 rounded-[16px]
+                transition-all duration-200 cursor-pointer
+                ${isActive(item.to) ? "bg-white text-black font-[700]" : "text-[#7E818C] font-[700] hover:text-black"}
+              `}
+            >
+              {/* الضغط على الاسم/الايقون يفتح الصفحة مباشرة */}
+              <div
+                className="flex items-center gap-3 flex-1"
+                onClick={() => handleMainClick(item)}
               >
                 <div className="w-7 h-7 rounded-[12px] flex items-center justify-center bg-[var(--color-purple)]">
                   <img src={item.icon} className="w-4 h-4" alt="" />
                 </div>
-                <span className="text-[14px]">{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+
+                <span className="text-[14px] whitespace-nowrap truncate">
+                  {item.label}
+                </span>
+              </div>
+
+              {/* السهم يظهر فقط على الشاشات الصغيرة */}
+              {item.key && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSubMenu(item.key);
+                  }}
+                  className="p-1 transition-transform lg:hidden"
+                  aria-label="toggle submenu"
+                >
+                  <DownArrow
+                    className={`w-4 h-4 text-[#7E818C] transition-transform duration-200 ${
+                      openMenus[item.key] ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+              )}
+            </div>
+
+            {/* القوائم الفرعية تظهر فقط على الشاشات الصغيرة */}
+            {item.key && openMenus[item.key] && (
+              <div className="lg:hidden pr-10 mt-2 flex flex-col gap-2.5">
+                {subTabs[item.key].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => handleSubTabClick(item.key, tab)}
+                    className="text-right text-[13px] font-semibold text-[#7E818C] hover:text-[var(--color-purple)] transition-colors py-1"
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </nav>
 
-      {/* 🔹 تسجيل الخروج */}
-      <div className="mt-auto pt-4 border-t border-[#eee]">
+      {/* تسجيل الخروج */}
+      <div className="mt-auto pt-5 border-t border-[#eee]">
         <NavLink
           to="/login"
           onClick={onClose}
-          className="w-full flex items-center justify-start text-[14px] p-3 rounded-xl text-[var(--color-greytext)] hover:bg-white"
+          className="flex items-center gap-2 text-[14px] text-[#7E818C] hover:text-black transition-colors duration-200"
         >
           <svg
-            width="26"
-            height="26"
+            width="24"
+            height="24"
             viewBox="0 0 26 26"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -78,7 +161,7 @@ export default function Sidebar({ onClose, onSelectTab }) {
               fill="var(--color-purple)"
             />
           </svg>
-          <span className="ms-2">تسجيل الخروج</span>
+          <span className="whitespace-nowrap">تسجيل الخروج</span>
         </NavLink>
       </div>
     </aside>

@@ -7,7 +7,6 @@ import ShareIcon from "../../icons/share.svg?react";
 import DeleteIcon from "../../icons/delete.svg?react";
 import EditIcon from "../../icons/address.svg?react";
 import DetailsIcon from "../../icons/circle-arrow-left.svg?react";
-
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import { deleteBookingAPI } from "../../api/bookingsApi";
 import { toast } from "react-toastify";
@@ -30,16 +29,14 @@ export default function BookingCard({
   const { role } = useBookings();
   const isAdmin = (role || "").toLowerCase() === "admin";
 
-  // 🔹 أول حجز كممثل للجروب (للتفاصيل العامة)
   const booking = bookingGroup[0];
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
-  /* ==========================
-      استخراج أقرب موعد قادم
-  =========================== */
+  // ========================
+  // استخراج البيانات المجمعة
+  // ========================
   const allSchedules = bookingGroup.flatMap((b) =>
     (b.schedules || []).map((s) => ({
       parentId: b._id,
@@ -60,7 +57,7 @@ export default function BookingCard({
     allSchedules
       .filter((s) => s.date && s.date >= today)
       .sort((a, b) => a.date - b.date)[0] ||
-    allSchedules.sort((a, b) => b.date - a.date)[0]; // fallback لأقرب مضى
+    allSchedules.sort((a, b) => b.date - a.date)[0];
 
   const upcomingDateLabel = upcomingSchedule?.date
     ? upcomingSchedule.date.toLocaleDateString("ar-EG", {
@@ -69,7 +66,9 @@ export default function BookingCard({
       })
     : "غير محدد";
 
-  // 🟣 استخراج اسم المدرب الصحيح
+  // ========================
+  // المدرب
+  // ========================
   let coachName = "مدرب غير معروف";
   if (upcomingSchedule?.coach) {
     if (typeof upcomingSchedule.coach === "object") {
@@ -80,7 +79,6 @@ export default function BookingCard({
         }`.trim() ||
         "مدرب غير معروف";
     } else if (typeof upcomingSchedule.coach === "string") {
-      // 🟢 نحاول نجيب الاسم من الحجز الأصلي لو المدرب جاي كـ ID
       const foundCoach = booking.coachList?.find?.(
         (c) =>
           c.id === upcomingSchedule.coach || c._id === upcomingSchedule.coach
@@ -99,9 +97,6 @@ export default function BookingCard({
   const maxMembers = upcomingSchedule?.maxMembers || 0;
   const membersList = upcomingSchedule?.members || [];
 
-  /* ==========================
-      بيانات الحجز الكامل
-  =========================== */
   const schedules = booking.schedules || [];
   const firstSchedule = schedules[0] || {};
 
@@ -132,7 +127,9 @@ export default function BookingCard({
         )
       : [];
 
-  // 🗓️ حساب فترة التاريخ بناءً على مدة الاشتراك
+  // ========================
+  // التاريخ والمدّة
+  // ========================
   let dateRange = "غير محدد";
   if (startDate && booking.subscriptionDuration) {
     const endDate = new Date(startDate);
@@ -148,7 +145,6 @@ export default function BookingCard({
     };
     const addDays = subMap[booking.subscriptionDuration] || 7;
     endDate.setDate(startDate.getDate() + addDays);
-
     dateRange = `${startDate.getDate()} ${startDate.toLocaleString("ar-EG", {
       month: "long",
     })} - ${endDate.getDate()} ${endDate.toLocaleString("ar-EG", {
@@ -156,9 +152,9 @@ export default function BookingCard({
     })}`;
   }
 
-  /* ==========================
-      الحالة (status)
-  =========================== */
+  // ========================
+  // الحالة
+  // ========================
   let statusText = "متاح";
   let statusColor = "bg-green-100 text-green-700";
   if (["cancelled", "ملغي"].includes(booking.status)) {
@@ -172,38 +168,61 @@ export default function BookingCard({
     statusColor = "bg-blue-100 text-blue-700";
   }
 
-  console.log("✅ booking:", booking);
-
+  // ========================
+  // عرض الكرت
+  // ========================
   return (
-    <div className="w-full max-w-[370px] rounded-[16px] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.15)] p-4 flex flex-col justify-between transition-transform duration-300 hover:scale-[1.03] hover:shadow-[0_4px_12px_rgba(0,0,0,0.25)] relative z-0">
+    <div
+      className="
+      w-full rounded-[16px] bg-white 
+      shadow-[0_2px_6px_rgba(0,0,0,0.15)] 
+      p-3 md:p-4 flex flex-col justify-between 
+      transition-transform duration-300 
+      hover:scale-[1.02] hover:shadow-[0_4px_12px_rgba(0,0,0,0.25)] 
+      relative z-0
+    "
+    >
       {/* 🟣 الموعد القادم */}
-      <div className="absolute top-0 left-0 bg-[var(--color-purple)] text-white text-[14px] px-4 py-1 rounded-tl-[16px] font-semibold min-w-[160px] text-center">
-        الموعد القادم {upcomingDateLabel}
-      </div>
+<div
+  className="
+    absolute top-0 left-0 
+    bg-[var(--color-purple)] text-white 
+    text-[13px] md:text-[14px] font-semibold 
+    px-3 md:px-4 py-[3px] md:py-[4px]
+    rounded-tl-[16px]
+    text-center min-w-[138px] md:min-w-[149px]
+  "
+>
+  الموعد القادم {upcomingDateLabel}
+</div>
 
-      {/* العنوان والمدرب */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-lg font-bold text-black">
-            حجز {booking.service || "غير محدد"}
-          </h3>
-          <div className="w-6 h-6"></div>
-        </div>
-        <p className="text-sm text-gray-600">{coachName}</p>
-      </div>
+{/* العنوان والمدرب */}
+<div className="mt-[20px] md:mt-[22px]">
+  <div className="flex items-center justify-between mb-[2px] md:mb-[4px]">
+    <h3 className="font-bold text-[16px] md:text-[18px] text-black leading-[1.3]">
+      حجز {booking.service || "غير محدد"}
+    </h3>
+  </div>
+  <p className="text-[13px] md:text-[14px] text-gray-600 leading-[1.2]">{coachName}</p>
+</div>
+
 
       {/* الأيام والتاريخ */}
-      <div className="flex items-center justify-between text-sm text-gray-700 mt-3">
-        <div className="flex items-center gap-2 mt-2 text-sm text-gray-800">
-          <CalenderIcon className="w-6 h-6 text-[var(--color-purple)]" />
+      <div className="flex items-center justify-between text-gray-700 mt-3 text-[13px] md:text-[14px]">
+        <div className="flex items-center gap-2">
+          <CalenderIcon className="w-5 h-5 md:w-6 md:h-6 text-[var(--color-purple)]" />
           <span>{dateRange}</span>
         </div>
 
-        <div className="flex gap-2">
-          {repeatDays.slice(0, 2).map((d, i) => (
+        <div className="flex gap-1 md:gap-2">
+          {repeatDays.slice(0, 3).map((d, i) => (
             <span
               key={i}
-              className="px-3 py-1 rounded-full text-xs font-semibold"
+              className="
+                rounded-full text-xs md:text-[13px] font-semibold 
+                flex items-center justify-center 
+                px-2 md:px-3 py-[2px]
+              "
               style={{
                 backgroundColor: "#6A0EAD1A",
                 color: "var(--color-purple)",
@@ -214,7 +233,11 @@ export default function BookingCard({
           ))}
           {repeatDays.length > 3 && (
             <span
-              className="px-3 py-1 rounded-full text-xs font-semibold"
+              className="
+                rounded-full text-xs md:text-[13px] font-semibold 
+                flex items-center justify-center 
+                px-2 md:px-3 py-[2px]
+              "
               style={{
                 backgroundColor: "#6A0EAD1A",
                 color: "var(--color-purple)",
@@ -227,8 +250,8 @@ export default function BookingCard({
       </div>
 
       {/* الوقت */}
-      <div className="flex items-center gap-2 mt-2 text-sm text-gray-800">
-        <HourIcon className="w-6 h-6 text-[var(--color-purple)]" />
+      <div className="flex items-center gap-2 mt-2 text-[13px] md:text-[14px] text-gray-800">
+        <HourIcon className="w-5 h-5 md:w-6 md:h-6 text-[var(--color-purple)]" />
         <span>
           {timeStart} - {timeEnd}
         </span>
@@ -237,8 +260,8 @@ export default function BookingCard({
       {/* عدد المشتركين + الصور + الحالة */}
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-2">
-          <MembersIcon className="w-6 h-6 text-[var(--color-purple)]" />
-          <span className="text-sm font-semibold text-gray-700">
+          <MembersIcon className="w-5 h-5 md:w-6 md:h-6 text-[var(--color-purple)]" />
+          <span className="text-[13px] md:text-[14px] font-semibold text-gray-700">
             {membersCount}/{maxMembers}
           </span>
 
@@ -248,7 +271,7 @@ export default function BookingCard({
                 <img
                   src={m.image || "/default-user.jpg"}
                   alt={m.name || "مشترك"}
-                  className="w-6 h-6 rounded-full border-2 border-white object-cover cursor-pointer"
+                  className="w-6 h-6 md:w-7 md:h-7 rounded-full border-2 border-white object-cover cursor-pointer"
                 />
                 {m.name && (
                   <span className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[11px] bg-black text-white px-2 py-[2px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
@@ -266,15 +289,27 @@ export default function BookingCard({
         </div>
 
         <span
-          className={`text-sm font-semibold px-3 py-1 rounded-full ${statusColor}`}
-        >
-          {statusText}
-        </span>
+  className={`
+    text-[12.5px] md:text-[13.5px] font-semibold 
+    flex items-center justify-center
+    rounded-full 
+    px-[12px] md:px-[14px] py-[3px] md:py-[4px]
+    ${statusColor}
+  `}
+  style={{
+    minHeight: "22px",
+    maxHeight: "24px",
+    minWidth: "77px",
+  }}
+>
+  {statusText}
+</span>
+
       </div>
 
       {/* الأزرار */}
       <div className="mt-4 flex items-center justify-between gap-2">
-        <button className="flex-1 flex items-center justify-center gap-2 bg-[#F4F4F4] text-[#000] text-sm font-semibold py-2 rounded-[12px] hover:bg-gray-200 transition">
+        <button className="flex-1 flex items-center justify-center gap-2 bg-[#F4F4F4] text-[#000] text-[13px] md:text-[14px] font-semibold py-2 rounded-[12px] hover:bg-gray-200 transition">
           <span>عرض التفاصيل</span>
           <DetailsIcon className="w-4 h-4 text-[var(--color-purple)]" />
         </button>
@@ -285,7 +320,7 @@ export default function BookingCard({
               .writeText(window.location.href)
               .then(() => toast.info("تم نسخ رابط الحجز 📋"))
           }
-          className="w-10 h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
+          className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
         >
           <ShareIcon className="w-5 h-5 text-[#000]" />
         </button>
@@ -300,7 +335,7 @@ export default function BookingCard({
               });
               setOpenMenu(openMenu === index ? null : index);
             }}
-            className="w-10 h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
+            className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
           >
             <span className="text-xl leading-none text-[#000]">⋯</span>
           </button>

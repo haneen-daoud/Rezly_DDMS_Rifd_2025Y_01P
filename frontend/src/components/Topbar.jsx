@@ -1,75 +1,45 @@
 import React from "react";
 import AdminImg from "../img/admin-img.jpg";
 import Logo from "../assets/icon/rezly-logo.svg";
+import SearchIcon from "../icons/search.svg?react";
+import PromotionIcon from "../icons/promotion.svg?react";
+import NotificationIcon from "../icons/notification.svg?react";
+import DownVectorIcon from "../icons/downVector.svg?react";
 
 export default function Topbar({ title, onMenuClick }) {
   return (
     <>
-      {/* 🟣 ديسكتوب */}
-      <header className="hidden lg:flex w-full items-center justify-between bg-bg px-6 py-5">
-        <h2 className="text-black text-[16px] font-cairo font-bold leading-[24px] break-words">
+      {/* ديسكتوب */}
+      <header
+        className="
+          hidden lg:flex w-full items-center justify-between 
+          bg-[#F8F8F8] px-6 
+          h-[72px] 
+          
+          font-cairo
+        "
+      >
+        {/* العنوان */}
+        <h2 className="text-black text-[16px] font-bold leading-[24px] break-words">
           {title}
         </h2>
 
+        {/* العناصر الجانبية */}
         <div className="flex gap-7 items-center">
-          {/* أيقونات */}
           <div className="icon-box flex gap-4 items-center">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M9.5 1C14.1944 1 18 4.80558 18 9.5C18 11.4868 17.316 13.3125 16.1738 14.7598L17.707 16.293L17.668 16.332C18.3425 16.1323 19.1024 16.2987 19.6348 16.8311L22.1689 19.3652C22.9432 20.1395 22.9432 21.3947 22.1689 22.1689C21.3947 22.9432 20.1395 22.9432 19.3652 22.1689L16.8311 19.6348C16.2987 19.1024 16.1323 18.3425 16.332 17.668L16.293 17.707L14.7598 16.1738C13.3125 17.316 11.4868 18 9.5 18C4.80558 18 1 14.1944 1 9.5C1 4.80558 4.80558 1 9.5 1ZM9.5 3C5.91015 3 3 5.91015 3 9.5C3 13.0899 5.91015 16 9.5 16C13.0899 16 16 13.0899 16 9.5C16 5.91015 13.0899 3 9.5 3Z"
-                fill="#6A0EAD"
-              />
-            </svg>
-
+            {/* بحث */}
+            <SearchIcon className="w-6 h-6 text-[var(--color-purple)]" />
+            {/* بروموشن */}
             <div className="relative">
-              <svg
-                width="24"
-                height="25"
-                viewBox="0 0 24 25"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M6.67188 15.1924C6.94369 15.0725 7.26103 15.124 7.48047 15.3242L9.79395 17.4375C9.91797 17.5507 10.0642 17.6376 10.2227 17.6934L12.9912 18.667C13.0886 18.7013 13.2613 18.7738 13.4092 18.9062C13.4782 18.968 13.6285 19.1188 13.6826 19.3643C13.7513 19.6766 13.6274 19.9507 13.4561 20.1211L10.5508 23.0068C10.1975 23.3574 9.62036 23.3307 9.30078 22.9492L6.86719 20.0449C6.45244 19.5499 6.22461 18.9241 6.22461 18.2783V15.8779C6.22477 15.5811 6.4003 15.3123 6.67188 15.1924ZM16.4766 2.34668C17.4856 1.91488 18.7604 2.09523 19.5039 3.05859C20.8343 4.78289 21.5381 6.80643 21.748 9.4248C21.7496 9.4446 21.75 9.46451 21.75 9.48438C21.75 12.8767 21.0077 15.0334 19.4834 16.9521C18.7273 17.9038 17.4479 18.1005 16.4219 17.6572L8.25 14.126V5.86621L16.4766 2.34668ZM6.75 13.7383H5C3.48122 13.7383 2.25 12.5071 2.25 10.9883V9C2.2502 7.48139 3.48134 6.25 5 6.25H6.75V13.7383Z"
-                  fill="#6A0EAD"
-                />
-              </svg>
-
-              <span
-                className="absolute -top-1.5 bg-danger text-white text-[10px] px-1 rounded-full"
-                style={{ backgroundColor: "var(--color-danger)" }}
-              >
-                4
+              <PromotionIcon className="w-6 h-6 text-[var(--color-purple)]" />
+              <span className="absolute -top-1 -right-0 bg-[var(--color-danger)] text-white text-[10px] px-1 rounded-full">
+                2
               </span>
             </div>
-
+            {/* جرس */}
             <div className="relative">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M20.6286 15.9984C20.5508 15.9047 20.4744 15.8109 20.3994 15.7204C19.3682 14.4731 18.7443 13.7203 18.7443 10.1892C18.7443 8.36107 18.3069 6.86107 17.4449 5.73607C16.8093 4.90498 15.95 4.27451 14.8175 3.80857C14.803 3.80047 14.79 3.78983 14.7791 3.77717C14.3718 2.4131 13.2571 1.49951 11.9999 1.49951C10.7427 1.49951 9.62849 2.41311 9.22114 3.77576C9.21027 3.78796 9.19744 3.79826 9.18318 3.80623C6.54036 4.8942 5.25599 6.98154 5.25599 10.1878C5.25599 13.7203 4.63302 14.4731 3.60083 15.719C3.52583 15.8095 3.44943 15.9014 3.37161 15.997C3.17061 16.2394 3.04326 16.5343 3.00464 16.8468C2.96601 17.1594 3.01772 17.4764 3.15365 17.7604C3.44286 18.3698 4.05927 18.7481 4.76286 18.7481H19.2421C19.9424 18.7481 20.5546 18.3703 20.8447 17.7637C20.9812 17.4796 21.0334 17.1623 20.9951 16.8494C20.9569 16.5366 20.8297 16.2412 20.6286 15.9984Z"
-                  fill="var(--color-purple)"
-                />
-                <path
-                  d="M11.9999 22.5C12.6773 22.4995 13.3419 22.3156 13.9232 21.9679C14.5045 21.6202 14.9809 21.1217 15.3018 20.5252C15.3169 20.4966 15.3244 20.4646 15.3235 20.4322C15.3226 20.3999 15.3133 20.3684 15.2966 20.3407C15.2799 20.313 15.2563 20.2901 15.2282 20.2742C15.2 20.2583 15.1682 20.25 15.1359 20.25H8.86492C8.83254 20.2499 8.80068 20.2582 8.77245 20.274C8.74422 20.2899 8.72057 20.3128 8.70382 20.3405C8.68706 20.3682 8.67777 20.3997 8.67684 20.4321C8.67591 20.4645 8.68337 20.4965 8.69851 20.5252C9.01939 21.1216 9.49569 21.6201 10.0769 21.9678C10.6581 22.3155 11.3226 22.4994 11.9999 22.5Z"
-                  fill="var(--color-purple)"
-                />
-              </svg>
-              <span
-                className="absolute -top-1 -right-0 bg-danger text-white text-[10px] px-1 rounded-full"
-                style={{ backgroundColor: "var(--color-danger)" }}
-              >
+              <NotificationIcon className="w-6 h-6 text-[var(--color-purple)]" />
+              <span className="absolute -top-1 -right-0 bg-[var(--color-danger)] text-white text-[10px] px-1 rounded-full">
                 4
               </span>
             </div>
@@ -77,39 +47,41 @@ export default function Topbar({ title, onMenuClick }) {
 
           {/* صورة المستخدم */}
           <div className="flex items-center gap-3 py-1">
-            <div className="flex flex-col text-right">
-              <span className="text-black text-[12px] font-[600]">معاذ حجاوي</span>
-              <span className="text-purple text-[12px] font-[700]">أدمن</span>
+            <DownVectorIcon className="w-3 h-5 text-[var(--color-purple)]" />
+            <div className="flex flex-col text-right leading-tight">
+              <span className="text-black text-[12px] font-[600]">
+                معاذ حجاوي
+              </span>
+              <span className="text-[var(--color-purple)] text-[12px] font-[700]">
+                أدمن
+              </span>
             </div>
-            <div className="admin_img_box">
-              <img
-                src={AdminImg}
-                width="40px"
-                height="40px"
-                className="rounded-full"
-                alt="admin"
-              />
-            </div>
+            <img
+              src={AdminImg}
+              width="40"
+              height="40"
+              className="rounded-full"
+              alt="admin"
+            />
           </div>
         </div>
       </header>
 
-      {/* 🟣 موبايل */}
-      <header className="flex lg:hidden w-full items-center justify-between bg-white px-4 py-3 shadow-sm">
-        {/* زر المنيو */}
+      {/* موبايل */}
+      <header className="flex lg:hidden w-full items-center justify-between bg-white px-4 h-[72px] shadow-sm">
+        {/* زر القائمة */}
         <button
           onClick={onMenuClick}
-          className="flex flex-col justify-center items-center w-10 h-10 rounded-md bg-[var(--color-purple)] text-white"
+          className="flex flex-col justify-center items-center w-10 h-10 rounded-md bg-white"
         >
-          <span className="block w-6 h-[2px] bg-white mb-1"></span>
-          <span className="block w-6 h-[2px] bg-white mb-1"></span>
-          <span className="block w-6 h-[2px] bg-white"></span>
+          <span className="block w-6 h-[3px] bg-[var(--color-purple)] mb-[5px] rounded"></span>
+          <span className="block w-6 h-[3px] bg-[var(--color-purple)] mb-[5px] rounded"></span>
+          <span className="block w-6 h-[3px] bg-[var(--color-purple)] rounded"></span>
         </button>
 
-        {/* اللوجو بالوسط */}
         <img src={Logo} alt="logo" className="w-24 h-auto" />
 
-        {/* صورة اليوزر */}
+        {/* صورة المستخدم */}
         <img
           src={AdminImg}
           alt="user"

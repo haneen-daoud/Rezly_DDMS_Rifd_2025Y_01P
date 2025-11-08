@@ -1,9 +1,12 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { step3Schema } from "../employeeValidation.js";
+import Select from 'react-select';
+import selectStyles from "../selectStyles.js";
 
 const Step3Employee = forwardRef(({ data, onChange }, ref) => {
   const [localErrors, setLocalErrors] = useState({});
   const [showErrors, setShowErrors] = useState(false);
+
 
   // تغيير البيانات
   const handleChange = (field, value) => {
@@ -11,6 +14,23 @@ const Step3Employee = forwardRef(({ data, onChange }, ref) => {
     // التعليق هنا إذا تريد تحقق أثناء الكتابة
     // validateField(field, value);
   };
+const jobTitleOptions = [
+  { value: "مطور", label: "مطور" },
+  { value: "مصمم", label: "مصمم" },
+  { value: "مدير", label: "مدير" },
+];
+
+const departmentOptions = [
+  { value: "HR", label: "الموارد البشرية" },
+  { value: "Administration", label: "الإدارة" },
+  { value: "تقنية المعلومات", label: "تقنية المعلومات" },
+];
+
+const contractTypeOptions = [
+  { value: "كامل", label: "دوام كامل" },
+  { value: "جزئي", label: "دوام جزئي" },
+  { value: "مؤقت", label: "دوام مؤقت" },
+];
 
   const validateAll = async () => {
     try {
@@ -47,22 +67,18 @@ const Step3Employee = forwardRef(({ data, onChange }, ref) => {
           <label className="text-[14px] font-[700] text-black">
             المسمى الوظيفي<span className="text-red-500">*</span>
           </label>
-          <select
-            value={data.jobTitle || ""}
-            onChange={(e) => handleChange("jobTitle", e.target.value)}
-            className={`w-full border rounded-xl px-3 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${showErrors && localErrors.jobTitle
-                ? "border-red-500 focus:ring-red-400"
-                : "border-gray-300 focus:ring-purple-500"
-              }`}
-          >
-            <option value="">المسمى الوظيفي</option>
-            <option value="مطور">مطور</option>
-            <option value="مصمم">مصمم</option>
-            <option value="مدير">مدير</option>
-          </select>
-          {showErrors && localErrors.jobTitle && (
-            <p className="text-red-500 text-[11px] mt-1">{localErrors.jobTitle}</p>
-          )}
+     <Select
+  options={jobTitleOptions}
+  value={jobTitleOptions.find((o) => o.value === data.jobTitle)}
+  onChange={(opt) => handleChange("jobTitle", opt.value)}
+  placeholder="المسمى الوظيفي"
+  styles={selectStyles}
+  isRtl={true}
+/>
+{showErrors && localErrors.jobTitle && (
+  <p className="text-red-500 text-[11px] mt-1">{localErrors.jobTitle}</p>
+)}
+
         </div>
 
         {/* القسم */}
@@ -70,23 +86,18 @@ const Step3Employee = forwardRef(({ data, onChange }, ref) => {
           <label className="text-[14px] font-[700] text-black">
             القسم<span className="text-red-500">*</span>
           </label>
-          <select
-            value={data.department || ""}
-            onChange={(e) => handleChange("department", e.target.value)}
-            className={`w-full border rounded-xl px-3 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${showErrors && localErrors.department
-                ? "border-red-500 focus:ring-red-400"
-                : "border-gray-300 focus:ring-purple-500"
-              }`}
-          >
-            <option value="">اختر القسم</option>
-            <option value="HR">الموارد البشرية</option>
-            <option value="Administration">الادارة</option>
+          <Select
+  options={departmentOptions}
+  value={departmentOptions.find((o) => o.value === data.department)}
+  onChange={(opt) => handleChange("department", opt.value)}
+  placeholder="اختر القسم"
+  styles={selectStyles}
+  isRtl={true}
+/>
+{showErrors && localErrors.department && (
+  <p className="text-red-500 text-[11px] mt-1">{localErrors.department}</p>
+)}
 
-            <option value="تقنية المعلومات">تقنية المعلومات</option>
-          </select>
-          {showErrors && localErrors.department && (
-            <p className="text-red-500 text-[11px] mt-1">{localErrors.department}</p>
-          )}
         </div>
 
         {/* نوع العقد */}
@@ -94,22 +105,18 @@ const Step3Employee = forwardRef(({ data, onChange }, ref) => {
           <label className="text-[14px] font-[700] text-black">
             نوع العقد<span className="text-red-500">*</span>
           </label>
-          <select
-            value={data.contractType || ""}
-            onChange={(e) => handleChange("contractType", e.target.value)}
-            className={`w-full border rounded-xl px-2.5 py-2 text-[12px] text-[#7E818C] focus:outline-none focus:ring-2 ${showErrors && localErrors.contractType
-                ? "border-red-500 focus:ring-red-400"
-                : "border-gray-300 focus:ring-purple-500"
-              }`}
-          >
-            <option value="">نوع العقد</option>
-            <option value="كامل">دوام كامل</option>
-            <option value="جزئي">دوام جزئي</option>
-            <option value="مؤقت">دوام مؤقت</option>
-          </select>
-          {showErrors && localErrors.contractType && (
-            <p className="text-red-500 text-[11px] mt-1">{localErrors.contractType}</p>
-          )}
+   <Select
+  options={contractTypeOptions}
+  value={contractTypeOptions.find((o) => o.value === data.contractType)}
+  onChange={(opt) => handleChange("contractType", opt.value)}
+  placeholder="نوع العقد"
+  styles={selectStyles}
+  isRtl={true}
+/>
+{showErrors && localErrors.contractType && (
+  <p className="text-red-500 text-[11px] mt-1">{localErrors.contractType}</p>
+)}
+
         </div>
 
         {/* تاريخ بدء العمل */}

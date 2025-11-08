@@ -814,7 +814,7 @@ export default function EventModal({
         {/* حفظ */}
         <div className="pt-2">
           <button
-            className="w-[313px] h-10 bg-[#6A0EAD] text-white rounded-[8px] font-bold text-[14px] hover:bg-[#5A0CA0] transition"
+            className="w-[313px] h-10 bg-[var(--color-purple)] text-white rounded-[8px] font-bold text-[14px] hover:bg-[var(--color-purple)] transition"
             onClick={handleUpdateSingleSchedule}
           >
             حفظ

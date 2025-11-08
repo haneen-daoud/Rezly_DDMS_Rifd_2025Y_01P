@@ -42,7 +42,16 @@ export default function BookingsList({ bookings = [], loading, onChange }) {
 console.log("📦 الحجوزات اللي داخل BookingList:", bookings);
 
   return (
-  <div ref={listRef} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+  <div
+  ref={listRef}
+  className="
+    grid
+    grid-cols-1 sm:grid-cols-2 xl:grid-cols-3
+    gap-x-[24px] gap-y-[20px]
+    w-full
+  "
+>
+
     {groupedArray.map((group) => (
       <BookingCard
         key={group[0]._id} // ✅ id ثابت

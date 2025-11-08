@@ -157,7 +157,7 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/25 z-50">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-[849px] h-[712px] flex flex-col p-6 text-right overflow-hidden relative">
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-[849px] h-[712px] flex flex-col p-6 text-right  relative">
         <div className="flex flex-col w-full gap-4 mx-auto">
           <div className="flex justify-between items-start">
             <h2 className="text-[16px] font-bold text-black">

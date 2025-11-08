@@ -16,7 +16,6 @@ import {
   getUserFromToken,
 } from "../../../api/bookingsApi";
 
-// تحول "أسبوعين" -> "2weeks"
 function mapDurationToBackend(arabicText) {
   const map = {
     أسبوع: "1week",
@@ -30,10 +29,8 @@ function mapDurationToBackend(arabicText) {
   return map[arabicText] || arabicText || "";
 }
 
-// تحول "08:00" -> "8:00 ص" مؤقتاً لإرضاء الباك
 function convertToBackendTimeFormat(hhmm, fullDateTime) {
   if (!hhmm) return "";
-  // hhmm = "08:00"
   const [hStr, mStr] = hhmm.split(":");
   let h = parseInt(hStr, 10);
   let suffix = "ص";
@@ -77,11 +74,9 @@ export default function AddBookingModal({ onChange }) {
 
   const [fullBookingData, setFullBookingData] = useState(null);
 
-  // 🟣 متغيرات المستخدم
   const [isCoach, setIsCoach] = useState(false);
   const [coachId, setCoachId] = useState(null);
 
-  // 🟣 حفظ جميع المشتركين (للإغناء لاحقًا)
   const [allMembers, setAllMembers] = useState([]);
 
   const calendarRef = useRef(null);
@@ -131,11 +126,11 @@ useEffect(() => {
   // أول ما نفتـح المودال للتعديل
   useEffect(() => {
     if (isEditing && formData?.schedules?.length) {
-      setScheduleOptions(formData.schedules); // نحفظ نسخة منفصلة ثابتة
+      setScheduleOptions(formData.schedules);
     }
   }, [isEditing, formData.schedules]);
 
-  // 🟣 جلب جميع المشتركين من السيرفر (كل الصفحات)
+  // جلب جميع المشتركين من السيرفر (كل الصفحات)
   useEffect(() => {
     const fetchMembers = async () => {
       try {
@@ -145,7 +140,7 @@ useEffect(() => {
           "";
         const headers = { Authorization: `Bearer ${token}` };
 
-        // 🟢 أول صفحة
+        //  أول صفحة
         const first = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL2}/auth/getAllMembers?page=1`,
           { headers }
@@ -155,7 +150,7 @@ useEffect(() => {
         let all = [...firstList];
         let page = 2;
 
-        // 🔁 باقي الصفحات
+        //  باقي الصفحات
         while (true) {
           const res = await axios.get(
             `${
@@ -178,11 +173,7 @@ useEffect(() => {
         }));
 
         setAllMembers(formatted);
-        console.log(
-          "✅ [AddBookingModal] تم جلب جميع المشتركين:",
-          formatted.length
-        );
-        // ✅ لما نكون في وضع التعديل (تعديل الكل) والمشتركين الأساسيين لسه ما انعرضوا
+        // لما نكون في وضع التعديل (تعديل الكل) والمشتركين الأساسيين لسه ما انعرضوا
         if (isEditing && fullBookingData?.members?.length) {
           const enrichedMembers = fullBookingData.members.map((m) => {
             const id = typeof m === "object" ? m.id || m._id : m;
@@ -201,40 +192,34 @@ useEffect(() => {
             ...prev,
             members: enrichedMembers,
           }));
-
-          console.log(
-            "👥 [AddBookingModal] تعبئة المشتركين عند فتح تعديل الكل:",
-            enrichedMembers
-          );
         }
       } catch (err) {
-        console.error("❌ [AddBookingModal] فشل جلب المشتركين:", err);
+        console.error("[AddBookingModal] فشل جلب المشتركين:", err);
       }
     };
 
     fetchMembers();
   }, []);
 
-  // 🧩 جلب بيانات المستخدم الفعلية
+  // جلب بيانات المستخدم الفعلية
   useEffect(() => {
     async function fetchUser() {
       const user = await getUserFromToken();
       const role = user?.role?.toLowerCase() || "unknown";
       setIsCoach(role === "coach");
       setCoachId(user?.id || null);
-      console.log("🧩 المستخدم الحالي:", user);
+      console.log("المستخدم الحالي:", user);
     }
     fetchUser();
   }, []);
 
-  // 🔁 تحديث الدور لو تغيّر التوكن
+  // تحديث الدور لو تغيّر التوكن
   useEffect(() => {
     const handleStorageChange = async () => {
       const updatedUser = await getUserFromToken();
       const role = updatedUser?.role?.toLowerCase() || "unknown";
       setIsCoach(role === "coach");
       setCoachId(updatedUser?.id || null);
-      console.log("🔁 تم تحديث المستخدم:", updatedUser);
     };
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
@@ -242,7 +227,7 @@ useEffect(() => {
 
   // فتح المودال للإضافة
   const handleOpen = async () => {
-    // ✅ صَفّي كل شيء أول إشي
+    // صَفّي كل شيء أول إشي
     setStep1Errors({});
     setStep2Errors({});
     setActiveStep(0);
@@ -255,7 +240,7 @@ useEffect(() => {
     setIsCoach(role === "coach");
     setCoachId(currentUser?.id || null);
 
-    // 🔹 بعدين نظّف الداتا الجاهزة للحجز الجديد
+    // بعدين نظّف الداتا الجاهزة للحجز الجديد
     setIsEditing(false);
     setFormData({});
     setIsGroupEdit(false);
@@ -278,18 +263,18 @@ useEffect(() => {
     setSelectedBooking(null);
     setGroupBookings([]);
 
-    // ✅ تصفير الأخطاء عند الإغلاق
+    // تصفير الأخطاء عند الإغلاق
     setStep1Errors({});
     setStep2Errors({});
     setSelectedOption("all");
     setScheduleOptions([]);
   };
 
-  // 🟣 تحديث البيانات عند اختيار حجز فردي من القائمة
+  // تحديث البيانات عند اختيار حجز فردي من القائمة
   const handleSelectBooking = (selectedSchedule) => {
     console.log("🟣 handleSelectBooking استُدعيت مع:", selectedSchedule);
 
-    // 🔸 لو ما في حجز (اختار تعديل الكل)
+    // لو ما في حجز (اختار تعديل الكل)
     if (!selectedSchedule) {
       setSelectedBooking(null);
       setIsGroupEdit(true);
@@ -837,8 +822,8 @@ useEffect(() => {
             {/* 🟣 اللودنج */}
             {loading && (
               <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-50">
-                <div className="w-16 h-16 border-4 border-[#6A0EAD] border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-lg font-medium text-[#6A0EAD]">
+                <div className="w-16 h-16 border-4 border-[var(--color-purple)] border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-lg font-medium text-[var(--color-purple)]">
                   {isEditing
                     ? isGroupEdit
                       ? "جارٍ تعديل الحجز..."
@@ -1002,9 +987,9 @@ useEffect(() => {
                     <div
                       className={`w-[20px] h-[20px] flex items-center justify-center rounded-[10px] text-xs font-medium border ${
                         index < activeStep
-                          ? "border-[#6A0EAD] bg-[#6A0EAD] text-white"
+                          ? "border-[var(--color-purple)] bg-[var(--color-purple)] text-white"
                           : index === activeStep
-                          ? "border-[#6A0EAD] text-[#6A0EAD]"
+                          ? "border-[var(--color-purple)] text-[var(--color-purple)]"
                           : "border-gray-300 text-gray-500"
                       }`}
                     >
@@ -1013,7 +998,7 @@ useEffect(() => {
                     <span
                       className={`text-sm font-medium ${
                         index <= activeStep
-                          ? "text-purple-600"
+                          ? "text-[var(--color-purple)]"
                           : "text-gray-500"
                       }`}
                     >
@@ -1058,8 +1043,7 @@ useEffect(() => {
               <div className="w-[344px] mt-4 self-center flex flex-row gap-2">
                 {activeStep === 0 ? (
                   <button
-                    className="w-full py-3 text-white text-sm font-medium rounded-[8px]"
-                    style={{ backgroundColor: "#6A0EAD" }}
+                    className="w-full py-3 text-white text-sm font-medium rounded-[8px] bg-[var(--color-purple)]"
                     onClick={async () => {
                       try {
                         if (isCoach && coachId && !formData.coachId)
@@ -1088,14 +1072,13 @@ useEffect(() => {
                 ) : (
                   <>
                     <button
-                      className="w-full py-3 text-[#6A0EAD] text-sm font-medium rounded-[8px] border border-[#6A0EAD]"
+                      className="w-full py-3 text-[var(--color-purple)] text-sm font-medium rounded-[8px] border border-[var(--color-purple)]"
                       onClick={() => setActiveStep(0)}
                     >
                       السابق
                     </button>
                     <button
-                      className="w-full py-3 text-white text-sm font-medium rounded-[8px]"
-                      style={{ backgroundColor: "#6A0EAD" }}
+                      className="w-full py-3 text-white text-sm font-medium rounded-[8px] bg-[var(--color-purple)]"
                       onClick={handleSubmit}
                       disabled={loading}
                     >

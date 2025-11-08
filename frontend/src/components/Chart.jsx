@@ -60,10 +60,9 @@ export default function Chart() {
   const data = getData();
 
   return (
-    <section className="bg-white rounded-[16px] p-4 sm:p-6 w-full overflow-hidden">
+    <section className="bg-white rounded-[16px] p-3 sm:p-4 w-full overflow-hidden">
   {/* 🔹 Header */}
-  <div className="flex items-center justify-between gap-2 flex-wrap mb-4">
-    {/* Tabs */}
+<div className="flex items-center justify-between gap-1 flex-nowrap overflow-x-auto no-scrollbar mb-3">
     <div className="flex gap-2">
       <button
         className="text-[13px] sm:text-[14px] font-[700] text-white bg-[var(--color-purple)] 
@@ -92,8 +91,9 @@ export default function Chart() {
         <option>الشهر</option>
       </select>
 
+      {/* زر تبديل الرسم + السهم */}
       <button
-        className="border border-[#ddd] rounded-md h-[36px] w-[36px] flex items-center justify-center hover:bg-[#f9f9f9]"
+        className="border border-[#ddd] rounded-md h-[36px] flex items-center justify-center gap-1 hover:bg-[#f9f9f9] px-3"
         onClick={toggleChartType}
       >
         <svg
@@ -108,8 +108,21 @@ export default function Chart() {
             fill="var(--color-purple)"
           />
         </svg>
+
+        {/* 🔹 السهم الصغير */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-3 h-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
       </button>
 
+      {/* زر النقاط الثلاث */}
       <button
         className="border border-[#ddd] rounded-md h-[36px] w-[36px] flex items-center justify-center hover:bg-[#f9f9f9] text-[#7E818C] text-[18px]"
       >
@@ -119,7 +132,7 @@ export default function Chart() {
   </div>
 
   {/* 🔹 الرسم البياني */}
-  <div className="w-full h-[180px] sm:h-[220px] md:h-[250px]">
+  <div className="w-full h-[160px] sm:h-[200px] md:h-[230px]">
     <ResponsiveContainer width="100%" height="100%">
       {chartType === "line" ? (
         <LineChart data={data}>

@@ -13,7 +13,7 @@ import MiniCalender from "../../components/MiniCalender/MiniCalender";
 import "./Calender.css";
 
 import CalenderIcon from "../../icons/calender.svg?react";
-import ReSizeIcon from "../../icons/resize.svg";
+import ReSizeIcon from "../../icons/resize.svg?react";
 import RightArrowIcon from "../../icons/rightarrow.svg";
 import LeftArrowIcon from "../../icons/leftarrow.svg";
 import DownArrowIcon from "../../icons/downarrow.svg";
@@ -375,15 +375,11 @@ setTimeout(() => {
 
               {/* زر تكبير الشاشة */}
               <div>
-                <img
-                  src={ReSizeIcon}
-                  alt="resize"
-                  className="cursor-pointer"
-                  onClick={() => {
+                
+                <ReSizeIcon className="cursor-pointer w-8 h-8 text-[var(--color-purple)]" onClick={() => {
                     setFullScreenMode(!fullScreenMode);
                     setTimeout(() => calendarRef.current?.getApi().render(), 0);
-                  }}
-                />
+                  }}/>
               </div>
             </div>
           </div>
