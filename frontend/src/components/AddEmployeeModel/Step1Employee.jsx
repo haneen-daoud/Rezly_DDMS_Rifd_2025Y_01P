@@ -1,20 +1,16 @@
-import React, { useState, useImperativeHandle, forwardRef, useRef, useEffect } from "react";
+import React, { useState, useImperativeHandle, forwardRef } from "react";
 import { step1Schema } from "../employeeValidation.js";
+import Select from 'react-select';
+import selectStyles from "../selectStyles.js";
 
 const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
   const [localErrors, setLocalErrors] = useState({});
-        const [openGenderDropdown, setOpenGenderDropdown] = useState(false);
-const genderRef = useRef(null);
 
-useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (genderRef.current && !genderRef.current.contains(event.target)) {
-      setOpenGenderDropdown(false);
-    }
-  };
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+const genderOptions = [
+  { value: 'ذكر', label: 'ذكر' },
+  { value: 'أنثى', label: 'أنثى' }
+];
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && file.size <= 2 * 1024 * 1024) {
@@ -112,45 +108,27 @@ useEffect(() => {
         </div>
 
         {/* الجنس */}
+        <div>
+          <label className="block text-[14px] font-[700] text-black mb-1.5 ">
+            الجنس <span className="text-red-500">*</span>
+          </label>
+        <Select
+  options={genderOptions}
+  value={genderOptions.find(o => o.value === data.gender)}
+  onChange={(opt) => handleChange('gender', opt.value)}
+  placeholder="اختر الجنس"
+  styles={selectStyles}
 
 
-<div className="relative" ref={genderRef}>
-  <label className="block text-[14px] font-[700] text-black mb-1.5 ">
-    الجنس <span className="text-red-500">*</span>
-  </label>
 
-  <div
-    className={`w-full h-10 rounded-xl flex items-center justify-between cursor-pointer px-3 border ${
-      combinedErrors.gender ? "border-red-500" : "border-gray-300"
-    }`}
-    onClick={() => setOpenGenderDropdown((prev) => !prev)}
-  >
-    <span className={`text-[12px] ${data.gender ? "text-black" : "text-gray-400"}`}>
-      {data.gender || "اختر الجنس"}
-    </span>
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" clip-rule="evenodd" d="M3.84861 5.76863C4.03478 5.56565 4.33663 5.56565 4.5228 5.76863L7.66239 9.19181C7.84856 9.3948 8.1504 9.3948 8.33658 9.19181L11.4762 5.76864C11.6623 5.56565 11.9642 5.56565 12.1504 5.76864C12.3365 5.97162 12.3365 6.30073 12.1504 6.50372L9.01076 9.92689C8.45225 10.5359 7.54672 10.5359 6.9882 9.92689L3.84861 6.50372C3.66244 6.30073 3.66244 5.97162 3.84861 5.76863Z" fill="black"/>
-</svg>
-
-  </div>
-
-  {openGenderDropdown && (
-    <div className="absolute w-full bg-white border border-gray-300 rounded-lg mt-1 shadow-lg z-50">
-      {["ذكر", "أنثى"].map((option) => (
-        <div
-          key={option}
-          className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-[13px]"
-          onClick={() => {
-            handleChange("gender", option);
-            setOpenGenderDropdown(false);
-          }}
-        >
-          {option}
+  isRtl={true}
+/> 
+          {combinedErrors.gender && (
+            <p className="text-red-500 text-[11px] mt-1">
+              {combinedErrors.gender}
+            </p>
+          )}
         </div>
-      ))}
-    </div>
-  )}
-</div>
 
         {/* رقم الهوية */}
         <div>

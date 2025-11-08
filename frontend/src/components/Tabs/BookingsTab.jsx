@@ -79,30 +79,31 @@ export default function BookingsPage({ bookings: filteredBookings }) {
         />
       )}
 
-      <div className="p-6 flex flex-col gap-6">
-        {/* ✅ مودال الإضافة */}
-        <AddBookingModal onChange={handleDataChange} />
+     <div className="mt-[16px] md:mt-[20px] flex flex-col gap-6 w-full">
+  {/* ✅ مودال الإضافة */}
+  <AddBookingModal onChange={handleDataChange} />
 
-        {/* ✅ محتوى الصفحة */}
-        <div className="p-6 flex flex-col gap-6 overflow-visible relative z-0">
+  {/* ✅ محتوى الصفحة */}
+  <div className="flex flex-col gap-6 overflow-visible relative z-0 w-full">
 
-          {loading ? (
-            <div className="text-center py-12 text-gray-500">
-              جارِ التحميل...
-            </div>
-          ) : displayBookings.length === 0 ? (
-            <div className="text-center text-gray-400 py-8">
-              لا توجد حجوزات مطابقة 🔍
-            </div>
-          ) : (
-            <BookingsList
-              bookings={displayBookings}
-              loading={loading}
-              onChange={handleDataChange}
-            />
-          )}
-        </div>
+    {loading ? (
+      <div className="text-center py-12 text-gray-500">
+        جارِ التحميل...
       </div>
+    ) : displayBookings.length === 0 ? (
+      <div className="text-center text-gray-400 py-8">
+        لا توجد حجوزات مطابقة 🔍
+      </div>
+    ) : (
+      <BookingsList
+        bookings={displayBookings}
+        loading={loading}
+        onChange={handleDataChange}
+      />
+    )}
+  </div>
+</div>
+
     </>
   );
 }

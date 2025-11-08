@@ -316,10 +316,12 @@ export default function ParticipantsSelector({
           }`}
         >
           <span
-            className={`h-10 flex items-center text-[14px] ${
+            className={`h-10 flex items-center ${
               currentIds.length
-                ? "text-[#000] font-normal"
-                : "text-gray-400 font-normal"
+                ? variant === "event"
+                  ? "font-bold text-[14px] text-[#000]"
+                  : "font-normal text-[14px] text-[#000]"
+                : "text-gray-400 font-normal text-[14px]"
             }`}
           >
             {currentIds.length > 0

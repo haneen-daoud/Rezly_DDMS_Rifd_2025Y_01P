@@ -118,9 +118,11 @@ export const signIn = async (formData) => {
   }
 };
 
+
+
 export const signup = async (formData) => {
   try {
-    const res = await api.post("/auth/signup", formData);
+const res = await api.post("/auth/SignUp", formData);
     return res;
   } catch (err) {
     console.error("Signup error:", err);
@@ -169,15 +171,13 @@ export const addNewMember = async (memberData) => {
 
 
 // جلب جميع الأعضاء (المشتركين)
-export const getAllMembers = async () => {
-
+export const getAllMembers = async (page = 1) => {
   try {
-    const res = await api.get("/auth/getAllMembers", {
+    const res = await api.get(`/auth/getAllMembers?page=${page}`, {
       headers: {
         Authorization: `Bearer ${FIXED_TOKEN}`,
       },
     });
-
     return res.data;
   } catch (err) {
     console.error("❌ خطأ أثناء جلب الأعضاء:", err);

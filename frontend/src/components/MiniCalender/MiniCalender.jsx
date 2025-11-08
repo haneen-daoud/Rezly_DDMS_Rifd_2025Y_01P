@@ -162,7 +162,7 @@ export default function MiniCalender({
         />
 
         <button
-          className="w-full h-[36px] mt-3 bg-[var(--color-purple)] text-white rounded-[8px] font-bold text-[14px] hover:bg-[#5A0CA0] transition"
+          className="w-full h-[36px] mt-3 bg-[var(--color-purple)] text-white rounded-[8px] font-bold text-[14px] hover:bg-[var(--color-purple)] transition"
           onClick={() => handleDateChange(tempDate)}
         >
           اختيار

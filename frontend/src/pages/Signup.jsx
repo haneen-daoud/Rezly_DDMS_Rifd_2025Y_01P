@@ -3,7 +3,7 @@ import UserIcon from "../icons/user.svg?react";
 import EmailIcon from "../icons/email.svg?react";
 import PasswordIcon from "../icons/password.svg?react";
 import EyeOffIcon from "../icons/eyeOff.svg?react";
-import SignupBg from "../icons/signup.svg"; // استيراد الخلفية
+import SignupBg from "../icons/signup.svg";
 import { useNavigate } from "react-router-dom";
 import { signup } from "../api.js";
 import Logo from "../assets/icon/rezly-logo.svg";
@@ -20,8 +20,6 @@ const Signup = () => {
     password: "",
     cpassword: "",
     phone: "",
-    gender: "",
-    role: "",
   });
 
   const handleChange = (e) => {
@@ -38,15 +36,23 @@ const Signup = () => {
 
     try {
       setLoading(true);
-      await signup(formData);
+      const res = await signup(formData);
+      console.log("✅ Signup success:", res);
       alert("تم إنشاء الحساب بنجاح!");
       navigate("/");
     } catch (error) {
-      console.error("خطأ أثناء التسجيل:", error);
-      alert(
-        error.response?.data?.message ||
-          "حدث خطأ أثناء التسجيل، حاول مرة أخرى"
-      );
+      console.error("❌ Signup failed:", error);
+
+      if (error.response) {
+        const backendErrors = error.response.data.errors || error.response.data;
+        alert(
+          typeof backendErrors === "string"
+            ? backendErrors
+            : JSON.stringify(backendErrors, null, 2)
+        );
+      } else {
+        alert(error.message || "حدث خطأ أثناء التسجيل، حاول مرة أخرى");
+      }
     } finally {
       setLoading(false);
     }
@@ -54,31 +60,22 @@ const Signup = () => {
 
   return (
     <div
-      className="flex font-[Cairo] justify-center items-start gap-8"
+      className="flex flex-col md:flex-row font-[Cairo] justify-center items-center md:items-start gap-8 px-4 md:px-10"
       style={{
-        height: "150vh", // ارتفاع الصفحة يكفي لكل المحتوى
-        overflow: "hidden", // يمنع أي scroll
-        paddingTop: "20px", // مسافة بسيطة من الأعلى
+        minHeight: "100vh",
+        paddingTop: "10px",
       }}
     >
       {/* نموذج التسجيل */}
       <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "10px",
-          flex: 1,
-          maxWidth: "600px",
-          padding: "2rem",
-          height: "auto", // ارتفاع طبيعي حسب المحتوى
-        }}
+        className="flex flex-col items-center flex-1 w-full md:max-w-[600px] bg-white rounded-xl p-6 md:p-8 shadow-md"
       >
         <div className="mb-4 flex justify-center w-full">
-          <img src={Logo} alt="logo" className="logo" />
+        
+          <img src={Logo} alt="logo" className="logo mb-1 w-[150px] h-auto" />
         </div>
 
-        <h2 className="text-3xl font-bold text-black mb-3">إنشاء حساب</h2>
+        <h2 className="text-3xl font-bold text-black mb-2">إنشاء حساب</h2>
         <p className="text-lg font-bold text-[#7E818C] mb-5 text-center">
           ابدأ تجربتك مع نظامنا الذكي لإدارة الجيم
         </p>
@@ -89,7 +86,7 @@ const Signup = () => {
         >
           {/* اسم المستخدم */}
           <div className="mb-4">
-            <label className="block mb-2">اسم المستخدم</label>
+            <label className="block mb-2 text-black">اسم المستخدم</label>
             <div className="relative w-full">
               <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
               <input
@@ -105,7 +102,7 @@ const Signup = () => {
 
           {/* البريد الإلكتروني */}
           <div className="mb-3">
-            <label className="block mb-1">البريد الإلكتروني</label>
+            <label className="block mb-1 text-black">البريد الإلكتروني</label>
             <div className="relative w-full">
               <EmailIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
               <input
@@ -121,13 +118,13 @@ const Signup = () => {
 
           {/* كلمة المرور */}
           <div className="mb-3">
-            <label className="block mb-1">كلمة المرور</label>
+            <label className="block mb-1 text-black">كلمة المرور</label>
             <div className="relative w-full">
               <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
-                placeholder="*"
+                placeholder="*****"
                 value={formData.password}
                 onChange={handleChange}
                 className="w-full h-12 pr-10 pl-3 border border-gray-300 rounded-lg text-sm focus:outline-none placeholder-[#7E818C]"
@@ -144,13 +141,13 @@ const Signup = () => {
 
           {/* تأكيد كلمة المرور */}
           <div className="mb-3">
-            <label className="block mb-1">تأكيد كلمة المرور</label>
+            <label className="block mb-1 text-black">تأكيد كلمة المرور</label>
             <div className="relative w-full">
               <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
               <input
                 type={showCPassword ? "text" : "password"}
                 name="cpassword"
-                placeholder="*"
+                placeholder="*****"
                 value={formData.cpassword}
                 onChange={handleChange}
                 className="w-full h-12 pr-10 pl-3 border border-gray-300 rounded-lg text-sm focus:outline-none placeholder-[#7E818C]"
@@ -167,7 +164,7 @@ const Signup = () => {
 
           {/* رقم الهاتف */}
           <div className="mb-3">
-            <label className="block mb-1">رقم الهاتف</label>
+            <label className="block mb-1 text-black">رقم الجوال</label>
             <input
               type="text"
               name="phone"
@@ -176,38 +173,6 @@ const Signup = () => {
               onChange={handleChange}
               className="w-full h-12 pr-3 pl-3 border border-gray-300 rounded-lg text-sm focus:outline-none placeholder-[#7E818C]"
             />
-          </div>
-
-          {/* الجنس */}
-          <div className="mb-3">
-            <label className="block mb-1">الجنس</label>
-            <select
-              name="gender"
-              value={formData.gender}
-              onChange={handleChange}
-              className="w-full h-12 pr-3 pl-3 border border-gray-300 rounded-lg text-sm focus:outline-none"
-            >
-              <option value="">اختر الجنس</option>
-              <option value="Female">أنثى</option>
-              <option value="Male">ذكر</option>
-            </select>
-          </div>
-
-          {/* مستوى الصلاحية */}
-          <div className="mb-5">
-            <label className="block mb-1">مستوى الصلاحية</label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              className="w-full h-12 pr-3 pl-3 border border-gray-300 rounded-lg text-sm focus:outline-none"
-            >
-              <option value="">اختر مستوى الصلاحية</option>
-              <option value="Admin">مدير</option>
-              <option value="Coach">مدرب</option>
-              <option value="accountant">محاسبة</option>
-              <option value="receptionist">موظف استقبال</option>
-            </select>
           </div>
 
           {/* زر الإنشاء */}
@@ -233,16 +198,17 @@ const Signup = () => {
         </form>
       </div>
 
-      {/* خلفية البنفسجية */}
+      {/* خلفية البنفسجية (تظهر فقط على الشاشات المتوسطة والكبيرة) */}
       <div
+        className="hidden md:block"
         style={{
           backgroundImage: `url(${SignupBg})`,
-          width: "680px",
-          height: "120vh",
+          width: "550px",
+          height: "95vh",
           backgroundSize: "cover",
           backgroundRepeat: "no-repeat",
-          borderRadius: "30px",
-          marginLeft: "1px",
+          borderRadius: "15px",
+          marginTop: "15px",
         }}
       ></div>
     </div>

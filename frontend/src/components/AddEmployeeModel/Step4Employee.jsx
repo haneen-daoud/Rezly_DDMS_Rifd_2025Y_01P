@@ -1,5 +1,7 @@
 import React, { useState, forwardRef, useImperativeHandle } from "react";
 import { step4Schema } from "../employeeValidation.js";
+import Select from "react-select";
+import selectStyles from "../selectStyles.js";
 
 const Step4Employee = forwardRef(({ data, onChange }, ref) => {
   const [errors, setErrors] = useState({});
@@ -12,6 +14,12 @@ const Step4Employee = forwardRef(({ data, onChange }, ref) => {
       validateField(field, value);
     }
   };
+const roleOptions = [
+  { value: "Admin", label: "مدير" },
+  { value: "Coach", label: "مدرب" },
+  { value: "Accountant", label: "محاسب" },
+  { value: "Receptionist", label: "موظف استقبال" },
+];
 
   const validateField = async (field, value) => {
     try {
@@ -93,44 +101,41 @@ const Step4Employee = forwardRef(({ data, onChange }, ref) => {
         </div>
 
         {/* مستوى الصلاحية */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[14px] font-[700] text-black">
-            مستوى الصلاحية<span className="text-red-500">*</span>
-          </label>
-          <select
-            value={data.role || ""}
-            onChange={(e) => handleChange("role", e.target.value)}
-            className={`w-full border rounded-xl p-2.5 text-[12px] text-[#7E818C]
-              focus:outline-none focus:ring-2 ${
-                showErrors && errors.role
-                  ? "border-red-500 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-purple-500"
-              }`}
-          >
-            <option value="">اختر مستوى الصلاحية</option>
-            <option value="Admin">مدير</option>
-            <option value="Coach">مدرب</option>
-            <option value="Accountant">محاسب</option>
-            <option value="Receptionist">موظف استقبال</option>
-          </select>
-          {showErrors && errors.role && (
-            <p className="text-red-500 text-[11px]">{errors.role}</p>
-          )}
-        </div>
+<div className="flex flex-col gap-2">
+  <label className="text-[14px] font-[700] text-black">
+    مستوى الصلاحية<span className="text-red-500">*</span>
+  </label>
+
+  <Select
+    options={roleOptions}
+    value={roleOptions.find((o) => o.value === data.role)}
+    onChange={(opt) => handleChange("role", opt.value)}
+    placeholder="اختر مستوى الصلاحية"
+    styles={selectStyles}
+    isRtl={true}
+  />
+
+  {showErrors && errors.role && (
+    <p className="text-red-500 text-[11px] mt-1">{errors.role}</p>
+  )}
+</div>
+
 
         {/* ملاحظات */}
         <div className="flex flex-col gap-2">
           <label className="text-[14px] font-[700] text-black">
             ملاحظات
           </label>
-          <input
-            type="text"
-            placeholder="أضف ملاحظات"
-            value={data.notes || ""}
-            onChange={(e) => handleChange("notes", e.target.value)}
-            className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-              focus:outline-none focus:ring-2 `}
-          />
+      <input
+  type="text"
+  placeholder="أضف ملاحظات"
+  value={data.notes || ""}
+  onChange={(e) => handleChange("notes", e.target.value)}
+  className="w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+              focus:outline-none focus:ring-2 border-gray-300 focus:ring-purple-500"
+/>
+
+
 
         </div>
 

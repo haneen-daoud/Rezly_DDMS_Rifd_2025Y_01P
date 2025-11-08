@@ -135,11 +135,31 @@ const ReminderSelector = ({
                       {option.label}
                     </span>
                   </div>
+
+                  {/* ✅ مربع تحديد بدل الدائرة */}
                   <div
-                    className={`w-4 h-4 rounded-full border-2 border-[var(--color-purple)] flex items-center justify-center`}
-                  >
+  className={`w-4 h-4 rounded-[4px] border-2 flex items-center justify-center transition-all duration-150 ${
+    isSelected
+      ? "bg-[var(--color-purple)] border-[var(--color-purple)]"
+      : "border-gray-400 bg-gray-100"
+  }`}
+>
+
                     {isSelected && (
-                      <div className="w-2 h-2 rounded-full bg-[var(--color-purple)]"></div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-3 h-3 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={3}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
                     )}
                   </div>
                 </div>

@@ -16,27 +16,47 @@ export default function SubscribersTab() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedClientToDelete, setSelectedClientToDelete] = useState(null);
 
+
   // جلب جميع المشتركين
 useEffect(() => {
   const localData = localStorage.getItem("membersData");
-
   if (localData) {
-    setClients(JSON.parse(localData));
+    setClients(JSON.parse(localData)); // تحميل مؤقت من الكاش
   }
-  const fetchMembers = async () => {
-    try {
-      const data = await getAllMembers();
-      setClients(data.members || []);
-      localStorage.setItem("membersData", JSON.stringify(data.members || []));
-      console.log(data)
 
+  const fetchAllMembers = async () => {
+    try {
+      let allMembers = [];
+      let currentPage = 1;
+      let hasMore = true;
+
+      // نجلب كل الصفحات وحدة وحدة
+      while (hasMore) {
+        const data = await getAllMembers(currentPage);
+        const members = data.members || data.data || [];
+
+        allMembers = [...allMembers, ...members];
+
+        if (members.length < 10) {
+          hasMore = false;
+        } else {
+          currentPage++;
+        }
+      }
+
+      // بعد ما يكتمل الجلب لكل الصفحات
+      setClients(allMembers);
+      localStorage.setItem("membersData", JSON.stringify(allMembers));
+      console.log("✅ تم جلب جميع المشتركين:", allMembers.length);
     } catch (error) {
-      console.error("حدث خطأ أثناء جلب المشتركين:", error);
+      console.error("❌ حدث خطأ أثناء جلب المشتركين:", error);
     }
   };
 
-  fetchMembers();
+  fetchAllMembers();
 }, []);
+
+
 
 
   // حذف المشترك
