@@ -79,29 +79,65 @@ console.log("🎯 بعد الفلترة:", filtered.length);
     });
 
     // 6️⃣ دمج بيانات المدرب داخل كل حجز (حتى لو كانت بياناته ناقصة)
-    const formatted = (filtered || []).map((b) => {
-      const schedWithCoach =
-        (b.schedules || []).find((s) => !!s.coach) || {};
-      const rawCoach =
-        schedWithCoach.coach ?? b.coach ?? b.coachId ?? null;
+const formatted = (filtered || []).map((b) => {
+  const schedWithCoach = (b.schedules || []).find((s) => !!s.coach) || {};
+  const rawCoach = schedWithCoach.coach ?? b.coach ?? b.coachId ?? null;
 
-      const coachId =
-        typeof rawCoach === "object"
-          ? rawCoach?._id || rawCoach?.id
-          : rawCoach;
+  const coachId =
+    typeof rawCoach === "object"
+      ? rawCoach?._id || rawCoach?.id
+      : rawCoach;
 
-      const coach =
-        (coachId && coachesMap[String(coachId)]) ||
-        (coachId
-          ? { id: coachId, name: "مدرب غير معروف" }
-          : { id: null, name: "لا يوجد مدرب" });
+  const coach =
+    (coachId && coachesMap[String(coachId)]) ||
+    (coachId
+      ? { id: coachId, name: "مدرب غير معروف" }
+      : { id: null, name: "لا يوجد مدرب" });
 
-      return { ...b, coach };
-    });
+  return { ...b, coach };
+});
 
-    // 7️⃣ تخزين وتحديث الحالة
-    setBookings(formatted);
-    localStorage.setItem("cachedBookings", JSON.stringify(formatted));
+
+// 🟣 تحميل قائمة كل المشتركين من localStorage (من شغل زميلتك)
+const allMembersCache = JSON.parse(localStorage.getItem("membersData") || "[]");
+
+const cleaned = formatted.map((b) => {
+  // نحدد قائمة IDs حسب اللي برجع من السيرفر
+  const memberIds =
+    Array.isArray(b.uniqueMembers) && b.uniqueMembers.length > 0
+      ? b.uniqueMembers
+      : Array.isArray(b.members)
+      ? b.members.map((m) => m.member || m._id || m.id)
+      : [];
+
+  const uniqueMap = new Map();
+
+  memberIds.forEach((id) => {
+    if (!uniqueMap.has(id)) {
+      // 🔍 نبحث الاسم الحقيقي من الكاش تبع SubscribersTab
+      const found = allMembersCache.find(
+        (mm) => mm._id === id || mm.id === id
+      );
+
+      uniqueMap.set(id, {
+        _id: id,
+        name:
+          `${found?.firstName || ""} ${found?.lastName || ""}`.trim() ||
+          found?.userName ||
+          found?.name ||
+          "مشترك بدون اسم",
+      });
+    }
+  });
+
+  return { ...b, members: Array.from(uniqueMap.values()) };
+});
+
+
+// 7️⃣ تخزين وتحديث الحالة
+setBookings(cleaned);
+localStorage.setItem("cachedBookings", JSON.stringify(cleaned));
+
 
   } catch (err) {
     console.error("❌ فشل جلب الحجوزات:", err);

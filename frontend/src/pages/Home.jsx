@@ -17,7 +17,7 @@ export default function Home() {
   const [showEventModal, setShowEventModal] = useState(false);
 
   return (
-    <div className="bg-[#F8F8F8] min-h-screen w-full font-cairo">
+    <div className="min-h-screen w-full font-cairo">
       <div className="flex flex-col lg:flex-row gap-6 items-stretch w-full h-full">
 
         {/* الجزء الأيسر: الكروت + الشارت + الجدول  */}

@@ -13,7 +13,7 @@ export default function Topbar({ title, onMenuClick }) {
       <header
         className="
           hidden lg:flex w-full items-center justify-between 
-          bg-[#F8F8F8] px-6 
+          px-6 
           h-[72px] 
           
           font-cairo

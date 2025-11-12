@@ -19,9 +19,12 @@ export default function Step2Booking({
   const [openDuration, setOpenDuration] = useState(false);
   const [openUpDuration, setOpenUpDuration] = useState(false);
   const [daysSchedule, setDaysSchedule] = useState(
-    formData.daysSchedule?.length ? formData.daysSchedule : []
+    Array.isArray(formData?.daysSchedule) && formData.daysSchedule.length
+      ? formData.daysSchedule
+      : []
   );
 
+  // حافظ على مزامنة daysSchedule مع formData (من غير تغيير الشكل)
   useEffect(() => {
     if (Array.isArray(formData?.daysSchedule)) {
       setDaysSchedule(formData.daysSchedule);
@@ -35,7 +38,7 @@ export default function Step2Booking({
       }
       return { ...prev, daysSchedule };
     });
-  }, [daysSchedule]);
+  }, [daysSchedule, setFormData]);
 
   const allDays = [
     { short: "سبت", full: "السبت" },
@@ -47,11 +50,20 @@ export default function Step2Booking({
     { short: "جمعة", full: "الجمعة" },
   ];
 
+  //  تعديل بسيط: نخزن التاريخ للباك في startDate أيضًا (غير إضافة dateOnly)
   const handleDateChange = (date) => {
     const dateString = date.toISOString().split("T")[0];
-    setFormData((prev) => ({ ...prev, dateOnly: dateString }));
+    setFormData((prev) => ({
+      ...prev,
+      dateOnly: dateString,
+      startDate: dateString,
+    }));
     setShowCalendar(false);
-    if (errors?.start) setErrors((prev) => ({ ...prev, start: null }));
+    if (errors?.dateOnly || !dateString)
+      setErrors((prev) => ({
+        ...prev,
+        dateOnly: dateString ? null : "تاريخ البدء مطلوب",
+      }));
   };
 
   const handleAddDay = () => {
@@ -70,6 +82,16 @@ export default function Step2Booking({
     const updated = [...daysSchedule];
     updated[index][key] = value;
     setDaysSchedule(updated);
+    if (key === "day" && !value) {
+      setErrors((prev) => ({ ...prev, daysSchedule: "اختر اليوم" }));
+    } else if ((key === "start" || key === "end") && !value) {
+      setErrors((prev) => ({
+        ...prev,
+        daysSchedule: "وقت البداية والنهاية مطلوب",
+      }));
+    } else {
+      setErrors((prev) => ({ ...prev, daysSchedule: null }));
+    }
   };
 
   const durationOptions = [
@@ -83,14 +105,9 @@ export default function Step2Booking({
   ];
 
   const dateDisplay =
-    formData.dateOnly || (formData.start ? formData.start.split("T")[0] : "");
-
-  useEffect(() => {
-    // أول ما يتغير formData، نحدّث daysSchedule والتواريخ داخلياً
-    if (formData) {
-      setDaysSchedule(formData.daysSchedule || []);
-    }
-  }, [formData]);
+    formData.dateOnly ||
+    (formData.start ? formData.start.split("T")[0] : "") ||
+    "";
 
   // إغلاق القوائم عند الضغط خارجها
   useEffect(() => {
@@ -115,15 +132,19 @@ export default function Step2Booking({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {}, [isEditing]);
+  useEffect(() => {
+    window.formData = formData; // عشان يعرف وقت الحجز عند الفتح
+  }, [formData]);
 
   return (
     <div className="flex flex-col gap-4 w-full items-center font-bold text-black text-[14px]">
       {/* تاريخ البدء */}
-      <div className="relative w-[344px] flex flex-col dropdown-step2">
+      <div className="relative w-[344px] flex flex-col calendar-popup">
         <label className="block font-bold text-sm mb-2">
-          تاريخ البدء <span className="text-red-500">*</span>
+          {isIndividual ? "تاريخ الحجز" : "تاريخ البدء"}
+          {!isEditing && <span className="text-red-500"> *</span>}
         </label>
+
         <div className="relative flex flex-col w-full">
           <div
             className={`relative flex items-center w-full border rounded-md h-10 ${
@@ -165,7 +186,8 @@ export default function Step2Booking({
       {!isIndividual && (
         <div className="relative w-[344px] dropdown-step2">
           <label className="block font-bold text-sm mb-2">
-            مدة الاشتراك <span className="text-red-500">*</span>
+            مدة الاشتراك{" "}
+            {!isEditing && <span className="text-red-500"> *</span>}
           </label>
 
           {/* الحقل الرئيسي */}
@@ -184,11 +206,10 @@ export default function Step2Booking({
             >
               {formData.subscriptionDuration || "اختر مدة الاشتراك"}
             </span>
-
             <img
               src={downarrowIcon}
               alt="downarrow"
-              className="absolute left-2 w-4 h-4 pointer-events-none"
+              className="w-4 h-4 opacity-80"
             />
           </div>
 
@@ -202,38 +223,34 @@ export default function Step2Booking({
               }`}
             >
               <div className="p-3">
-                {durationOptions.map((option, idx) => {
+                {durationOptions.map((option) => {
                   const selected = formData.subscriptionDuration === option;
                   return (
                     <div
-                      key={idx}
-                      className="flex items-center justify-between h-[36px] px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
+                      key={option}
                       onClick={() => {
-                        setFormData({
-                          ...formData,
-                          duration: option,
+                        setFormData((prev) => ({
+                          ...prev,
                           subscriptionDuration: option,
-                        });
+                        }));
                         setOpenDuration(false);
-                        if (errors?.subscriptionDuration)
-                          setErrors((prev) => ({
-                            ...prev,
-                            subscriptionDuration: null,
-                          }));
+                        setErrors((prev) => ({
+                          ...prev,
+                          subscriptionDuration: option
+                            ? null
+                            : "مدة الاشتراك مطلوبة",
+                        }));
                       }}
+                      className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100 rounded-md"
                     >
                       <div className="flex items-center gap-2">
-                        <img
-                          src={durationIcon}
-                          alt="duration"
-                          className="w-4 h-4 text-[var(--color-purple)]"
-                        />
+                        <img src={durationIcon} alt="" className="w-4 h-4" />
                         <span
-                          className={`text-[12px] ${
+                          className={
                             selected
                               ? "font-semibold text-[#000]"
                               : "font-normal text-[#000]"
-                          }`}
+                          }
                         >
                           {option}
                         </span>
@@ -267,11 +284,18 @@ export default function Step2Booking({
       )}
 
       {/* جدول الأيام أو تعديل فردي */}
-      <div className="w-[344px] flex flex-col gap-3 ">
+      <div
+        className={`w-[344px] flex flex-col gap-3 max-h-[220px] pr-1 ${
+          daysSchedule.length > 4
+            ? "overflow-y-auto custom-scrollbar"
+            : "overflow-y-hidden"
+        }`}
+      >
         {!isIndividual && (
           <div className="flex items-center justify-between mb-1">
             <label className="block font-bold text-sm">
-              جدول المواعيد <span className="text-red-500">*</span>
+              جدول المواعيد{" "}
+              {!isEditing && <span className="text-red-500"> *</span>}
             </label>
 
             <button
@@ -285,15 +309,10 @@ export default function Step2Booking({
           </div>
         )}
 
-        {isIndividual && (
-          <label className="block font-bold text-sm mb-1">
-            تعديل وقت الحجز <span className="text-red-500">*</span>
-          </label>
-        )}
-
         {/* تعديل حجز فردي */}
         {isIndividual ? (
           <div className="flex flex-col gap-2">
+            <label className="block font-bold text-sm mb-1">وقت الحجز</label>
             <TimeRangePicker
               startTime={formData.start?.split("T")[1]?.slice(0, 5) || "08:00"}
               endTime={formData.end?.split("T")[1]?.slice(0, 5) || "09:00"}
@@ -305,6 +324,16 @@ export default function Step2Booking({
                   start: `${dateBase}T${start}`,
                   end: `${dateBase}T${end}`,
                 });
+                // 🟣 تحقق فوري أثناء اختيار الوقت
+                if (!start || !end) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    start: !start ? "وقت البداية مطلوب" : prev.start,
+                    end: !end ? "وقت النهاية مطلوب" : prev.end,
+                  }));
+                } else {
+                  setErrors((prev) => ({ ...prev, start: null, end: null }));
+                }
               }}
               variant="booking"
             />
@@ -365,6 +394,12 @@ export default function Step2Booking({
             )}
           </>
         )}
+        {/* 🟣 عرض رسالة الخطأ تحت جدول الأيام (لو جاية من AddBookingModal) */}
+        {errors?.daysSchedule && (
+          <p className="text-red-500 text-xs mt-1 text-center">
+            {errors.daysSchedule}
+          </p>
+        )}
       </div>
 
       {/* التذكير */}
@@ -376,6 +411,13 @@ export default function Step2Booking({
               setFormData((prev) => ({
                 ...prev,
                 reminders: newReminders,
+              }));
+              setErrors((prev) => ({
+                ...prev,
+                reminders:
+                  Array.isArray(newReminders) && newReminders.length > 0
+                    ? null
+                    : "اختيار التذكير مطلوب",
               }));
             }}
           />
