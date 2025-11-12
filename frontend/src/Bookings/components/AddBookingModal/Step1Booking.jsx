@@ -19,39 +19,36 @@ export default function Step1Booking({
   setErrors,
   isIndividual = false,
   isCoach = false,
-  members = [],
 }) {
+  // ====== حالات محلية ======
   const [coaches, setCoaches] = useState([]);
+  const [membersList, setMembersList] = useState([]); // ✅ اللستة المحلية الصحيحة للمشتركين
   const [openClass, setOpenClass] = useState(false);
   const [classSearch, setClassSearch] = useState("");
   const [classes, setClasses] = useState(["يوغا", "كارديو", "ملاكمة"]);
   const [rooms] = useState(["قاعة 1", "قاعة 2", "قاعة 3"]);
 
-  // تأكد من إضافة اسم الحصة الحالية لقائمة الحصص عند فتح التعديل
+  const isReadOnly = !!isIndividual; // حقول مقفلة بصريًا عند تعديل فردي
+
+  // لما يكون فيّ اسم حصة مسبقًا (تعديل)، ضيفيه لقائمة الحصص لو مش موجود
   useEffect(() => {
     if (!formData?.title || formData.title.trim() === "") return;
 
     setClasses((prev) => {
       const normalizedPrev = prev.map((c) => c.trim().toLowerCase());
       const normalizedTitle = formData.title.trim().toLowerCase();
-
-      // إذا مش موجود نضيفه
       if (!normalizedPrev.includes(normalizedTitle)) {
         return [...prev, formData.title.trim()];
       }
-
-      // إذا موجود نرجّع القائمة بدون تعديل
       return prev;
     });
   }, [formData?.title]);
 
-  const isReadOnly = !!isIndividual; // حقول مظللة لو تعديل فردي
-
-  // جلب قائمة المدربين
+  // ====== جلب المدربين (فوري من الكاش، ثم تحديث بالخلفية) ======
   useEffect(() => {
     const loadCoachesInstantly = async () => {
       try {
-        // يحمل مباشرة من localStorage عشان تظهر الأسماء فوراً
+        // من الـ localStorage لإظهار فوري
         const local = JSON.parse(localStorage.getItem("allEmployees") || "[]");
         if (Array.isArray(local) && local.length > 0) {
           const formattedLocal = local.map((c) => ({
@@ -64,7 +61,7 @@ export default function Step1Booking({
           setCoaches(formattedLocal);
         }
 
-        // تحديث من السيرفر بخلفية الصفحة
+        // تحديث من السيرفر بالخلفية
         const remote = await getAllCoachesAPI();
         if (Array.isArray(remote) && remote.length > 0) {
           const formattedRemote = remote.map((c) => ({
@@ -83,8 +80,9 @@ export default function Step1Booking({
     };
 
     loadCoachesInstantly();
-  }, []);
+  }, []); // :contentReference[oaicite:2]{index=2}
 
+  // ====== جلب المشتركين (صفحة أولى فورًا + باقي الصفحات بالخلفية) ======
   useEffect(() => {
     const fetchMembersSmart = async () => {
       try {
@@ -92,9 +90,11 @@ export default function Step1Booking({
           localStorage.getItem("authToken") ||
           localStorage.getItem("token") ||
           "";
-        const headers = { Authorization: `Bearer ${token}` };
+        const headers = {
+          Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
+        };
 
-        //  أول صفحة فوراً بتتحمل
+        // الصفحة الأولى — تظهر فورًا
         const firstRes = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL2}/auth/getAllMembers?page=1`,
           { headers }
@@ -110,89 +110,52 @@ export default function Step1Booking({
 
         // باقي الصفحات بالخلفية
         let page = 2;
-        let all = [...firstList];
+        let all = [...formattedFirst];
         let hasMore = true;
 
         while (hasMore) {
           const res = await axios.get(
-            `${
-              import.meta.env.VITE_API_BASE_URL2
-            }/auth/getAllMembers?page=${page}`,
+            `${import.meta.env.VITE_API_BASE_URL2}/auth/getAllMembers?page=${page}`,
             { headers }
           );
           const list = res.data?.members || res.data?.data || [];
           if (Array.isArray(list) && list.length > 0) {
-            all = [...all, ...list];
+            const formatted = list.map((m) => ({
+              id: m._id,
+              name:
+                `${m.firstName || ""} ${m.lastName || ""}`.trim() ||
+                m.userName ||
+                "مشترك بدون اسم",
+            }));
+            all = [...all, ...formatted];
             page++;
           } else {
             hasMore = false;
           }
         }
 
-        const formattedAll = all.map((m) => ({
-          id: m._id,
-          name:
-            `${m.firstName || ""} ${m.lastName || ""}`.trim() ||
-            m.userName ||
-            "مشترك بدون اسم",
-        }));
+        // ✅ خزّنها محليًا — ونمررها لـ ParticipantsSelector
+        setMembersList(all);
       } catch (err) {
         console.error(" فشل جلب المشتركين:", err);
       }
     };
 
     fetchMembersSmart();
-  }, []);
+  }, []); // منطق الجلب موجود عندك وأكملته بتخزينه بـ membersList :contentReference[oaicite:3]{index=3} :contentReference[oaicite:4]{index=4}
 
-  const handleClassSelect = (cls) => {
-    if (isReadOnly) return;
-
-    setFormData((prev) => ({
-      ...prev,
-      title: cls,
-      service: cls,
-    }));
-
-    setOpenClass(false);
-    setClassSearch("");
-    if (errors?.title) setErrors((prev) => ({ ...prev, title: null }));
-  };
-
-  const handleAddNewClass = () => {
-    if (isReadOnly) return;
-    const newClass = classSearch.trim();
-    if (newClass && !classes.includes(newClass)) {
-      setClasses([...classes, newClass]);
-      handleClassSelect(newClass);
-    }
-  };
-
-  // إغلاق القوائم عند الضغط خارجها
+  // لو في أعضاء مختارين بالأرقام فقط، نغنيهم بالأسماء من membersList (عرضًا فقط)
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".dropdown-step1")) {
-        setOpenClass(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    if (!Array.isArray(formData?.members) || formData.members.length === 0) {
+    if (!Array.isArray(formData?.members) || formData.members.length === 0)
       return;
-    }
-    if (!Array.isArray(members) || members.length === 0) {
-      return;
-    }
+    if (!Array.isArray(membersList) || membersList.length === 0) return;
 
     const enriched = formData.members.map((m) => {
       const id = typeof m === "object" ? m.id || m._id : m;
-      const full = members.find((mm) => mm.id === id || mm._id === id);
-
+      const full = membersList.find((mm) => mm.id === id || mm._id === id);
       if (full) {
         return {
-          ...m,
+          ...(typeof m === "object" ? m : {}),
           id,
           name:
             full.name ||
@@ -208,8 +171,44 @@ export default function Step1Booking({
       ...prev,
       members: enriched,
     }));
-  }, [members, formData?.members?.length]);
+  }, [membersList, formData?.members?.length]); // :contentReference[oaicite:5]{index=5}
 
+  // ====== Handlers ======
+  const handleClassSelect = (cls) => {
+    if (isReadOnly) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      title: cls,
+      service: cls, // backend expects "service"
+    }));
+
+    setOpenClass(false);
+    setClassSearch("");
+    if (errors?.title) setErrors((prev) => ({ ...prev, title: null }));
+  };
+
+  const handleAddNewClass = () => {
+    if (isReadOnly) return;
+    const newClass = classSearch.trim();
+    if (newClass && !classes.includes(newClass)) {
+      setClasses((prev) => [...prev, newClass]);
+      handleClassSelect(newClass);
+    }
+  };
+
+  // إغلاق قائمة أسماء الحصص عند الضغط خارجها
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".dropdown-step1")) {
+        setOpenClass(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ====== UI (نفس الشكل بالضبط) ======
   return (
     <div className="flex justify-center bg-white w-full text-black text-[14px]">
       <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
@@ -221,11 +220,7 @@ export default function Step1Booking({
           <div
             className={`w-full h-10 rounded-[8px] flex items-center justify-between relative border ${
               errors?.title ? "border-red-500" : "border-gray-300"
-            } ${
-              isReadOnly
-                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                : "cursor-pointer"
-            }`}
+            } ${isReadOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "cursor-pointer"}`}
             onClick={() => {
               if (!isIndividual) setOpenClass(!openClass);
             }}
@@ -237,11 +232,7 @@ export default function Step1Booking({
             >
               {formData.title || "اختر اسم الحصة"}
             </span>
-            <img
-              src={downarrowIcon}
-              alt="downarrow"
-              className="absolute left-2"
-            />
+            <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
           </div>
           {errors?.title && (
             <p className="text-red-500 text-xs mt-1">{errors.title}</p>
@@ -253,21 +244,17 @@ export default function Step1Booking({
                 <div className="relative mb-2">
                   <input
                     type="text"
-                    placeholder="ابحث عن حصة..."
+                    placeholder="ابحث عن حصة."
                     value={classSearch}
                     onChange={(e) => setClassSearch(e.target.value)}
                     className="w-full h-8 rounded-md pr-8 pl-8 border border-gray-200 focus:outline-none text-gray-800 placeholder-gray-400"
                   />
-
                   <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-4 h-4 text-[var(--color-purple)]" />
-
                   {classSearch && (
                     <XIcon
                       alt="clear"
                       className="absolute top-1/2 left-2 -translate-y-1/2 w-3.5 h-3.5 cursor-pointer opacity-80 hover:opacity-100 text-[var(--color-purple)]"
-                      onClick={() => {
-                        setClassSearch("");
-                      }}
+                      onClick={() => setClassSearch("")}
                     />
                   )}
                 </div>
@@ -295,9 +282,7 @@ export default function Step1Booking({
                         key={idx}
                         onClick={() => handleClassSelect(cls)}
                         className={`flex items-center justify-between h-[32px] px-3 py-1 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 ${
-                          isSelected
-                            ? "font-semibold text-black"
-                            : "text-gray-700"
+                          isSelected ? "font-semibold text-black" : "text-gray-700"
                         }`}
                       >
                         {cls}
@@ -333,26 +318,66 @@ export default function Step1Booking({
           <label className="block font-bold text-sm mb-1">
             الوصف <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
+          <textarea
             placeholder="أدخل الوصف"
             value={formData.description || ""}
             onChange={(e) => {
-              if (isIndividual) return;
-              setFormData({ ...formData, description: e.target.value });
-              if (errors?.description)
-                setErrors((prev) => ({ ...prev, description: null }));
-            }}
+  if (isIndividual) return;
+  const el = e.target;
+  el.style.height = "40px";
+  el.style.height = Math.min(el.scrollHeight, 100) + "px";
+
+  let value = el.value;
+
+  // ✅ أولاً: لو تجاوز 250 - نقصّه ونظهر رسالة الحدّ الأقصى ونرجع
+  if (value.length > 250) {
+    value = value.slice(0, 250);
+    setFormData({ ...formData, description: value });
+    setErrors((prev) => ({
+      ...prev,
+      description: "الوصف لا يمكن أن يتجاوز 250 حرفًا",
+    }));
+    return; // مهم علشان ما ينمسح الخطأ بالشروط اللي تحت
+  }
+
+  // باقي الحالات الطبيعية
+  setFormData({ ...formData, description: value });
+
+  if (value.trim().length === 0) {
+    setErrors((prev) => ({ ...prev, description: "الوصف مطلوب" }));
+  } else if (value.trim().length < 10) {
+    setErrors((prev) => ({
+      ...prev,
+      description: "الوصف يجب أن يحتوي على 10 أحرف على الأقل",
+    }));
+  } else {
+    // طول من 10 إلى 250 → لا خطأ
+    setErrors((prev) => ({ ...prev, description: null }));
+  }
+}}
+
+
             readOnly={isIndividual}
             disabled={isIndividual}
-            className={`w-full h-10 border rounded-md px-3 focus:outline-none placeholder-gray-400 ${
+            rows={1}
+            className={`w-full border rounded-md px-3 py-[8px] focus:outline-none placeholder-gray-400 ${
               errors?.description ? "border-red-500" : "border-gray-300"
-            } ${
-              isReadOnly
-                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                : "bg-white"
-            }`}
+            } ${isReadOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"}`}
+            style={{
+              lineHeight: "1.5",
+              resize: "none",
+              overflowY: "auto",
+              minHeight: "40px",
+              maxHeight: "60px",
+            }}
           />
+          {/* عداد لحروف الوصف
+          <div className="flex justify-end">
+  <span className="text-xs text-gray-500">
+    {(formData.description?.length || 0)}/250
+  </span>
+</div>
+*/}
           {errors?.description && (
             <p className="text-red-500 text-xs mt-1">{errors.description}</p>
           )}
@@ -390,7 +415,6 @@ export default function Step1Booking({
                 room: loc,
                 location: loc,
               }));
-
               if (errors?.room) setErrors((prev) => ({ ...prev, room: null }));
             }}
             locationsList={rooms}
@@ -412,7 +436,6 @@ export default function Step1Booking({
                 ...prev,
                 maxMembers: Number(value),
               }));
-
               if (errors?.maxMembers)
                 setErrors((prev) => ({ ...prev, maxMembers: null }));
             }}
@@ -430,9 +453,7 @@ export default function Step1Booking({
 
         {/* المشتركين */}
         <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
-          <label className="text-[12px] font-bold leading-[18px]">
-            المشتركين
-          </label>
+          <label className="text-[12px] font-bold leading-[18px]">المشتركين</label>
           <div className="relative w-[343px]">
             <ParticipantsSelector
               variant="booking"
@@ -440,7 +461,7 @@ export default function Step1Booking({
               showIcon={false}
               booking={formData}
               setBooking={setFormData}
-              membersList={members}
+              membersList={membersList} // ✅ هون التعديل المهم
             />
           </div>
         </div>

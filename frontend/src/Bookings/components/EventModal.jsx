@@ -450,6 +450,34 @@ export default function EventModal({
       // ✅ خزّنيهم بالـ booking نفسه قبل البناء
       booking.members = cleanedMembers;
 
+      // 🟣 تحويل التذكيرات {hoursBefore} إلى {date,time} بناءً على وقت الحجز الحالي
+// 🟣 تحويل التذكيرات {hoursBefore} إلى {date,time} بناءً على وقت الحجز الحالي (محلي)
+let transformedReminders = [];
+if (Array.isArray(booking.reminders)) {
+  transformedReminders = booking.reminders.map((r) => {
+    if (typeof r === "object" && typeof r.hoursBefore === "number") {
+      const bookingDate = new Date(booking.start);
+      const reminderDate = new Date(
+        bookingDate.getTime() - r.hoursBefore * 60 * 60 * 1000
+      );
+
+      // 🕒 استخدم التوقيت المحلي بدل UTC
+      const year = reminderDate.getFullYear();
+      const month = String(reminderDate.getMonth() + 1).padStart(2, "0");
+      const day = String(reminderDate.getDate()).padStart(2, "0");
+      const hours = String(reminderDate.getHours()).padStart(2, "0");
+      const minutes = String(reminderDate.getMinutes()).padStart(2, "0");
+
+      return {
+        date: `${year}-${month}-${day}`,
+        time: `${hours}:${minutes}`,
+      };
+    }
+    return r;
+  });
+}
+
+
       // 🔹 بناء جسم الطلب مثل ما بدو الباك
       const updateBody = {
         coach:
@@ -458,7 +486,7 @@ export default function EventModal({
             : booking.coachId || "",
         location: booking.location || "",
         maxMembers: Number(booking.maxMembers) || 0,
-        reminders: Array.isArray(booking.reminders) ? booking.reminders : [],
+        reminders: transformedReminders,
         timeStart: toArabic12h(booking.start?.split("T")[1]?.slice(0, 5)),
         timeEnd: toArabic12h(booking.end?.split("T")[1]?.slice(0, 5)),
         date: booking.date || booking.start?.split("T")[0], // ✅ نرسل التاريخ الجديد
@@ -797,16 +825,18 @@ export default function EventModal({
             <div className="relative">
               <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
               <ReminderSelector
-                variant="event"
-                showLabel={false}
-                selectedReminders={booking.reminders || []}
-                setSelectedReminders={(rem) =>
-                  setBooking({ ...booking, reminders: rem })
-                }
-                showIconInInput
-                borderStyle="#7E818C"
-                placeholderColor="text-gray-400"
-              />
+  variant="event"
+  showLabel={false}
+  selectedReminders={booking.reminders || []}
+  setSelectedReminders={(rem) =>
+    setBooking({ ...booking, reminders: rem })
+  }
+  showIconInInput
+  borderStyle="#7E818C"
+  placeholderColor="text-gray-400"
+  baseDateTime={booking.start} // 🟣 نمرّر وقت الحجز الحالي لحساب الفرق
+/>
+
             </div>
           </div>
         </div>

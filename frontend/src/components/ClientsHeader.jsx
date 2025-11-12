@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate, useLocation } from "react-router-dom"; // ✅ استخدمناهم للتنقل والتعرّف على الصفحة الحالية
 import BookingIcon from "../icons/booking.svg?react";
 import MembersIcon from "../icons/addpeople.svg?react";
 import FilterIcon from "../icons/filter.svg?react";
@@ -6,32 +7,54 @@ import BookingNumberIcon from "../icons/bookingNumber.svg?react";
 import MembersNumberIcon from "../icons/people.svg?react";
 import SearchIcon from "../icons/search.svg?react";
 
-const tabs = ["الحجوزات", "المشتركين", "سجل الحضور", "التقارير", "الإعدادات"];
+// ✅ التابات الرئيسية لإدارة العملاء
+const tabs = [
+  { name: "الحجوزات", path: "bookings" },
+  { name: "المشتركين", path: "members" },
+  { name: "سجل الحضور", path: "attendance" },
+  { name: "التقارير", path: "reports" },
+  { name: "الإعدادات", path: "settings" },
+];
 
 export default function ClientsHeader({
   activeTab,
   setActiveTab,
-  totalBookings = 30,
+  totalMembers,
+  totalBookings,
   handleAddBookingClick,
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // ✅ عند الضغط على تب → يغير التاب والرابط
+  const handleTabClick = (tab) => {
+    setActiveTab(tab.name);
+    navigate(`/dashboard/clients/${tab.path}`);
+  };
+
+  // ✅ استخراج المسار الحالي لمعرفة التاب النشط
+  const currentPath = location.pathname.split("/")[3];
+
   return (
     <div className="w-full">
+      {/* ✅ التابات (ديسكتوب) */}
       <div
         className="hidden md:flex bg-white items-center px-4 h-[40px] border-b border-[#E5E7EB]"
         style={{ gap: "12px" }}
       >
         {tabs.map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
+            key={tab.name}
+            onClick={() => handleTabClick(tab)}
             className={`relative text-[12px] font-semibold font-Cairo leading-[150%] pb-[3px] transition-colors duration-200 ${
-              activeTab === tab
+              // ✅ التاب النشط لو المسار يطابق الرابط أو الـ activeTab
+              activeTab === tab.name || currentPath === tab.path
                 ? "text-[var(--color-purple)]"
                 : "text-[#7E818C]"
             }`}
           >
-            {tab}
-            {activeTab === tab && (
+            {tab.name}
+            {(activeTab === tab.name || currentPath === tab.path) && (
               <span className="absolute bottom-[-10px] left-[-8px] right-[-8px] h-[3px] bg-[var(--color-purple)] rounded-full"></span>
             )}
           </button>
@@ -40,6 +63,7 @@ export default function ClientsHeader({
 
       <div className="hidden md:block h-[20px]"></div>
 
+      {/* ✅ الأدوات (بحث + إضافة + فلترة + عدادات) */}
       <div
         className="
           flex flex-col md:flex-row md:justify-between md:items-center 
@@ -47,7 +71,7 @@ export default function ClientsHeader({
           bg-transparent
         "
       >
-        {/*بالموبايل: البحث والفلتر فوق */}
+        {/* البحث والفلترة للموبايل */}
         <div className="flex items-center gap-2 w-full md:hidden">
           {/* مربع البحث */}
           <div className="flex items-center bg-white w-full h-[40px] rounded-[8px] px-[12px] gap-[8px] border border-[#7E818C]">
@@ -80,7 +104,7 @@ export default function ClientsHeader({
           )}
         </div>
 
-        {/* الجزء السفلي بالموبايل (زر الإضافة full width + العدادات) */}
+        {/* زر الإضافة + العدادات */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
           {/* زر الإضافة */}
           {(activeTab === "المشتركين" || activeTab === "الحجوزات") && (
@@ -105,7 +129,7 @@ export default function ClientsHeader({
             </button>
           )}
 
-          {/* زر الفلتر + العدادات (للديسكتوب فقط) */}
+          {/* زر الفلتر والعدادات (ديسكتوب) */}
           <div className="hidden md:flex items-center gap-3 w-full sm:w-auto">
             {(activeTab === "الحجوزات" || activeTab === "المشتركين") && (
               <div
@@ -128,12 +152,12 @@ export default function ClientsHeader({
               </div>
             )}
 
-            {/* العدادات */}
+            {/* ✅ العدادات */}
             <div className="flex items-center gap-[4px] ml-[8px]">
               {activeTab === "المشتركين" ? (
                 <>
                   <MembersNumberIcon className="w-5 h-5 text-[var(--color-purple)]" />
-                  <span className="text-[12px]">32</span>
+                  <span className="text-[12px]">{totalMembers}</span>
                 </>
               ) : activeTab === "الحجوزات" ? (
                 <>
@@ -145,7 +169,7 @@ export default function ClientsHeader({
           </div>
         </div>
 
-        {/* مربع البحث (ديسكتوب فقط) */}
+        {/* البحث (ديسكتوب) */}
         <div className="hidden md:flex items-center bg-white w-[241px] h-[32px] rounded-[8px] px-[12px] gap-[8px]">
           <SearchIcon className="w-5 h-5 text-[var(--color-purple)]" />
           <input

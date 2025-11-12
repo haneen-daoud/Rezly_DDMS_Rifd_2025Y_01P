@@ -12,17 +12,30 @@ export default function Sidebar({ onClose, onSelectTab, setActiveSubTab }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // فتح/إغلاق القوائم الفرعية 
+  // ✅ حالة فتح/إغلاق القوائم الفرعية
   const [openMenus, setOpenMenus] = useState({
     clients: false,
     employees: false,
   });
 
+  // ✅ التابات الفرعية الجديدة مع روابطها
   const subTabs = {
-    clients: ["الحجوزات", "المشتركين", "سجل الحضور", "التقارير", "الإعدادات"],
-    employees: ["الموظفين", "الصلاحيات", "التقارير", "الإعدادات"],
+    clients: [
+      { name: "الحجوزات", path: "bookings" },
+      { name: "المشتركين", path: "members" },
+      { name: "سجل الحضور", path: "attendance" },
+      { name: "التقارير", path: "reports" },
+      { name: "الإعدادات", path: "settings" },
+    ],
+    employees: [
+      { name: "الموظفين", path: "staff" },
+      { name: "الصلاحيات", path: "roles" },
+      { name: "التقارير", path: "reports" },
+      { name: "الإعدادات", path: "settings" },
+    ],
   };
 
+  // ✅ القوائم الرئيسية
   const menu = [
     { to: "/dashboard", label: "الصفحة الرئيسية", icon: Homesidebar },
     { to: "/dashboard/clients", label: "إدارة العملاء", icon: Booking, key: "clients" },
@@ -35,40 +48,32 @@ export default function Sidebar({ onClose, onSelectTab, setActiveSubTab }) {
     setOpenMenus((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // ✅ لما يكبس على عنصر رئيسي (يفتح صفحته)
   const handleMainClick = (item) => {
     navigate(item.to);
     onSelectTab && onSelectTab(item.label);
     onClose && onClose();
   };
 
+  // ✅ لما يكبس على تب فرعي — يروح لرابطه الكامل
   const handleSubTabClick = (mainKey, tab) => {
-  navigate(`/dashboard/${mainKey}`, { replace: true });
-  setActiveSubTab && setActiveSubTab(tab);
-  onSelectTab && onSelectTab(tab);
-  onClose && onClose();
-};
+    navigate(`/dashboard/${mainKey}/${tab.path}`); // ← صار لكل تاب رابط فعلي
+    setActiveSubTab && setActiveSubTab(tab.name);
+    onSelectTab && onSelectTab(tab.name);
+    onClose && onClose();
+  };
 
-
-
+  // ✅ التحقق من الصفحة الحالية (لتمييز النشطة)
   const isActive = (path) => {
-    if (path === "/dashboard") {
-      return location.pathname === "/dashboard";
-    }
+    if (path === "/dashboard") return location.pathname === "/dashboard";
     return location.pathname.startsWith(path);
   };
 
   return (
     <aside
       className="
-        w-[212px]
-        bg-[#F8F8F8]
-        flex flex-col
-        min-h-screen
-        overflow-y-auto
-        font-cairo
-        px-6
-        pt-4
-        pb-6
+        w-full h-screen flex flex-col min-h-screen overflow-y-auto
+        font-cairo pr-6 pl-[9px] pt-4 pb-6
       "
       dir="rtl"
     >
@@ -89,7 +94,7 @@ export default function Sidebar({ onClose, onSelectTab, setActiveSubTab }) {
                 ${isActive(item.to) ? "bg-white text-black font-[700]" : "text-[#7E818C] font-[700] hover:text-black"}
               `}
             >
-              {/* الضغط على الاسم/الايقون يفتح الصفحة مباشرة */}
+              {/* الضغط على الاسم أو الأيقونة يفتح الصفحة */}
               <div
                 className="flex items-center gap-3 flex-1"
                 onClick={() => handleMainClick(item)}
@@ -103,7 +108,7 @@ export default function Sidebar({ onClose, onSelectTab, setActiveSubTab }) {
                 </span>
               </div>
 
-              {/* السهم يظهر فقط على الشاشات الصغيرة */}
+              {/* السهم لإظهار القوائم الفرعية */}
               {item.key && (
                 <button
                   onClick={(e) => {
@@ -111,7 +116,6 @@ export default function Sidebar({ onClose, onSelectTab, setActiveSubTab }) {
                     toggleSubMenu(item.key);
                   }}
                   className="p-1 transition-transform lg:hidden"
-                  aria-label="toggle submenu"
                 >
                   <DownArrow
                     className={`w-4 h-4 text-[#7E818C] transition-transform duration-200 ${
@@ -122,16 +126,20 @@ export default function Sidebar({ onClose, onSelectTab, setActiveSubTab }) {
               )}
             </div>
 
-            {/* القوائم الفرعية تظهر فقط على الشاشات الصغيرة */}
+            {/* ✅ القوائم الفرعية (تظهر في الموبايل فقط) */}
             {item.key && openMenus[item.key] && (
               <div className="lg:hidden pr-10 mt-2 flex flex-col gap-2.5">
                 {subTabs[item.key].map((tab) => (
                   <button
-                    key={tab}
-                    onClick={() => handleSubTabClick(item.key, tab)}
-                    className="text-right text-[13px] font-semibold text-[#7E818C] hover:text-[var(--color-purple)] transition-colors py-1"
+                    key={tab.path}
+                    onClick={() => handleSubTabClick(item.key, tab)} // ← يروح للرابط الصحيح
+                    className={`text-right text-[13px] font-semibold transition-colors py-1 ${
+                      location.pathname === `/dashboard/${item.key}/${tab.path}`
+                        ? "text-[var(--color-purple)]"
+                        : "text-[#7E818C] hover:text-[var(--color-purple)]"
+                    }`}
                   >
-                    {tab}
+                    {tab.name}
                   </button>
                 ))}
               </div>

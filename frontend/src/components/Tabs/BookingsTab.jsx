@@ -14,31 +14,32 @@ export default function BookingsPage({ bookings: filteredBookings }) {
   const [deleting, setDeleting] = useState(false);
 
   {/*
-  // 🟣 تحميل البيانات عند أول فتح الصفحة
+  // تحميل البيانات عند أول فتح الصفحة
   useEffect(() => {
     fetchBookings();
   }, []);
 */}
-
-  // 🌀 تحديث الحجوزات عند إضافة أو تعديل أو حذف
+{/*
+  // تحديث الحجوزات عند إضافة أو تعديل أو حذف
   const handleDataChange = () => {
     fetchBookings();
   };
-
+*/}
   {/*}
-  // 🟡 مراقبة التحديثات بالكونسول (اختياري)
+  // مراقبة التحديثات بالكونسول (اختياري)
   useEffect(() => {
     console.log(" الحجوزات بعد التحديث:", bookings);
   }, [bookings]);
 */}
 
-  // 🔴 حذف حجز
+
+  // حذف حجز
   const handleDelete = async (booking, isGroup) => {
     try {
       setDeleting(true);
       const idToDelete = isGroup ? booking.groupId || booking._id : booking._id;
       await deleteBookingAPI(idToDelete, isGroup);
-      toast.success(isGroup ? "تم حذف جميع التكرارات ✅" : "تم حذف الحجز ✅");
+      toast.success(isGroup ? "تم حذف جميع التكرارات  " : "تم حذف الحجز  ");
       setDeleteModalData(null);
       fetchBookings();
     } catch (err) {
@@ -49,7 +50,7 @@ export default function BookingsPage({ bookings: filteredBookings }) {
     }
   };
 
-  // 🔹 عرض النتائج (مفلترة أو كاملة)
+  // عرض النتائج (مفلترة أو كاملة)
   const displayBookings =
     filteredBookings && Array.isArray(filteredBookings)
       ? filteredBookings
@@ -80,26 +81,23 @@ export default function BookingsPage({ bookings: filteredBookings }) {
       )}
 
      <div className="mt-[16px] md:mt-[20px] flex flex-col gap-6 w-full">
-  {/* ✅ مودال الإضافة */}
-  <AddBookingModal onChange={handleDataChange} />
+  {/*   مودال الإضافة */}
+<AddBookingModal onChange={() => {}} />
 
-  {/* ✅ محتوى الصفحة */}
+
+  {/*   محتوى الصفحة */}
   <div className="flex flex-col gap-6 overflow-visible relative z-0 w-full">
 
     {loading ? (
-      <div className="text-center py-12 text-gray-500">
-        جارِ التحميل...
-      </div>
+      <div className="flex justify-center items-center h-[200px]">
+    <span className="loader"></span>
+  </div>
     ) : displayBookings.length === 0 ? (
       <div className="text-center text-gray-400 py-8">
-        لا توجد حجوزات مطابقة 🔍
+        لا توجد حجوزات مطابقة 
       </div>
     ) : (
-      <BookingsList
-        bookings={displayBookings}
-        loading={loading}
-        onChange={handleDataChange}
-      />
+      <BookingsList bookings={displayBookings} loading={loading} onChange={() => {}} />
     )}
   </div>
 </div>

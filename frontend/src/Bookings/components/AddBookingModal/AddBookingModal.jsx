@@ -7,6 +7,8 @@ import Step1Booking from "./Step1Booking";
 import Step2Booking from "./Step2Booking";
 import CloseIcon from "../../../icons/close.svg";
 import CalenderIcon from "../../../icons/calender.svg?react";
+import { useBookings } from "../../BookingsContext.jsx";
+
 import { formatBookingData } from "../helpers/formatBookingData";
 import { step1Schema, step2Schema } from "../helpers/bookingValidation";
 import {
@@ -51,6 +53,8 @@ function convertToBackendTimeFormat(hhmm, fullDateTime) {
 }
 
 export default function AddBookingModal({ onChange }) {
+  const { setBookings } = useBookings();
+
   const [open, setOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState({});
@@ -80,32 +84,29 @@ export default function AddBookingModal({ onChange }) {
   const [allMembers, setAllMembers] = useState([]);
 
   const calendarRef = useRef(null);
-const dropdownRef = useRef(null);
+  const dropdownRef = useRef(null);
 
-useEffect(() => {
-  const handleClickAnywhere = (e) => {
-    // لو الدروب داون أو الكاليندر مفتوحين
-    if (dropdownOpen || showCalendar) {
-      const dropdownEl = dropdownRef.current;
+  useEffect(() => {
+    const handleClickAnywhere = (e) => {
+      // لو الدروب داون أو الكاليندر مفتوحين
+      if (dropdownOpen || showCalendar) {
+        const dropdownEl = dropdownRef.current;
 
-      // نتحقق: إذا العنصر اللي انضغط عليه مش جوّا الدروب داون نفسه
-      if (dropdownEl && !dropdownEl.contains(e.target)) {
-        setDropdownOpen(false);
-        setShowCalendar(false);
+        // نتحقق: إذا العنصر اللي انضغط عليه مش جوّا الدروب داون نفسه
+        if (dropdownEl && !dropdownEl.contains(e.target)) {
+          setDropdownOpen(false);
+          setShowCalendar(false);
+        }
       }
-    }
-  };
+    };
 
-  // نستخدم capture mode true حتى نلتقط الكليك قبل React events داخل المودال
-  document.addEventListener("mousedown", handleClickAnywhere, true);
+    // نستخدم capture mode true حتى نلتقط الكليك قبل React events داخل المودال
+    document.addEventListener("mousedown", handleClickAnywhere, true);
 
-  return () => {
-    document.removeEventListener("mousedown", handleClickAnywhere, true);
-  };
-}, [dropdownOpen, showCalendar]);
-
-
-
+    return () => {
+      document.removeEventListener("mousedown", handleClickAnywhere, true);
+    };
+  }, [dropdownOpen, showCalendar]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -130,7 +131,7 @@ useEffect(() => {
     }
   }, [isEditing, formData.schedules]);
 
-  // جلب جميع المشتركين من السيرفر (كل الصفحات)
+  // 🟣 جلب جميع المشتركين من السيرفر (كل الصفحات)
   useEffect(() => {
     const fetchMembers = async () => {
       try {
@@ -140,7 +141,7 @@ useEffect(() => {
           "";
         const headers = { Authorization: `Bearer ${token}` };
 
-        //  أول صفحة
+        // 🕐 أول صفحة
         const first = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL2}/auth/getAllMembers?page=1`,
           { headers }
@@ -150,7 +151,7 @@ useEffect(() => {
         let all = [...firstList];
         let page = 2;
 
-        //  باقي الصفحات
+        // 🌀 باقي الصفحات
         while (true) {
           const res = await axios.get(
             `${
@@ -164,6 +165,7 @@ useEffect(() => {
           page++;
         }
 
+        // 🧩 تنسيق قائمة المشتركين للـ dropdown
         const formatted = all.map((m) => ({
           id: m._id,
           name:
@@ -173,7 +175,8 @@ useEffect(() => {
         }));
 
         setAllMembers(formatted);
-        // لما نكون في وضع التعديل (تعديل الكل) والمشتركين الأساسيين لسه ما انعرضوا
+
+        // 🟣 في وضع التعديل (تعديل الكل)
         if (isEditing && fullBookingData?.members?.length) {
           const enrichedMembers = fullBookingData.members.map((m) => {
             const id = typeof m === "object" ? m.id || m._id : m;
@@ -188,9 +191,18 @@ useEffect(() => {
             };
           });
 
+          // ✅ تنظيف التكرارات (لو الباك رجع العضو مكرر من كل جدول)
+          const uniqueMap = new Map();
+          enrichedMembers.forEach((m) => {
+            if (!uniqueMap.has(m.id)) {
+              uniqueMap.set(m.id, m);
+            }
+          });
+
+          // ✅ تحديث الـ formData بأعضاء فريدين فقط وبأسمائهم
           setFormData((prev) => ({
             ...prev,
-            members: enrichedMembers,
+            members: Array.from(uniqueMap.values()),
           }));
         }
       } catch (err) {
@@ -278,6 +290,8 @@ useEffect(() => {
     if (!selectedSchedule) {
       setSelectedBooking(null);
       setIsGroupEdit(true);
+      setSelectedOption(null); // 🟣 تصفير آخر يوم مختار من المربع
+
       setFormData((prev) => ({
         ...prev,
         subscriptionDuration: prev.subscriptionDuration || "",
@@ -433,10 +447,63 @@ useEffect(() => {
 
     setStep1Errors({});
     setStep2Errors({});
-    setActiveStep(1);
+
+    // 🟣 ما نغيّر الخطوة الحالية، نخلي المستخدم بمكانه فقط
+    setActiveStep((prev) => prev);
 
     console.log("✅ تم تحديث formData للفردي:", updatedForm);
   };
+
+  // ✅ دوال مساعدة للتنسيق المحلي للتاريخ والوقت
+const pad2 = (n) => String(n).padStart(2, "0");
+const formatLocalDate = (d) =>
+  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const formatLocalTime = (d) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+
+  // ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت الحجز
+function transformRemindersForCreateOrGroup(formData) {
+  // ✅ ابني Date محلّي من "YYYY-MM-DD" + "HH:mm" بدون UTC
+const buildBaseDateTime = (baseDateStr, hhmm) => {
+  const [y, mo, d] = baseDateStr.split("-").map(Number); // YYYY, MM, DD
+  const [h, m] = (hhmm || "09:00").split(":").map(Number); // HH:mm
+  // 👈 هذا يبني التاريخ/الوقت محليًا (Asia/Hebron)، مش UTC
+  return new Date(y, (mo || 1) - 1, d || 1, h || 0, m || 0, 0, 0);
+};
+
+  let base = null;
+
+  if (formData.start) {
+    base = new Date(formData.start);
+  } else if (
+    formData.dateOnly &&
+    Array.isArray(formData.daysSchedule) &&
+    formData.daysSchedule.length > 0
+  ) {
+    const first = formData.daysSchedule[0];
+    base = buildBaseDateTime(formData.dateOnly, first.start);
+  } else {
+    base = new Date();
+  }
+
+  return Array.isArray(formData.reminders)
+    ? formData.reminders.map((r) => {
+        if (typeof r === "string") return r;
+
+        if (typeof r === "object" && typeof r.hoursBefore === "number") {
+  const reminderDate = new Date(base.getTime() - r.hoursBefore * 60 * 60 * 1000);
+  const date = formatLocalDate(reminderDate); // بدل toISOString
+  const time = formatLocalTime(reminderDate); // بدل toISOString
+  return { date, time };
+}
+
+
+        if (typeof r === "object" && r.date && r.time) return r;
+
+        return r;
+      })
+    : [];
+}
 
   const buildRequestBodyForBackend = () => {
     // 1) service / description / location / maxMembers من Step1
@@ -493,10 +560,61 @@ useEffect(() => {
           }))
       : [];
 
-    // تذكير
-    const reminders = Array.isArray(formData.reminders)
-      ? formData.reminders
-      : [];
+    // ✅ حساب التذكير بناءً على وقت الحجز
+// ✅ Helper صغير لتحويل hh:mm (24h) إلى Date مبني على baseDate (YYYY-MM-DD)
+// ✅ ابني Date محلّي من "YYYY-MM-DD" + "HH:mm" بدون UTC
+const buildBaseDateTime = (baseDateStr, hhmm) => {
+  const [y, mo, d] = baseDateStr.split("-").map(Number); // YYYY, MM, DD
+  const [h, m] = (hhmm || "09:00").split(":").map(Number); // HH:mm
+  // 👈 هذا يبني التاريخ/الوقت محليًا (Asia/Hebron)، مش UTC
+  return new Date(y, (mo || 1) - 1, d || 1, h || 0, m || 0, 0, 0);
+};
+
+
+
+// ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت الحجز
+const transformRemindersForCreateOrGroup = () => {
+  // قاعدة الوقت:
+  // - لو تعديل فردي: عندك formData.start (YYYY-MM-DDTHH:mm)
+  // - غير هيك: من dateOnly + أول start بـ daysSchedule
+  let base = null;
+
+  if (formData.start) {
+    base = new Date(formData.start);
+  } else if (formData.dateOnly && Array.isArray(formData.daysSchedule) && formData.daysSchedule.length > 0) {
+    const first = formData.daysSchedule[0];
+    base = buildBaseDateTime(formData.dateOnly, first.start);
+  } else {
+    // fallback (مش مفروض نوصله)
+    base = new Date();
+  }
+
+  return Array.isArray(formData.reminders)
+    ? formData.reminders.map((r) => {
+        if (typeof r === "string") return r;
+
+        // لو مخزّن كـ hoursBefore → حوّله إلى توقيت فعلي قبل وقت الحجز
+        if (typeof r === "object" && typeof r.hoursBefore === "number") {
+          const reminderDate = new Date(
+            base.getTime() - r.hoursBefore * 60 * 60 * 1000
+          );
+          const date = reminderDate.toISOString().split("T")[0];
+          const time = reminderDate.toISOString().split("T")[1].slice(0, 5);
+          return { date, time };
+        }
+
+        // لو already {date,time} خليه كما هو
+        if (typeof r === "object" && r.date && r.time) return r;
+
+        return r;
+      })
+    : [];
+};
+
+const reminders = transformRemindersForCreateOrGroup(formData);
+
+
+
 
     // coachId:
     // - لو المستخدم كوتش: من التوكن
@@ -537,26 +655,54 @@ useEffect(() => {
 
   // الحفظ
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault(); // ✅ يمنع الخطأ لو ما في event
     setLoading(true);
 
     try {
       // 🟣 إنشاء حجز جديد
       if (!isEditing) {
         const bodyForCreate = buildRequestBodyForBackend();
-         bodyForCreate.members = Array.isArray(formData.members)
-    ? formData.members
-        .filter((m) => !m._tempRemoved)
-        .map((m) => (typeof m === "object" ? m.id || m._id : m))
-        .filter(Boolean)
-    : [];
+        bodyForCreate.members = Array.isArray(formData.members)
+          ? [
+              ...new Set(
+                formData.members
+                  .filter((m) => !m._tempRemoved)
+                  .map((m) => (typeof m === "object" ? m.id || m._id : m))
+                  .filter(Boolean)
+              ),
+            ]
+          : [];
+
         console.log("🚀 إرسال بيانات الإضافة:", bodyForCreate);
 
-        await createBookingAPI(bodyForCreate);
+        // 🟣 نرسل الطلب ونستقبل الرد الحقيقي من السيرفر
+        const response = await createBookingAPI(bodyForCreate);
+
+        // ✅ السيرفر عادة يرجّع الحجز الجديد داخل data.data أو data مباشرة
+        const newBooking = response?.data?.data || response?.data || response;
+
+        // ✅ نغني البيانات المحلية لتنعرض فوريًا بالكروت
+        const enrichedBooking = {
+          ...newBooking,
+          coach: {
+            _id: formData.coach?.id || formData.coachId || "",
+            name:
+              formData.coach?.name || formData.coachName || "مدرب غير معروف",
+          },
+          members: Array.isArray(formData.members)
+            ? formData.members.map((m) =>
+                typeof m === "object"
+                  ? { _id: m._id || m.id, name: m.name || "مشترك غير معروف" }
+                  : { _id: m, name: "مشترك غير معروف" }
+              )
+            : [],
+        };
+
+        setBookings((prev) => [...prev, enrichedBooking]);
 
         toast.success("تم إنشاء الحجز بنجاح ✅");
         handleClose();
-        onChange(); // لإعادة تحميل القائمة
+        onChange(); // لإعادة تحميل القائمة (لو لازمة لعرض التفاصيل الجديدة)
         setLoading(false);
         return;
       }
@@ -620,15 +766,20 @@ useEffect(() => {
           coachId: coachIdFinal || "",
           location: formData.location || formData.room || "",
           maxMembers: Number(formData.maxMembers) || 0,
-          reminders: Array.isArray(formData.reminders)
-            ? formData.reminders
-            : [],
+          reminders: transformRemindersForCreateOrGroup(formData),
+
+
           members: Array.isArray(formData.members)
-    ? formData.members
-        .filter((m) => !m._tempRemoved)
-        .map((m) => (typeof m === "object" ? m.id || m._id : m))
-        .filter(Boolean)
-    : [],
+            ? [
+                ...new Set(
+                  formData.members
+                    .filter((m) => !m._tempRemoved)
+                    .map((m) => (typeof m === "object" ? m.id || m._id : m))
+                    .filter(Boolean)
+                ),
+              ]
+            : [],
+
           subscriptionDuration: mapDurationToBackend(
             formData.subscriptionDuration
           ),
@@ -640,14 +791,58 @@ useEffect(() => {
 
         console.log("🚀 جسم الإرسال النهائي (تعديل الكل):", body);
 
-        await updateGeneralBookingAPI(
+        const updatedResponse = await updateGeneralBookingAPI(
           fullBookingData?.groupId || formData.groupId,
           body
         );
 
+        // ✅ السيرفر بيرجع النسخة المعدّلة، ناخدها ونحدث الـ context
+        const updatedBooking =
+          updatedResponse?.data?.data ||
+          updatedResponse?.data ||
+          updatedResponse;
+
+        setBookings((prev) =>
+          prev.map((b) => {
+            if (b._id === (updatedBooking._id || formData._id)) {
+              return {
+                ...b,
+                ...updatedBooking,
+
+                // ✅ تحديث بيانات المدرب محلياً
+                coach: {
+                  _id:
+                    formData.coach?.id ||
+                    formData.coachId ||
+                    updatedBooking.coachId ||
+                    b.coach?._id ||
+                    "",
+                  name:
+                    formData.coach?.name ||
+                    formData.coachName ||
+                    b.coach?.name ||
+                    "مدرب غير معروف",
+                },
+
+                // ✅ تحديث بيانات المشتركين محلياً بالأسماء الصحيحة
+                members: Array.isArray(formData.members)
+                  ? formData.members.map((m) =>
+                      typeof m === "object"
+                        ? {
+                            _id: m._id || m.id,
+                            name: m.name || "مشترك غير معروف",
+                          }
+                        : { _id: m, name: "مشترك غير معروف" }
+                    )
+                  : [],
+              };
+            }
+            return b;
+          })
+        );
+
         toast.success("تم تعديل الحجز بالكامل ✅");
         handleClose();
-        onChange();
         setLoading(false);
         return;
       }
@@ -677,6 +872,23 @@ useEffect(() => {
           return `${displayH}:${String(m).padStart(2, "0")} ${suffix}`;
         };
 
+        // ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت هذا اليوم (formData.start)
+const remindersSingle = Array.isArray(formData.reminders)
+  ? formData.reminders.map((r) => {
+      if (typeof r === "string") return r;
+      if (typeof r === "object" && typeof r.hoursBefore === "number") {
+  const base = new Date(formData.start); // "YYYY-MM-DDTHH:mm" تُفهم محليًا
+  const reminderDate = new Date(base.getTime() - r.hoursBefore * 60 * 60 * 1000);
+  const date = formatLocalDate(reminderDate);
+  const time = formatLocalTime(reminderDate);
+  return { date, time };
+}
+
+      if (typeof r === "object" && r.date && r.time) return r;
+      return r;
+    })
+  : [];
+
         // ⚡ نرسلها داخل مصفوفة schedules
         const updateBody = {
           _id: selectedSchedule._id,
@@ -686,9 +898,9 @@ useEffect(() => {
               : formData.coachId || "",
           location: formData.location || formData.room || "",
           maxMembers: Number(formData.maxMembers) || 0,
-          reminders: Array.isArray(formData.reminders)
-            ? formData.reminders
-            : [],
+          reminders: remindersSingle,
+
+
           timeStart: toArabic12h(formData.start?.split("T")[1]?.slice(0, 5)),
           timeEnd: toArabic12h(formData.end?.split("T")[1]?.slice(0, 5)),
 
@@ -696,24 +908,37 @@ useEffect(() => {
           date: formData.dateOnly || formData.start?.split("T")[0],
           dayOfWeek: new Date(formData.dateOnly || formData.start).getDay(),
           members: Array.isArray(formData.members)
-    ? formData.members
-        .filter((m) => !m._tempRemoved)
-        .map((m) => (typeof m === "object" ? m.id || m._id : m))
-        .filter(Boolean)
-    : [],
+            ? formData.members
+                .filter((m) => !m._tempRemoved)
+                .map((m) => (typeof m === "object" ? m.id || m._id : m))
+                .filter(Boolean)
+            : [],
         };
 
         console.log("🚀 جسم الإرسال (تعديل فردي):", updateBody);
 
-        await updateSingleScheduleAPI(
+        const updatedResponse = await updateSingleScheduleAPI(
           fullBookingData?._id || selectedBooking?._id,
           updateBody,
           selectedSchedule._id
         );
 
+        const updatedBooking =
+          updatedResponse?.data?.data ||
+          updatedResponse?.data ||
+          updatedResponse;
+
+        // ✅ تحديث الحجز داخل الـ context بدون refresh
+        setBookings((prev) =>
+          prev.map((b) =>
+            b._id === (updatedBooking._id || selectedBooking._id)
+              ? { ...b, ...updatedBooking }
+              : b
+          )
+        );
+
         toast.success("تم تعديل اليوم بنجاح ✅");
         handleClose();
-        onChange();
         setLoading(false);
         return;
       }
@@ -722,7 +947,42 @@ useEffect(() => {
       setLoading(false);
     } catch (err) {
       console.error("❌ فشل الحفظ:", err.response?.data || err.message);
-      toast.error("فشل حفظ التعديلات");
+
+      // 🟣 قراءة رسالة الباك الأساسية
+      let backendMsg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.response?.data?.details?.[0]?.message ||
+        "حدث خطأ غير متوقع أثناء حفظ الحجز";
+
+      // 🟣 لو فيه أيام متعارضة، نكوّن رسالة تفصيلية
+      const conflicted = err?.response?.data?.conflictedDays;
+      if (Array.isArray(conflicted) && conflicted.length > 0) {
+        const details = conflicted
+          .map((d) => {
+            const dateStr = new Date(d["التاريخ"]).toLocaleDateString("ar-EG", {
+              weekday: "long",
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+            });
+            let reason = d["السبب"];
+            if (reason === "Coach busy") reason = "المدرب مشغول";
+            if (reason === "Room busy") reason = "القاعة محجوزة";
+            return `• ${dateStr} — ${reason}`;
+          })
+          .join("\n");
+        backendMsg += "\n" + details;
+      }
+
+      // 🧾 عرض التوست للمستخدم
+      toast.error(backendMsg, {
+        position: "top-left",
+        autoClose: 5000,
+        className: "custom-toast-error", // لو عندك كلاس خاص بالألوان القديمة
+        style: { whiteSpace: "pre-line" },
+      });
+
       setLoading(false);
     }
   };
@@ -809,10 +1069,10 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-  // كل ما تتغير بيانات الحجز أو تتبدل الحالة (فتح/تعديل جديد)
-  setDropdownOpen(false);
-  setShowCalendar(false);
-}, [formData, isEditing]);
+    // كل ما تتغير بيانات الحجز أو تتبدل الحالة (فتح/تعديل جديد)
+    setDropdownOpen(false);
+    setShowCalendar(false);
+  }, [formData, isEditing]);
 
   return (
     <>
@@ -923,44 +1183,51 @@ useEffect(() => {
                         className="absolute top-[calc(100%+6px)] right-78 z-50"
                       >
                         <div className="calendar-popup">
-                        <MiniCalender
-                          variant="event"
-                          hideTodayHighlight={true}
-                          currentDate={new Date()}
-                          highlightedDates={
-                            Array.isArray(scheduleOptions)
-                              ? scheduleOptions.map((s) => s.date.split("T")[0])
-                              : []
-                          }
-                          handleDateChange={(selectedDate) => {
-                            const dateStr = selectedDate
-                              .toISOString()
-                              .split("T")[0];
-                            const found = scheduleOptions.find(
-                              (s) => s.date.split("T")[0] === dateStr
-                            );
-
-                            if (found) {
-                              handleSelectBooking(found);
-
-                              // ✅ نخزّن الـ _id تبع اليوم المختار عشان handleSubmit تقدر تلاقيه
-                              setSelectedOption(found._id || found.date);
-
-                              const formattedDate =
-                                selectedDate.toLocaleDateString("ar-EG", {
-                                  day: "numeric",
-                                  month: "long",
-                                  year: "numeric",
-                                });
-                              setSelectedDateLabel(formattedDate);
-
-                              setShowCalendar(false);
-                              toast.success(`تم اختيار ${formattedDate}`);
-                            } else {
-                              toast.warn("لا يوجد حجز في هذا اليوم");
+                          <MiniCalender
+                            variant="event"
+                            hideTodayHighlight={true}
+                            currentDate={
+                              Array.isArray(scheduleOptions) &&
+                              scheduleOptions.length > 0
+                                ? new Date(scheduleOptions[0].date)
+                                : new Date()
                             }
-                          }}
-                        />
+                            highlightedDates={
+                              Array.isArray(scheduleOptions)
+                                ? scheduleOptions.map(
+                                    (s) => s.date.split("T")[0]
+                                  )
+                                : []
+                            }
+                            handleDateChange={(selectedDate) => {
+                              const dateStr = selectedDate
+                                .toISOString()
+                                .split("T")[0];
+                              const found = scheduleOptions.find(
+                                (s) => s.date.split("T")[0] === dateStr
+                              );
+
+                              if (found) {
+                                handleSelectBooking(found);
+
+                                // ✅ نخزّن الـ _id تبع اليوم المختار عشان handleSubmit تقدر تلاقيه
+                                setSelectedOption(found._id || found.date);
+
+                                const formattedDate =
+                                  selectedDate.toLocaleDateString("ar-EG", {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                  });
+                                setSelectedDateLabel(formattedDate);
+
+                                setShowCalendar(false);
+                                toast.success(`تم اختيار ${formattedDate}`);
+                              } else {
+                                toast.warn("لا يوجد حجز في هذا اليوم");
+                              }
+                            }}
+                          />
                         </div>
                       </div>
                     )}
@@ -1079,7 +1346,71 @@ useEffect(() => {
                     </button>
                     <button
                       className="w-full py-3 text-white text-sm font-medium rounded-[8px] bg-[var(--color-purple)]"
-                      onClick={handleSubmit}
+                      onClick={async () => {
+                        // 🟣 تحقق يدوي من Step2 قبل الحفظ
+                        const newErrors = {};
+
+                        if (!formData.dateOnly)
+                          newErrors.dateOnly = "تاريخ البدء مطلوب";
+
+                        if (!formData.subscriptionDuration)
+                          newErrors.subscriptionDuration =
+                            "مدة الاشتراك مطلوبة";
+
+                        if (
+                          !formData.daysSchedule ||
+                          formData.daysSchedule.length === 0
+                        ) {
+                          newErrors.daysSchedule = "أضف يومًا واحدًا على الأقل";
+                        } else {
+                          // 🟣 تحقق من كل يوم داخل الجدول
+                          const invalidDay = formData.daysSchedule.find(
+                            (d) =>
+                              !d.day?.trim() ||
+                              !String(d.start || "").trim() ||
+                              !String(d.end || "").trim()
+                          );
+
+                          if (invalidDay) {
+                            newErrors.daysSchedule =
+                              "يرجى إدخال اليوم ووقت البداية والنهاية لكل يوم";
+                          }
+                        }
+
+                        // ✅ نتحقق من start/end فقط في الحجز الفردي
+                        if (
+                          selectedBooking &&
+                          (!formData.start || !formData.end)
+                        ) {
+                          newErrors.start = "وقت البداية مطلوب";
+                          newErrors.end = "وقت النهاية مطلوب";
+                        }
+
+                        if (
+                          !formData.reminders ||
+                          formData.reminders.length === 0
+                        )
+                          newErrors.reminders = "اختيار التذكير مطلوب";
+
+                        console.log("🔍 DEBUG CHECK — formData:", {
+                          dateOnly: formData.dateOnly,
+                          subscriptionDuration: formData.subscriptionDuration,
+                          daysSchedule: formData.daysSchedule,
+                          start: formData.start,
+                          end: formData.end,
+                          reminders: formData.reminders,
+                        });
+                        console.log("🔍 ERRORS so far:", newErrors);
+
+                        if (Object.keys(newErrors).length > 0) {
+                          setStep2Errors(newErrors); // أو setErrors(newErrors) حسب اسمك
+                          toast.error("يرجى تعبئة جميع حقول الحجز");
+                          return; // ❌ ما نكمّل الحفظ
+                        }
+
+                        // ✅ إذا كله تمام كمّلي الحفظ
+                        handleSubmit();
+                      }}
                       disabled={loading}
                     >
                       {isEditing ? "حفظ" : "إضافة"}

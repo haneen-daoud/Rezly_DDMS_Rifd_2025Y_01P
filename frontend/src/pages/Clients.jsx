@@ -4,27 +4,89 @@ import BookingsPage from "../components/Tabs/BookingsTab.jsx";
 import AddParticipantModel from "../components/AddParticipantModel/AddParticipantModel.jsx";
 import { useBookings } from "../Bookings/BookingsContext.jsx";
 import { getBookingsCountAPI } from "../api/bookingsApi.js";
-import { BookingsProvider } from "../Bookings/BookingsContext.jsx";
 import ClientsHeader from "../components/ClientsHeader.jsx";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate, useLocation, Outlet } from "react-router-dom";
+import { getAllMembers } from "../api.js";
 
 export default function ClientsPage() {
-  const [activeTab, setActiveTab] = useState("المشتركين");
+  const [activeTab, setActiveTab] = useState("الحجوزات");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [totalBookings, setTotalBookings] = useState(0);
+  const [totalMembers, setTotalMembers] = useState(0);
 
-  const { bookings, loading } = useBookings();
+const { bookings, loading, setBookings } = useBookings();
+  const { setActiveSubTab, activeSubTab } = useOutletContext();
 
-const { setActiveSubTab, activeSubTab } = useOutletContext();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-// إذا تغيّر التاب الفرعي من السايدبار، فعله مباشرة
+  // ✅ نقرأ اسم التاب من الـ URL أول ما ندخل الصفحة
+  useEffect(() => {
+    const path = location.pathname.split("/")[3]; // → bookings / members / reports...
+    const mapping = {
+      bookings: "الحجوزات",
+      members: "المشتركين",
+      attendance: "سجل الحضور",
+      reports: "التقارير",
+      settings: "الإعدادات",
+    };
+
+    if (mapping[path]) {
+      setActiveTab(mapping[path]);
+      setActiveSubTab(mapping[path]);
+    }
+  }, [location.pathname]);
+
+  // ✅ عند تغيّر activeSubTab (من السايدبار) → حدث الرابط تلقائياً
+  useEffect(() => {
+    const reverseMapping = {
+      الحجوزات: "bookings",
+      المشتركين: "members",
+      "سجل الحضور": "attendance",
+      التقارير: "reports",
+      الإعدادات: "settings",
+    };
+
+    if (activeSubTab && reverseMapping[activeSubTab]) {
+      navigate(`/dashboard/clients/${reverseMapping[activeSubTab]}`);
+      setActiveTab(activeSubTab);
+    }
+  }, [activeSubTab]);
+
+  // ✅ جلب عدد المشتركين
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const data = await getAllMembers();
+        setTotalMembers(data.totalMembers || 0);
+      } catch (err) {
+        console.error("خطأ أثناء جلب المشتركين:", err);
+      }
+    };
+    fetchMembers();
+  }, []);
+
+  {/*
+  // ✅ جلب عدد الحجوزات
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const count = await getBookingsCountAPI();
+        setTotalBookings(count);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchCount();
+  }, []);
+*/}
 useEffect(() => {
-  if (activeSubTab && activeSubTab !== activeTab) {
-    setActiveTab(activeSubTab);
+  if (Array.isArray(bookings)) {
+    setTotalBookings(bookings.length);
   }
-}, [activeSubTab]);
+}, [bookings]);
 
-  // لما نكبس زر "إضافة"
+  // ✅ لما نكبس زر "إضافة"
   const handleAddBookingClick = () => {
     if (activeTab === "الحجوزات") {
       window.dispatchEvent(new CustomEvent("openAddBooking"));
@@ -33,7 +95,7 @@ useEffect(() => {
     }
   };
 
-  // عرض المحتوى حسب التاب
+  // ✅ عرض المحتوى حسب التاب الحالي
   const renderContent = () => {
     switch (activeTab) {
       case "المشتركين":
@@ -49,40 +111,30 @@ useEffect(() => {
     }
   };
 
- 
-  //  جلب عدد الحجوزات
-  useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const count = await getBookingsCountAPI();
-        setTotalBookings(count);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchCount();
-  }, []);
-
   return (
     <div className="flex flex-col gap-3 flex-1 w-full">
-      {/* الهيدر المفصول */}
+      {/* ✅ الهيدر الجديد */}
       <ClientsHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         totalBookings={totalBookings}
+        totalMembers={totalMembers}
         handleAddBookingClick={handleAddBookingClick}
       />
 
-      {/* المحتوى */}
+      {/* ✅ محتوى الصفحة حسب التاب */}
       {renderContent()}
 
-      {/* مودال المشتركين فقط */}
+      {/* ✅ مودال إضافة المشتركين */}
       {isModalOpen && activeTab === "المشتركين" && (
         <AddParticipantModel
           onClose={() => setIsModalOpen(false)}
           onSave={(data) => console.log("تم إضافة مشترك:", data)}
         />
       )}
+
+      {/* ✅ مسار فرعي (اختياري لمرونة التوسع لاحقاً) */}
+      <Outlet />
     </div>
   );
 }

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
+import { useRef, useLayoutEffect } from "react";
 import { useBookings } from "../BookingsContext";
 import CalenderIcon from "../../icons/calender.svg?react";
 import HourIcon from "../../icons/hour.svg?react";
 import MembersIcon from "../../icons/members.svg?react";
 import ShareIcon from "../../icons/share.svg?react";
-import DeleteIcon from "../../icons/delete.svg?react";
+import DeleteIcon from "../../icons/deleteIcon.svg?react";
 import EditIcon from "../../icons/address.svg?react";
 import DetailsIcon from "../../icons/circle-arrow-left.svg?react";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
@@ -26,6 +27,7 @@ export default function BookingCard({
   onChange,
 }) {
   if (!bookingGroup.length) return null;
+  const { setBookings } = useBookings();
   const { role } = useBookings();
   const isAdmin = (role || "").toLowerCase() === "admin";
 
@@ -60,11 +62,15 @@ export default function BookingCard({
     allSchedules.sort((a, b) => b.date - a.date)[0];
 
   const upcomingDateLabel = upcomingSchedule?.date
-    ? upcomingSchedule.date.toLocaleDateString("ar-EG", {
-        day: "numeric",
-        month: "long",
-      })
-    : "غير محدد";
+  ? upcomingSchedule.date.toLocaleDateString("ar-EG", {
+      day: "numeric",
+      month: "long",
+      ...(upcomingSchedule.date.getFullYear() !== new Date().getFullYear()
+        ? { year: "numeric" }
+        : {}),
+    })
+  : "غير محدد";
+
 
   // ========================
   // المدرب
@@ -153,20 +159,108 @@ export default function BookingCard({
   }
 
   // ========================
-  // الحالة
-  // ========================
-  let statusText = "متاح";
-  let statusColor = "bg-green-100 text-green-700";
-  if (["cancelled", "ملغي"].includes(booking.status)) {
-    statusText = "ملغي";
-    statusColor = "bg-red-100 text-red-700";
-  } else if (["completed", "منتهي"].includes(booking.status)) {
-    statusText = "منتهي";
-    statusColor = "bg-gray-100 text-gray-700";
-  } else if (membersCount >= maxMembers && maxMembers !== 0) {
-    statusText = "ممتلئ";
-    statusColor = "bg-blue-100 text-blue-700";
+// الحالة
+// ========================
+const now = new Date();
+const lastSchedule =
+  allSchedules.length > 0
+    ? allSchedules
+        .filter((s) => s.date)
+        .sort((a, b) => b.date - a.date)[0]
+    : null;
+
+let statusText = "متاح";
+let statusColor = "bg-green-100 text-green-700";
+
+// 🟣 لو الحجز ملغي
+if (["cancelled", "ملغي"].includes(booking.status)) {
+  statusText = "ملغي";
+  statusColor = "bg-red-100 text-red-700";
+}
+// 🟣 لو جميع المواعيد خلصت (منتهي)
+else if (lastSchedule?.date && lastSchedule.date < now) {
+  statusText = "منتهي";
+  statusColor = "bg-gray-200 text-gray-700";
+}
+// 🟣 لو الحجز ممتلئ
+else if (membersCount >= maxMembers && maxMembers !== 0) {
+  statusText = "ممتلئ";
+  statusColor = "bg-blue-100 text-blue-700";
+}
+
+
+// 🔹 مرجع للزر لتحديد موقعه
+const menuButtonRef = useRef(null);
+const [menuCoords, setMenuCoords] = useState({ top: 0, left: 0 });
+
+// 🔹 تحديث موقع المنيو كل ما يتغير الحجم أو السكروول
+useLayoutEffect(() => {
+  function updateMenuPosition() {
+    if (openMenu === index && menuButtonRef.current) {
+      const rect = menuButtonRef.current.getBoundingClientRect();
+      const menuWidth = 131;
+      const menuHeight = 82;
+      const margin = 8;
+
+      // ✅ نستخدم window.scrollX/Y فقط مرة واحدة (لو فعلاً body هي اللي فيها scroll)
+      const scrollTop =
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0;
+      const scrollLeft =
+        window.scrollX ||
+        document.documentElement.scrollLeft ||
+        document.body.scrollLeft ||
+        0;
+
+      let top = rect.bottom + scrollTop + margin;
+      let left = rect.left + scrollLeft - 90;
+
+      // ✅ لو ما في مساحة لتحت → نفتح لفوق
+      if (rect.bottom + menuHeight + margin > window.innerHeight) {
+        top = rect.top + scrollTop - menuHeight - margin;
+      }
+
+      // ✅ تصحيح الاتجاه الأفقي لو قريب من الحافة
+      if (rect.left + menuWidth > window.innerWidth) {
+        left = window.innerWidth - menuWidth - margin;
+      }
+      if (rect.left < 0) {
+        left = margin;
+      }
+
+      setMenuCoords({ top, left });
+    }
   }
+
+  // 🔹 استدعاء فوري عند الفتح
+  updateMenuPosition();
+
+  // 🔹 تحديث عند scroll و resize
+  window.addEventListener("scroll", updateMenuPosition, true);
+  window.addEventListener("resize", updateMenuPosition);
+
+  // 🔹 إغلاق عند النقر خارج المنيو
+  function handleClickOutside(e) {
+    const menuEl = document.getElementById(`menu-${index}`);
+    const btnEl = menuButtonRef.current;
+    if (!btnEl || !menuEl) return;
+    if (btnEl.contains(e.target)) return; // لو ضغط على الزر نفسه
+    if (!menuEl.contains(e.target)) {
+      setOpenMenu(null);
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    window.removeEventListener("scroll", updateMenuPosition, true);
+    window.removeEventListener("resize", updateMenuPosition);
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, [openMenu, index]);
+
 
   // ========================
   // عرض الكرت
@@ -327,53 +421,98 @@ export default function BookingCard({
 
         <div className="relative">
           <button
-            onClick={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setMenuPosition({
-                top: rect.bottom + 12,
-                left: rect.left - 100,
-              });
-              setOpenMenu(openMenu === index ? null : index);
-            }}
+  ref={menuButtonRef}
+  onClick={() => setOpenMenu(openMenu === index ? null : index)}
+
             className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
           >
             <span className="text-xl leading-none text-[#000]">⋯</span>
           </button>
 
-          {openMenu === index && (
-            <div className="absolute bg-white rounded-lg flex flex-col z-[9999] shadow-lg border border-[#7E818C66] p-2 left-[-100px] top-[calc(100%+12px)] w-[174px]">
-              <button
-                onClick={() => {
-                  window.dispatchEvent(
-                    new CustomEvent("openBookingEdit", {
-                      detail: {
-                        ...booking,
-                        groupBookings: bookingGroup,
-                      },
-                    })
-                  );
-                  setOpenMenu(null);
-                }}
-                className="flex items-center gap-2 text-right text-[14px] font-semibold hover:text-blue-600 mb-2"
-              >
-                <EditIcon className="w-4 h-4" />
-                تعديل الحجز
-              </button>
+         {openMenu === index &&
+  ReactDOM.createPortal(
+    (() => {
+      if (!menuButtonRef.current) return null;
 
-              {isAdmin && (
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(true);
-                    setOpenMenu(null);
-                  }}
-                  className="flex items-center gap-2 text-right text-[14px] font-semibold text-red-500 hover:text-red-700"
-                >
-                  <DeleteIcon className="w-4 h-4" />
-                  حذف الحجز
-                </button>
-              )}
-            </div>
+      const rect = menuButtonRef.current.getBoundingClientRect();
+      const menuWidth = 131;
+      const menuHeight = 82;
+      const margin = 8;
+
+      // 🔹 الوضع الافتراضي (لتحت)
+      let top = rect.bottom + margin - 10;
+      let left = rect.right - menuWidth;
+
+      // 🔹 لو ما في مساحة لتحت → خليها فوق الزر
+      if (rect.bottom + menuHeight + margin > window.innerHeight) {
+        top = rect.top - menuHeight - margin + 10;
+      }
+
+      // 🔹 تصحيح الاتجاه الأفقي لو قريب من اليمين أو اليسار
+      if (left < 0) left = 8;
+      if (left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - 8;
+
+      return (
+        <div
+          id={`menu-${index}`}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="fixed bg-white border border-[#D1D5DB] rounded-[16px]
+                     shadow-[0_4px_8px_rgba(0,0,0,0.25)]
+                     flex flex-col justify-center pointer-events-auto z-[999999]"
+          style={{
+            top: `${top}px`,
+            left: `${left}px`,
+            width: `${menuWidth}px`,
+            height: `${menuHeight}px`,
+            padding: "8px",
+            transition: "opacity 0.15s ease, transform 0.15s ease",
+            transformOrigin:
+              rect.bottom + menuHeight + margin > window.innerHeight
+                ? "bottom right"
+                : "top right",
+          }}
+        >
+          {/* تعديل */}
+          <button
+            onClick={() => {
+              window.dispatchEvent(
+                new CustomEvent("openBookingEdit", {
+                  detail: { ...booking, groupBookings: bookingGroup },
+                })
+              );
+              setOpenMenu(null);
+            }}
+            className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-[var(--color-purple)] transition-colors"
+          >
+            <EditIcon className="w-4 h-4 text-[var(--color-purple)]" />
+            تعديل
+          </button>
+
+          <div className="my-[6px] mx-[6px] border-t border-[#D1D5DB]" />
+
+          {/* حذف */}
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setShowDeleteModal(true);
+                setOpenMenu(null);
+              }}
+              className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-red-600 transition-colors"
+            >
+              <DeleteIcon className="w-4 h-4" />
+              حذف
+            </button>
           )}
+        </div>
+      );
+    })(),
+    document.body
+  )}
+
+
+
+
+
         </div>
       </div>
 
@@ -385,19 +524,23 @@ export default function BookingCard({
             isLoading={deleting}
             onCancel={() => setShowDeleteModal(false)}
             onConfirm={async () => {
-              try {
-                setDeleting(true);
-                await deleteBookingAPI(booking._id);
-                toast.success("تم حذف الحجز ✅");
-                setShowDeleteModal(false);
-                onChange?.();
-              } catch (err) {
-                console.error(err);
-                toast.error("حدث خطأ أثناء الحذف");
-              } finally {
-                setDeleting(false);
-              }
-            }}
+  try {
+    setDeleting(true);
+    await deleteBookingAPI(booking._id);
+
+    // ✅ تحديث محلي لقائمة الحجوزات بدون ريفرش
+    setBookings((prev) => prev.filter((b) => b._id !== booking._id));
+
+    toast.success("تم حذف الحجز ✅");
+    setShowDeleteModal(false);
+  } catch (err) {
+    console.error(err);
+    toast.error("حدث خطأ أثناء الحذف");
+  } finally {
+    setDeleting(false);
+  }
+}}
+
           />,
           document.body
         )}

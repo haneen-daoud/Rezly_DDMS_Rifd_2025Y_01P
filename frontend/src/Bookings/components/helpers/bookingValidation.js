@@ -1,25 +1,70 @@
 // src/helpers/bookingValidation.js
 import * as Yup from "yup";
 
+// 🟣 التحقق من الوقت بصيغة HH:MM (إما 24h أو مع ص/م)
+const timeRegex = /^([0-9]{1,2}):([0-9]{2})(\s?[صم]?)$/;
+
+// 🟣 step 1 — الحقول الأساسية
 export const step1Schema = Yup.object().shape({
-  title: Yup.string().required("اسم الحصة مطلوب"),
-  description: Yup.string().required("الوصف مطلوب"),
-  coach: Yup.object().required("اختيار المدرب مطلوب"),
+  // service أو title في الواجهة
+  title: Yup.string().trim().required("اسم الحصة مطلوب"),
+
+  description: Yup.string()
+  .required("الوصف مطلوب")
+  .min(10, "الوصف يجب أن يحتوي على 10 أحرف على الأقل")
+  .max(250, "الوصف يجب ألا يزيد عن 250 حرفًا"),
+
+
+  // coach موجود كـ object من الـ Selector
+  coach: Yup.object()
+    .shape({
+      id: Yup.string().required(),
+      name: Yup.string(),
+    })
+    .required("اختيار المدرب مطلوب"),
+
   room: Yup.string().required("اختيار القاعة مطلوب"),
+
   maxMembers: Yup.number()
+    .typeError("عدد المشتركين يجب أن يكون رقمًا")
     .min(1, "عدد المشتركين لا يمكن أن يكون أقل من 1")
     .required("عدد المشتركين مطلوب"),
 });
 
-// ✅ النسخة الثابتة من step2Schema بدون branch error
+// 🟢 step 2 — التاريخ، الاشتراك، الأوقات
 export const step2Schema = Yup.object().shape({
-  dateOnly: Yup.string().required("تاريخ البدء مطلوب"),
+  // تاريخ البداية
+  dateOnly: Yup.string()
+    .required("تاريخ البدء مطلوب")
+    .matches(/^\d{4}-\d{2}-\d{2}$/, "صيغة التاريخ غير صحيحة"),
 
-  // مدة الاشتراك
+  // مدة الاشتراك (تتخطى بالفردي)
   subscriptionDuration: Yup.string().when("isIndividual", {
     is: true,
     then: () => Yup.string().notRequired(),
-    otherwise: () => Yup.string().required("مدة الاشتراك مطلوبة"),
+    otherwise: () =>
+      Yup.string()
+        .oneOf(
+          [
+            "1day",
+            "1week",
+            "2weeks",
+            "3weeks",
+            "1month",
+            "3months",
+            "6months",
+            "1year",
+            "أسبوع",
+            "أسبوعين",
+            "3 أسابيع",
+            "شهر",
+            "3 أشهر",
+            "6 أشهر",
+            "سنة",
+          ],
+          "مدة الاشتراك غير صالحة"
+        )
+        .required("مدة الاشتراك مطلوبة"),
   }),
 
   // جدول الأيام (يتجاوز بالفردي)
@@ -31,22 +76,43 @@ export const step2Schema = Yup.object().shape({
         .of(
           Yup.object().shape({
             day: Yup.string().required("اختر اليوم"),
-            start: Yup.string().required("وقت البداية مطلوب"),
-            end: Yup.string().required("وقت النهاية مطلوب"),
+            start: Yup.string()
+              .required("وقت البداية مطلوب")
+              .matches(timeRegex, "صيغة الوقت غير صحيحة"),
+            end: Yup.string()
+              .required("وقت النهاية مطلوب")
+              .matches(timeRegex, "صيغة الوقت غير صحيحة"),
           })
         )
         .min(1, "أضف يومًا واحدًا على الأقل"),
   }),
 
-  // وقت البداية والنهاية (مطلوبين للفردي)
+  // الأوقات في حالة تعديل فردي
   start: Yup.string().when("isIndividual", {
     is: true,
-    then: () => Yup.string().required("وقت البداية مطلوب"),
+    then: () =>
+      Yup.string()
+        .required("وقت البداية مطلوب")
+        .matches(timeRegex, "صيغة الوقت غير صحيحة"),
     otherwise: () => Yup.string().notRequired(),
   }),
   end: Yup.string().when("isIndividual", {
     is: true,
-    then: () => Yup.string().required("وقت النهاية مطلوب"),
+    then: () =>
+      Yup.string()
+        .required("وقت النهاية مطلوب")
+        .matches(timeRegex, "صيغة الوقت غير صحيحة"),
     otherwise: () => Yup.string().notRequired(),
   }),
+
+  // reminders (اختياري)
+  reminders: Yup.array().of(
+    Yup.mixed().test("valid-reminder", "التذكير غير صالح", (val) => {
+      if (!val) return true;
+      const validValues = ["none", "30min", "1hour", "1day"];
+      if (typeof val === "string") return validValues.includes(val);
+      if (typeof val === "object" && val.date && val.time) return true;
+      return false;
+    })
+  ),
 });
