@@ -3,9 +3,11 @@ import Logo from "../assets/icon/rezly-logo.svg";
 import UserIcon from "../icons/user.svg?react";
 import PasswordIcon from "../icons/password.svg?react";
 import EyeOffIcon from "../icons/eyeOff.svg?react";
+import EyeOnIcon from "../icons/eyeOn.svg?react";
 import login from "../icons/login.svg";
 import { useNavigate } from "react-router-dom";
 import { signIn } from "../api.js";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -14,23 +16,59 @@ const Login = () => {
     rememberMe: true,
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // التعامل مع الحقول
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({ ...formData, [name]: type === "checkbox" ? checked : value });
   };
 
+  // فحص البيانات قبل الإرسال
+  const validate = () => {
+    if (!formData.identifier.trim()) {
+      toast.error("⚠ الرجاء إدخال اسم المستخدم أو البريد الإلكتروني", {
+      });
+      return false;
+    }
+
+    if (!formData.password.trim()) {
+      toast.error("⚠ الرجاء إدخال كلمة المرور", {
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  // إرسال الطلب
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validate()) return;
+
+    setLoading(true);
+
     try {
       const res = await signIn(formData);
+
       if (res.status === 200) {
         localStorage.setItem("token", res.data.token);
+
+        // ❌ حذف toast النجاح كما طلبتِ
         navigate("/dashboard");
       }
     } catch (err) {
-      alert("Login failed");
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "حدث خطأ أثناء تسجيل الدخول";
+
+      toast.error(`❌ ${message}`, {
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -65,7 +103,6 @@ const Login = () => {
             className="logo"
             style={{ width: "215px", height: "77px" }}
           />
-
         </div>
 
         <h2 className="text-2xl sm:text-3xl font-bold text-black mb-2 text-center">
@@ -79,14 +116,17 @@ const Login = () => {
           onSubmit={handleSubmit}
           className="w-full text-right text-sm font-bold"
         >
+          {/* حقل اسم المستخدم */}
           <div className="mb-4">
-            <label className="block mb-2 text-black">اسم المستخدم أو البريد الالكتروني  </label>
+            <label className="block mb-2 text-black">
+              اسم المستخدم أو البريد الإلكتروني
+            </label>
             <div className="relative w-full">
               <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
               <input
                 type="text"
                 name="identifier"
-                placeholder="أدخل اسم المستخدم أو  بريدك الإلكتروني"
+                placeholder="أدخل اسم المستخدم أو بريدك الإلكتروني"
                 value={formData.identifier}
                 onChange={handleChange}
                 className="w-full h-12 pr-10 pl-3 border border-gray-300 rounded-lg text-sm focus:outline-none placeholder-[#7E818C]"
@@ -94,10 +134,12 @@ const Login = () => {
             </div>
           </div>
 
+          {/* كلمة المرور */}
           <div className="mb-6">
-             <label className="block mb-2 text-black">كلمة المرور</label>
-             <div className="relative w-full">
+            <label className="block mb-2 text-black">كلمة المرور</label>
+            <div className="relative w-full">
               <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
+
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -106,16 +148,18 @@ const Login = () => {
                 onChange={handleChange}
                 className="w-full h-12 pr-10 pl-3 border border-gray-300 rounded-lg text-sm focus:outline-none placeholder-[#7E818C]"
               />
+
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
               >
-                <EyeOffIcon />
+                {showPassword ? <EyeOnIcon className="text-[var(--color-purple)]" /> : <EyeOffIcon />}
               </button>
             </div>
           </div>
 
+          {/* تذكرني + نسيت كلمة المرور */}
           <div className="flex items-center justify-between mb-6">
             <label className="flex items-center text-sm text-gray-700">
               <input
@@ -127,6 +171,7 @@ const Login = () => {
               />
               تذكرني
             </label>
+
             <a
               href="#"
               className="text-sm text-[#6A0EAD] hover:underline font-semibold"
@@ -135,20 +180,29 @@ const Login = () => {
             </a>
           </div>
 
+          {/* زر تسجيل الدخول */}
           <button
             type="submit"
-            className="w-full h-12 text-white font-semibold rounded-lg hover:bg-[#580b94] transition"
+            disabled={loading}
+            className={`w-full h-12 text-white font-semibold rounded-lg hover:bg-[#580b94] transition flex items-center justify-center gap-2 ${
+              loading ? "opacity-90 cursor-wait" : ""
+            }`}
             style={{ backgroundColor: "var(--color-purple)" }}
           >
             تسجيل الدخول
+
+            {loading && (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            )}
           </button>
 
+          {/* الذهاب لإنشاء حساب */}
           <p className="text-center text-sm text-gray-600 mt-4">
             ليس لديك حساب؟{" "}
             <button
               type="button"
               onClick={() => navigate("/signup")}
-              className="text-[#6A0EAD]  font-semibold hover:underline"
+              className="text-[#6A0EAD] font-semibold hover:underline"
             >
               أنشئ حساب الآن
             </button>
@@ -156,7 +210,7 @@ const Login = () => {
         </form>
       </div>
 
-      {/* الجزء البنفسجي */}
+      {/* الجزء البنفسجي (الصورة) */}
       <div
         style={{
           width: "550px",

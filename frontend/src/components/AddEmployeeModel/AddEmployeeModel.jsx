@@ -67,58 +67,74 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
   };
 
   const handleSubmit = async () => {
-    console.log(type === "add" ? " بدء الإضافة" : "🛠 بدء التعديل");
-    setIsLoading(true);
+  console.log(type === "add" ? " بدء الإضافة" : "🛠 بدء التعديل");
+  setIsLoading(true);
 
-    try {
-      const formData = new FormData();
-      Object.entries(employeeDataState).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== "") {
-          formData.append(key, value);
-        }
-      });
-
-      console.group(" محتوى formData قبل الإرسال:");
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}`, value);
+  try {
+    const formData = new FormData();
+    Object.entries(employeeDataState).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== "") {
+        formData.append(key, value);
       }
-      console.groupEnd();
+    });
 
-      let res;
-      if (type === "add") {
-        res = await createEmployee(formData);
-        console.log("  تمّت الإضافة بنجاح:", res);
-        toast.success("تم إضافة الموظف بنجاح");
-      } else {
-        if (!employeeDataState._id) {
-          console.error("   لا يوجد _id لتحديث الموظف");
-          setIsLoading(false);
-          toast.error("لم يتم إضافة الموظف بنجاح ");
-          return;
-        }
-        res = await updateEmployee(employeeDataState._id, formData);
-        console.log("تمّ التعديل بنجاح:", res);
-        toast.success("تم تعديل بيانات الموظف بنجاح");
-
-        if (onSave) {
-          const updatedEmployee = res.data?.data || res.data;
-          onSave(updatedEmployee);
-        }
-
-      }
-
-      if (onSave) onSave(res);
-      setIsSubmitted(true);
-
-      setTimeout(() => {
-        setIsLoading(false);
-        onClose();
-      }, 100);
-    } catch (err) {
-      console.error("خطأ:", err.response?.data || err.message);
-      setIsLoading(false);
+    console.group(" محتوى formData قبل الإرسال:");
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}`, value);
     }
-  };
+    console.groupEnd();
+
+    let res;
+
+    if (type === "add") {
+      // ➜ إضافة موظف
+      res = await createEmployee(formData);
+      console.log("  تمّت الإضافة بنجاح:", res);
+      toast.success("تم إضافة الموظف بنجاح");
+
+      // لو بدك تحدث الليستة بعد الإضافة (للكرتات مثلاً)
+      if (onSave) {
+        const newEmployee =
+          res?.data?.employee || res?.employee || res?.data || res;
+        onSave(newEmployee);
+      }
+    } else {
+      // ➜ تعديل موظف
+      if (!employeeDataState._id) {
+        console.error("   لا يوجد _id لتحديث الموظف");
+        setIsLoading(false);
+        toast.error("لم يتم إضافة الموظف بنجاح ");
+        return;
+      }
+
+      res = await updateEmployee(employeeDataState._id, formData);
+      console.log("تمّ التعديل بنجاح:", res);
+      toast.success("تم تعديل بيانات الموظف بنجاح");
+
+      if (onSave) {
+        // نحاول نطلع الأوبجكت الحقيقي للموظف من الريسبونس
+        const updatedEmployee =
+          res?.data?.employee || // لو الباك رجع data.employee
+          res?.employee ||       // لو رجع employee مباشرة
+          res?.data ||           // لو رجع data فيها الموظف
+          res;                   // آخر حل
+
+        onSave(updatedEmployee);
+      }
+    }
+
+    setIsSubmitted(true);
+
+    setTimeout(() => {
+      setIsLoading(false);
+      onClose();
+    }, 100);
+  } catch (err) {
+    console.error("خطأ:", err.response?.data || err.message);
+    setIsLoading(false);
+  }
+};
+
 
   const step1Ref = React.useRef();
   const step2Ref = React.useRef();

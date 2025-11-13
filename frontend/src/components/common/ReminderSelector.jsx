@@ -17,25 +17,44 @@ const ReminderSelector = ({
   const [openReminder, setOpenReminder] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const [customHours, setCustomHours] = useState("");
-  const [localReminders, setLocalReminders] = useState([]);
+
+  // 🟣 بدل ما نسيبها فاضية ونضبطها مرة واحدة، نبدأ من قيمة الـ props
+  const [localReminders, setLocalReminders] = useState(
+    Array.isArray(selectedReminders) && selectedReminders.length > 0
+      ? selectedReminders
+      : ["none"]
+  );
+
   const ref = useRef(null);
 
-  // أول مرة: خذ القيمة من الأب أو "none"
+  // 🟣 مزامنة localReminders في كل مرة يتغير فيها selectedReminders من الأب
   useEffect(() => {
-    if (Array.isArray(selectedReminders) && selectedReminders.length > 0) {
-      setLocalReminders(selectedReminders);
-    } else {
-      setLocalReminders(["none"]);
-      setSelectedReminders(["none"]);
-    }
-  }, []);
+    const safe =
+      Array.isArray(selectedReminders) && selectedReminders.length > 0
+        ? selectedReminders
+        : ["none"];
 
-  // لما تتغيّر القيمة المحلية، حدث الأب
-  useEffect(() => {
-    if (JSON.stringify(localReminders) !== JSON.stringify(selectedReminders)) {
-      setSelectedReminders(localReminders);
+    setLocalReminders((prev) => {
+      // لو نفس القيمة ما نعمل setState عشان ما ندخل في لوب
+      if (JSON.stringify(prev) === JSON.stringify(safe)) return prev;
+      return safe;
+    });
+
+    // لو الأب مرّر [] أو undefined خليه ياخد "none" كقيمة افتراضية
+    if (!selectedReminders || selectedReminders.length === 0) {
+      setSelectedReminders?.(["none"]);
     }
-  }, [localReminders]);
+  }, [selectedReminders, setSelectedReminders]);
+
+  // لما تتغير القيمة المحلية، حدث الأب
+  useEffect(() => {
+    if (
+      !Array.isArray(selectedReminders) ||
+      JSON.stringify(localReminders) !== JSON.stringify(selectedReminders)
+    ) {
+      setSelectedReminders?.(localReminders);
+    }
+  }, [localReminders, selectedReminders, setSelectedReminders]);
 
   // إغلاق عند الضغط خارجها
   useEffect(() => {
@@ -65,36 +84,34 @@ const ReminderSelector = ({
     { value: "1day", label: "قبل 1 يوم", icon: NotificationIcon },
   ];
 
-  // عرض الاسم بالحقل
+  // عرض النص في الحقل
   const displayLabel =
-  !localReminders || localReminders.length === 0
-    ? "عدم التذكير"
-    : localReminders.some(
-        (r) =>
-          (typeof r === "string" && r !== "none") ||
-          (typeof r === "object" &&
-            (r.hoursBefore || (r.date && r.time)))
-      )
-    ? localReminders
-        .map((r) => {
-          if (typeof r === "string") {
-            return options.find((o) => o.value === r)?.label || r;
-          } else if (typeof r === "object" && typeof r.hoursBefore === "number") {
-            return `تذكير مخصّص (قبل ${r.hoursBefore} س)`;
-          } else if (typeof r === "object" && r.date && r.time) {
-            return `تذكير مخصّص (${r.time})`; // 🕓 نعرض الساعة بس
-          }
-          return "";
-        })
-        .join(", ")
-    : "عدم التذكير";
-
+    !localReminders || localReminders.length === 0
+      ? "عدم التذكير"
+      : localReminders.some(
+          (r) =>
+            (typeof r === "string" && r !== "none") ||
+            (typeof r === "object" &&
+              (r.hoursBefore || (r.date && r.time)))
+        )
+      ? localReminders
+          .map((r) => {
+            if (typeof r === "string") {
+              return options.find((o) => o.value === r)?.label || r;
+            } else if (typeof r === "object" && typeof r.hoursBefore === "number") {
+              return `تذكير مخصّص (قبل ${r.hoursBefore} س)`;
+            } else if (typeof r === "object" && r.date && r.time) {
+              return `تذكير مخصّص (${r.time})`;
+            }
+            return "";
+          })
+          .join(", ")
+      : "عدم التذكير";
 
   const handleAddCustomReminder = () => {
     if (!customHours) return;
     const hours = Number(customHours);
 
-    // خزّن التذكير الجديد وأزِل "عدم التذكير"
     setLocalReminders((prev) => {
       const filtered = Array.isArray(prev)
         ? prev.filter((r) => !(typeof r === "string" && r === "none"))
@@ -102,46 +119,16 @@ const ReminderSelector = ({
       return [...filtered, { hoursBefore: hours }];
     });
 
-    setCustomHours(String(hours)); // خلي الرقم يظل ظاهر بالحقل
+    setCustomHours(String(hours));
     setTimeout(() => setOpenReminder(false), 200);
   };
 
-  // لما تفتح المنسدلة، عبّي حقل الساعات سواء كان مخزون كـ hoursBefore أو {date,time}
+  // لما تفتح المنسدلة، عبّي حقل الساعات من localReminders
   useEffect(() => {
     if (openReminder && Array.isArray(localReminders)) {
       let foundHours = "";
 
       const custom = localReminders.find((r) => typeof r === "object");
-
-      if (custom) {
-        // لو عنده hoursBefore مباشرة
-        if (typeof custom.hoursBefore === "number") {
-          foundHours = String(custom.hoursBefore);
-        }
-        // لو عنده date/time (راجع من الباك)، نحسب الفرق بالساعات
-        else if (custom.date && custom.time && window?.formData?.start) {
-          try {
-            const reminderDate = new Date(`${custom.date}T${custom.time}`);
-            const bookingDate = new Date(window.formData.start);
-            const diffMs = bookingDate - reminderDate;
-            const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-            if (diffHours > 0) foundHours = String(diffHours);
-          } catch (err) {
-            console.warn("⚠️ فشل حساب فرق الساعات للتذكير:", err);
-          }
-        }
-      }
-
-      setCustomHours(foundHours);
-    }
-  }, [openReminder, localReminders]);
-
-  // لما تفتح المنسدلة، احسب عدد الساعات السابقة من وقت الحجز (baseDateTime)
-  useEffect(() => {
-    if (openReminder && Array.isArray(selectedReminders)) {
-      let foundHours = "";
-
-      const custom = selectedReminders.find((r) => typeof r === "object");
 
       if (custom) {
         if (typeof custom.hoursBefore === "number") {
@@ -161,7 +148,7 @@ const ReminderSelector = ({
 
       setCustomHours(foundHours);
     }
-  }, [openReminder, selectedReminders, baseDateTime]);
+  }, [openReminder, localReminders, baseDateTime]);
 
   return (
     <div ref={ref} className="relative w-full">

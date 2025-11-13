@@ -463,47 +463,22 @@ const formatLocalTime = (d) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
   // ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت الحجز
 function transformRemindersForCreateOrGroup(formData) {
-  // ✅ ابني Date محلّي من "YYYY-MM-DD" + "HH:mm" بدون UTC
-const buildBaseDateTime = (baseDateStr, hhmm) => {
-  const [y, mo, d] = baseDateStr.split("-").map(Number); // YYYY, MM, DD
-  const [h, m] = (hhmm || "09:00").split(":").map(Number); // HH:mm
-  // 👈 هذا يبني التاريخ/الوقت محليًا (Asia/Hebron)، مش UTC
-  return new Date(y, (mo || 1) - 1, d || 1, h || 0, m || 0, 0, 0);
-};
+  if (!Array.isArray(formData.reminders)) return [];
 
-  let base = null;
+  return formData.reminders.map((r) => {
+    // أنواع جاهزة: none, 30min, 1hour, 1day
+    if (typeof r === "string") return r;
 
-  if (formData.start) {
-    base = new Date(formData.start);
-  } else if (
-    formData.dateOnly &&
-    Array.isArray(formData.daysSchedule) &&
-    formData.daysSchedule.length > 0
-  ) {
-    const first = formData.daysSchedule[0];
-    base = buildBaseDateTime(formData.dateOnly, first.start);
-  } else {
-    base = new Date();
-  }
+    // تذكير مخصص قبل X ساعات
+    if (r && typeof r.hoursBefore === "number") {
+      return { hoursBefore: r.hoursBefore };
+    }
 
-  return Array.isArray(formData.reminders)
-    ? formData.reminders.map((r) => {
-        if (typeof r === "string") return r;
-
-        if (typeof r === "object" && typeof r.hoursBefore === "number") {
-  const reminderDate = new Date(base.getTime() - r.hoursBefore * 60 * 60 * 1000);
-  const date = formatLocalDate(reminderDate); // بدل toISOString
-  const time = formatLocalTime(reminderDate); // بدل toISOString
-  return { date, time };
+    // fallback
+    return r;
+  });
 }
 
-
-        if (typeof r === "object" && r.date && r.time) return r;
-
-        return r;
-      })
-    : [];
-}
 
   const buildRequestBodyForBackend = () => {
     // 1) service / description / location / maxMembers من Step1
@@ -574,18 +549,19 @@ const buildBaseDateTime = (baseDateStr, hhmm) => {
 
 // ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت الحجز
 const transformRemindersForCreateOrGroup = () => {
-  // قاعدة الوقت:
-  // - لو تعديل فردي: عندك formData.start (YYYY-MM-DDTHH:mm)
-  // - غير هيك: من dateOnly + أول start بـ daysSchedule
   let base = null;
 
+  // قاعدة وقت الحجز
   if (formData.start) {
     base = new Date(formData.start);
-  } else if (formData.dateOnly && Array.isArray(formData.daysSchedule) && formData.daysSchedule.length > 0) {
+  } else if (
+    formData.dateOnly &&
+    Array.isArray(formData.daysSchedule) &&
+    formData.daysSchedule.length > 0
+  ) {
     const first = formData.daysSchedule[0];
     base = buildBaseDateTime(formData.dateOnly, first.start);
   } else {
-    // fallback (مش مفروض نوصله)
     base = new Date();
   }
 
@@ -593,23 +569,32 @@ const transformRemindersForCreateOrGroup = () => {
     ? formData.reminders.map((r) => {
         if (typeof r === "string") return r;
 
-        // لو مخزّن كـ hoursBefore → حوّله إلى توقيت فعلي قبل وقت الحجز
+        // ⚡ حساب الوقت المحلي وليس UTC
         if (typeof r === "object" && typeof r.hoursBefore === "number") {
           const reminderDate = new Date(
             base.getTime() - r.hoursBefore * 60 * 60 * 1000
           );
-          const date = reminderDate.toISOString().split("T")[0];
-          const time = reminderDate.toISOString().split("T")[1].slice(0, 5);
-          return { date, time };
+
+          const y = reminderDate.getFullYear();
+          const mo = String(reminderDate.getMonth() + 1).padStart(2, "0");
+          const d = String(reminderDate.getDate()).padStart(2, "0");
+          const hh = String(reminderDate.getHours()).padStart(2, "0");
+          const mm = String(reminderDate.getMinutes()).padStart(2, "0");
+
+          return {
+            date: `${y}-${mo}-${d}`,
+            time: `${hh}:${mm}`,
+          };
         }
 
-        // لو already {date,time} خليه كما هو
+        // جاهز date/time
         if (typeof r === "object" && r.date && r.time) return r;
 
         return r;
       })
     : [];
 };
+
 
 const reminders = transformRemindersForCreateOrGroup(formData);
 
@@ -879,9 +864,14 @@ const remindersSingle = Array.isArray(formData.reminders)
       if (typeof r === "object" && typeof r.hoursBefore === "number") {
   const base = new Date(formData.start); // "YYYY-MM-DDTHH:mm" تُفهم محليًا
   const reminderDate = new Date(base.getTime() - r.hoursBefore * 60 * 60 * 1000);
-  const date = formatLocalDate(reminderDate);
-  const time = formatLocalTime(reminderDate);
-  return { date, time };
+  const y = reminderDate.getFullYear();
+const mo = String(reminderDate.getMonth() + 1).padStart(2, "0");
+const d = String(reminderDate.getDate()).padStart(2, "0");
+const hh = String(reminderDate.getHours()).padStart(2, "0");
+const mm = String(reminderDate.getMinutes()).padStart(2, "0");
+
+return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
+
 }
 
       if (typeof r === "object" && r.date && r.time) return r;
@@ -1073,6 +1063,22 @@ const remindersSingle = Array.isArray(formData.reminders)
     setDropdownOpen(false);
     setShowCalendar(false);
   }, [formData, isEditing]);
+
+    // 🟣 وقت الأساس لحساب التذكير في Step2 (نفس منطق التحويل للبك تقريباً)
+  const baseDateTimeForStep2 =
+  formData?.start
+    ? formData.start
+    : formData?.dateOnly &&
+      Array.isArray(formData.daysSchedule) &&
+      formData.daysSchedule.length > 0 &&
+      formData.daysSchedule[0]?.start
+    ? `${formData.dateOnly}T${formData.daysSchedule[0].start}:00`
+    : null;
+
+    const normalizedBaseDateTime = baseDateTimeForStep2
+  ? new Date(baseDateTimeForStep2).toISOString()
+  : null;
+
 
   return (
     <>
@@ -1303,6 +1309,8 @@ const remindersSingle = Array.isArray(formData.reminders)
                   setErrors={setStep2Errors}
                   isIndividual={!!selectedBooking}
                   isEditing={isEditing}
+                  baseDateTime={normalizedBaseDateTime}
+
                 />
               )}
 

@@ -1,15 +1,18 @@
 import React, { useState, useImperativeHandle, forwardRef } from "react";
 import { step1Schema } from "../employeeValidation.js";
-import Select from 'react-select';
+import Select from "react-select";
 import selectStyles from "../selectStyles.js";
+import CalenderIcon from "../../icons/calender.svg?react";
 
+import MiniCalender from "../MiniCalender/MiniCalender.jsx";
 const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
   const [localErrors, setLocalErrors] = useState({});
+  const [showCalendar, setShowCalendar] = useState(false); // 👈 فتح/إغلاق الكاليندر
 
-const genderOptions = [
-  { value: 'ذكر', label: 'ذكر' },
-  { value: 'أنثى', label: 'أنثى' }
-];
+  const genderOptions = [
+    { value: "ذكر", label: "ذكر" },
+    { value: "أنثى", label: "أنثى" },
+  ];
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -57,12 +60,13 @@ const genderOptions = [
   const combinedErrors = { ...errors, ...localErrors };
 
   return (
-    <div className="flex justify-center bg-white w-full">
-      <form className="w-[343px] flex flex-col gap-2 font-[Cairo]">
+    <div className="flex justify-center bg-white w-full relative">
+      <form className="w-[343px] flex flex-col gap-2 font-[Cairo] relative">
+
+        {/* ------------------- الاسم الأول ------------------- */}
         <div className="flex gap-3 align-item-center">
-          {/* الاسم الأول */}
           <div className="flex-1">
-            <label className="block text-[14px] font-[700] text-black mb-1.5 ">
+            <label className="block text-[14px] font-[700] text-black mb-1.5">
               الاسم الأول <span className="text-red-500">*</span>
             </label>
             <input
@@ -70,11 +74,12 @@ const genderOptions = [
               placeholder="أدخل الاسم الأول"
               value={data.firstName}
               onChange={(e) => handleChange("firstName", e.target.value)}
-              className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C] focus:outline-none focus:ring-2 ${
-                combinedErrors.firstName
-                  ? "border-red-500 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-purple-500"
-              }`}
+              className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+                focus:outline-none focus:ring-2 ${
+                  combinedErrors.firstName
+                    ? "border-red-500 focus:ring-red-400"
+                    : "border-gray-300 focus:ring-purple-500"
+                }`}
             />
             {combinedErrors.firstName && (
               <p className="text-red-500 text-[11px] mt-1">
@@ -83,9 +88,9 @@ const genderOptions = [
             )}
           </div>
 
-          {/* الاسم الثاني */}
+          {/* ------------------- الاسم الثاني ------------------- */}
           <div className="flex-1">
-            <label className="block text-[14px] font-[700] text-black mb-1.5 ">
+            <label className="block text-[14px] font-[700] text-black mb-1.5">
               الاسم الثاني <span className="text-red-500">*</span>
             </label>
             <input
@@ -93,11 +98,12 @@ const genderOptions = [
               placeholder="أدخل الاسم الثاني"
               value={data.lastName}
               onChange={(e) => handleChange("lastName", e.target.value)}
-              className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C] focus:outline-none focus:ring-2 ${
-                combinedErrors.lastName
-                  ? "border-red-500 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-purple-500"
-              }`}
+              className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+                focus:outline-none focus:ring-2 ${
+                  combinedErrors.lastName
+                    ? "border-red-500 focus:ring-red-400"
+                    : "border-gray-300 focus:ring-purple-500"
+                }`}
             />
             {combinedErrors.lastName && (
               <p className="text-red-500 text-[11px] mt-1">
@@ -107,22 +113,21 @@ const genderOptions = [
           </div>
         </div>
 
-        {/* الجنس */}
+        {/* ------------------- الجنس ------------------- */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5 ">
+          <label className="block text-[14px] font-[700] text-black mb-1.5">
             الجنس <span className="text-red-500">*</span>
           </label>
-        <Select
-  options={genderOptions}
-  value={genderOptions.find(o => o.value === data.gender)}
-  onChange={(opt) => handleChange('gender', opt.value)}
-  placeholder="اختر الجنس"
-  styles={selectStyles}
 
+          <Select
+            options={genderOptions}
+            value={genderOptions.find((o) => o.value === data.gender)}
+            onChange={(opt) => handleChange("gender", opt.value)}
+            placeholder="اختر الجنس"
+            styles={selectStyles}
+            isRtl={true}
+          />
 
-
-  isRtl={true}
-/> 
           {combinedErrors.gender && (
             <p className="text-red-500 text-[11px] mt-1">
               {combinedErrors.gender}
@@ -130,9 +135,9 @@ const genderOptions = [
           )}
         </div>
 
-        {/* رقم الهوية */}
+        {/* ------------------- رقم الهوية ------------------- */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5 ">
+          <label className="block text-[14px] font-[700] text-black mb-1.5">
             رقم الهوية
           </label>
           <input
@@ -140,12 +145,14 @@ const genderOptions = [
             placeholder="أدخل رقم الهوية"
             value={data.nationalId}
             onChange={(e) => handleChange("nationalId", e.target.value)}
-            className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C] focus:outline-none focus:ring-2 ${
-              combinedErrors.nationalId
-                ? "border-red-500 focus:ring-red-400"
-                : "border-gray-300 focus:ring-purple-500"
-            }`}
+            className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+              focus:outline-none focus:ring-2 ${
+                combinedErrors.nationalId
+                  ? "border-red-500 focus:ring-red-400"
+                  : "border-gray-300 focus:ring-purple-500"
+              }`}
           />
+
           {combinedErrors.nationalId && (
             <p className="text-red-500 text-[11px] mt-1">
               {combinedErrors.nationalId}
@@ -153,38 +160,63 @@ const genderOptions = [
           )}
         </div>
 
-        {/* تاريخ الميلاد */}
+        {/* ------------------- تاريخ الميلاد + MiniCalender ------------------- */}
         <div className="relative">
-          <label className="block text-[14px] font-[700] text-black mb-1.5 ">
-            تاريخ الميلاد
-          </label>
-          <input
-            type="text"
-            placeholder="اختر تاريخ الميلاد"
-            value={data.birthDate}
-            onFocus={(e) => (e.target.type = "date")}
-            onBlur={(e) => {
-              if (!e.target.value) e.target.type = "text";
-            }}
-            onChange={(e) => handleChange("birthDate", e.target.value)}
-            className={`w-full p-2.5 pr-10 border rounded-xl text-[12px] placeholder-[#7E818C] focus:outline-none focus:ring-2 ${
-              combinedErrors.birthDate
-                ? "border-red-500 focus:ring-red-400"
-                : "border-gray-300 focus:ring-purple-500"
-            }`}
-          />
-          {combinedErrors.birthDate && (
-            <p className="text-red-500 text-[11px] mt-1">
-              {combinedErrors.birthDate}
-            </p>
-          )}
-        </div>
+  <label className="block text-[14px] font-[700] text-black mb-1.5">
+    تاريخ الميلاد
+  </label>
 
-        {/* رفع الملف */}
+  {/* ◀️ الحقل الجديد (div بدل input) */}
+  <div
+    onClick={() => setShowCalendar(!showCalendar)}
+    className={`w-full flex items-center gap-2 border rounded-xl px-3 py-2.5 cursor-pointer 
+      text-[12px] placeholder-[#7E818C] 
+      ${combinedErrors.birthDate ? "border-red-500" : "border-gray-300"}
+      focus-within:ring-2 ${combinedErrors.birthDate ? "focus-within:ring-red-400" : "focus-within:ring-purple-500"}
+    `}
+  >
+    {/* أيقونة الكاليندر */}
+    
+                  <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
+
+
+    {/* placeholder أو التاريخ */}
+    <span className={data.birthDate ? "text-black" : "text-[#7E818C]"}>
+      {data.birthDate || "اختر تاريخ الميلاد"}
+    </span>
+  </div>
+
+  {/* رسالة الخطأ */}
+  {combinedErrors.birthDate && (
+    <p className="text-red-500 text-[11px] mt-1">
+      {combinedErrors.birthDate}
+    </p>
+  )}
+
+  {/* 🌟 الميني كاليندر */}
+  {showCalendar && (
+    <div className="absolute z-50 top-[100%] right-0">
+      <MiniCalender
+        currentDate={
+          data.birthDate ? new Date(data.birthDate) : new Date()
+        }
+        variant="employee"
+        handleDateChange={(date) => {
+          const iso = date.toISOString().split("T")[0];
+          handleChange("birthDate", iso);
+          setShowCalendar(false);
+        }}
+      />
+    </div>
+  )}
+</div>
+
+        {/* ------------------- صورة الملف ------------------- */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5 ">
+          <label className="block text-[14px] font-[700] text-black mb-1.5">
             صورة الملف الشخصي
           </label>
+
           <div className="border-2 border-dashed border-[var(--color-purple)] rounded-xl p-5 text-center text-gray-500 text-[12px] cursor-pointer hover:border-purple-400 transition">
             <input
               type="file"
@@ -193,6 +225,7 @@ const genderOptions = [
               className="hidden"
               id="imageUpload"
             />
+
             <label htmlFor="imageUpload" className="cursor-pointer">
               <svg
                 width="33"
@@ -208,8 +241,10 @@ const genderOptions = [
                   fill="var(--color-purple)"
                 />
               </svg>
+
               <p>اسحب الملف وأفلته هنا أو اختر ملفاً</p>
               <p className="text-xs text-gray-400 mt-1">الحد الأقصى 2MB</p>
+
               {data.image && (
                 <p className="text-green-600 mt-2">✔ تم اختيار الملف</p>
               )}

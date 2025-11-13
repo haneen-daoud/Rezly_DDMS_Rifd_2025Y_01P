@@ -138,3 +138,15 @@
 .mini-calendar-card .react-datepicker__header {
   height: 32px !important;
 }
+
+/* 🔥 تصغير ارتفاع الميني كاليندر بالكامل لمودال الموظف */
+.employee-mini-calendar {
+  transform: scaleY(0.76);   /* 👈 قللي من هنا حسب رغبتك */
+  transform-origin: top center;
+}
+
+/* حتى لا يترك مساحات زائدة */
+.employee-mini-calendar .react-datepicker {
+  margin: 0 !important;
+  padding: 0 !important;
+}
