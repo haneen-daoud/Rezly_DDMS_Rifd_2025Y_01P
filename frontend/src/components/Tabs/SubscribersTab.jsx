@@ -154,10 +154,13 @@ const formatDate = (isoDate) => {
               <td className="table-text">{client.phone}</td>
               <td>
                 <span
-                  className={`status-badge ${client.packageId?.name === "شهري" ? "status-mouth" : "bg-blue-500"}`}
-                >
-                  {client.packageId?.name}
-                </span>
+  className={`status-badge ${
+    client.packageId?.slug === "شهري" ? "status-mouth" : "bg-blue-500"
+  }`}
+>
+  {client.packageId?.name || client.packageId?.slug || "—"}
+</span>
+
               </td>
              <td className="table-text">{formatDate(client.startDate)}</td>
 <td className="table-text">{formatDate(client.endDate)}</td>
@@ -213,36 +216,42 @@ const formatDate = (isoDate) => {
 onSave={(member) => {
   console.log("📩 عضو تم استلامه من المودال:", member);
 
-  const oldPackage = clients.find((c) => c._id === member._id)?.packageId;
+  // تأكيد إن العضو عنده packageId object (مش string)
+  let fixedPackage =
+    typeof member.packageId === "string"
+      ? { 
+          _id: member.packageId, 
+          slug: clients.find(c => c._id === member._id)?.packageId?.slug || "غير معروف" 
+        }
+      : member.packageId;
 
   if (editClientData) {
+    // تعديل عضو موجود
     setClients((prev) =>
       prev.map((c) =>
         c._id === member._id
           ? {
               ...c,
               ...member,
-              packageId:
-                typeof member.packageId === "string"
-                  ? { _id: member.packageId, name: oldPackage?.name || "غير محددة" }
-                  : member.packageId,
+              packageId: fixedPackage,
             }
           : c
       )
     );
   } else {
-    const formatted = {
-      ...member,
-      packageId:
-        typeof member.packageId === "string"
-          ? { _id: member.packageId, name: "غير محددة" }
-          : member.packageId,
-    };
-    setClients((prev) => [formatted, ...prev]);
+    // إضافة عضو جديدة
+    setClients((prev) => [
+      {
+        ...member,
+        packageId: fixedPackage,
+      },
+      ...prev,
+    ]);
   }
 
-setIsModalOpen(false);
+  setIsModalOpen(false);
 }}
+
 
 
 

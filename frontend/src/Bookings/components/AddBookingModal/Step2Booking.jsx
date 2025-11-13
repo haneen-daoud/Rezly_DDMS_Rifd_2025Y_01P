@@ -14,6 +14,7 @@ export default function Step2Booking({
   setErrors,
   isEditing,
   isIndividual = false,
+  baseDateTime,
 }) {
   const [showCalendar, setShowCalendar] = useState(false);
   const [openDuration, setOpenDuration] = useState(false);
@@ -420,6 +421,7 @@ export default function Step2Booking({
                     : "اختيار التذكير مطلوب",
               }));
             }}
+            baseDateTime={baseDateTime}
           />
         </div>
       </div>

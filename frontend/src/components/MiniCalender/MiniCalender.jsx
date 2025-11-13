@@ -68,6 +68,12 @@ export default function MiniCalender({
 
       inner: "flex flex-col w-full items-center py-3 px-4",
     },
+    employee: {
+  container:
+    "absolute top-[10px] right-0 z-50 w-[343px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
+  inner: "flex flex-col w-full items-center py-3 px-4",
+},
+
     default: {
       container:
         "absolute left-0 top-full mt-2 w-[500px] rounded-[12px] bg-white shadow-lg",
@@ -78,7 +84,7 @@ export default function MiniCalender({
   const styles = styleMap[variant] || styleMap.default;
 
   return (
-    <div className={styles.container}>
+<div className={`${styles.container} ${variant === "employee" ? "employee-mini-calendar" : ""}`}>
       <div className={styles.inner}>
         <DatePicker
           inline
@@ -145,12 +151,14 @@ export default function MiniCalender({
               </div>
               <div className="flex items-center gap-2">
                 <button
+                type = "button"
                   onClick={decreaseMonth}
                   className="flex items-center justify-center w-[28px] h-[28px] rounded-[6px] bg-gray-200"
                 >
                   <img src={RightArrowIcon} alt="prev" />
                 </button>
                 <button
+                type = "button"
                   onClick={increaseMonth}
                   className="flex items-center justify-center w-[28px] h-[28px] rounded-[6px] bg-gray-200"
                 >

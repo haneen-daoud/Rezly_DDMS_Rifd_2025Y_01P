@@ -5,6 +5,7 @@ import AddEmployeeModel from "../components/AddEmployeeModel/AddEmployeeModel.js
 import { getAllEmployees } from "../api.js";
 import EmployeesHeader from "../components/EmployeeHeader.jsx";
 import { useOutletContext, useNavigate, useLocation, Outlet } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function Employees() {
   const [activeTab, setActiveTab] = useState("الموظفين");
@@ -18,9 +19,12 @@ export default function Employees() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ نقرأ التاب الحالي من الرابط (URL)
+  /* --------------------------------------------------------
+      قراءة التاب الحالي من الرابط
+  -------------------------------------------------------- */
   useEffect(() => {
-    const subPath = location.pathname.split("/")[3]; // → staff / roles / reports / settings
+    const subPath = location.pathname.split("/")[3]; // staff / roles / reports / settings
+
     const mapping = {
       staff: "الموظفين",
       roles: "الصلاحيات",
@@ -34,7 +38,9 @@ export default function Employees() {
     }
   }, [location.pathname]);
 
-  // ✅ لما يتغير التاب من السايدبار → غيّر الرابط تلقائياً
+  /* --------------------------------------------------------
+      تحديث الرابط عند تغيير التاب من السايدبار
+  -------------------------------------------------------- */
   useEffect(() => {
     const reverseMapping = {
       الموظفين: "staff",
@@ -49,47 +55,112 @@ export default function Employees() {
     }
   }, [activeSubTab]);
 
-  // ✅ جلب بيانات الموظفين
+  /* --------------------------------------------------------
+      جلب الموظفين أول مرة
+  -------------------------------------------------------- */
   useEffect(() => {
     const fetchData = async () => {
       try {
         const data = await getAllEmployees();
-        setEmployees(data.data?.employees || data.employees || []);
-        setTotalEmployees(data.totalCount || (data.data?.employees?.length || 0));
+
+        const list =
+          data.data?.employees ||
+          data.employees ||
+          [];
+
+        setEmployees(list);
+        setTotalEmployees(data.totalCount || list.length);
       } catch (error) {
         console.error("حدث خطأ أثناء جلب الموظفين:", error);
+        toast.error("فشل تحميل بيانات الموظفين");
       } finally {
         setLoading(false);
       }
     };
+
     fetchData();
   }, []);
 
-  // ✅ حذف موظف وتحديث العدد
+  /* --------------------------------------------------------
+      Refresh بعد الإضافة / التعديل
+  -------------------------------------------------------- */
+  const refreshEmployees = async () => {
+    try {
+      const data = await getAllEmployees();
+
+      const list =
+        data.data?.employees ||
+        data.employees ||
+        data.data ||
+        [];
+
+      const cleanedList = Array.isArray(list) ? list : [];
+
+      setEmployees(cleanedList);
+      setTotalEmployees(cleanedList.length);
+
+      return cleanedList;
+    } catch (error) {
+      console.error("Error refreshing employees:", error);
+      toast.error("فشل تحديث بيانات الموظفين");
+      return [];
+    }
+  };
+
+  /* --------------------------------------------------------
+      حذف موظف + Toast
+  -------------------------------------------------------- */
   const handleDeleteEmployee = (id) => {
     setEmployees((prev) => {
       const updated = prev.filter((emp) => emp._id !== id);
       setTotalEmployees(updated.length);
       return updated;
     });
+
+    toast.success("تم حذف الموظف بنجاح");
   };
 
-  // ✅ فتح مودال إضافة موظف
+  /* --------------------------------------------------------
+      تعديل موظف (من جدول التعديل)
+  -------------------------------------------------------- */
+  const handleEditEmployee = (employeeId, updatedObj) => {
+    setEmployees((prev) =>
+      prev.map((emp) =>
+        emp._id === employeeId ? { ...emp, ...updatedObj } : emp
+      )
+    );
+
+  };
+
+  /* --------------------------------------------------------
+      فتح مودال إضافة موظف
+  -------------------------------------------------------- */
   const handleAddEmployeeClick = () => {
     setIsModalOpen(true);
   };
 
-  // ✅ تحديد المحتوى حسب التاب
+  /* --------------------------------------------------------
+      محتوى التاب
+  -------------------------------------------------------- */
   const renderContent = () => {
     if (activeTab === "الموظفين") {
       return activeIconIndex === 0 ? (
-        <EmployeeCardTab employees={employees} loading={loading} onDelete={handleDeleteEmployee} />
+        <EmployeeCardTab
+          employees={employees}
+          loading={loading}
+          onDelete={handleDeleteEmployee}
+        />
       ) : (
-        <EmployeeTable employees={employees} loading={loading} onDelete={handleDeleteEmployee} />
+        <EmployeeTable
+          employees={employees}
+          loading={loading}
+          onDelete={handleDeleteEmployee}
+          onEdit={handleEditEmployee}
+        />
       );
     }
 
-    // بقية التابات (الصلاحيات / التقارير / الإعدادات)
+    // باقي التابات
     return (
       <div className="p-4 bg-white rounded-2xl shadow">
         محتوى {activeTab}
@@ -97,9 +168,12 @@ export default function Employees() {
     );
   };
 
+  /* --------------------------------------------------------
+      الـ RETURN
+  -------------------------------------------------------- */
   return (
     <div className="flex flex-col gap-3 flex-1 w-full">
-      {/* ✅ الهيدر */}
+      {/* Header */}
       <EmployeesHeader
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -109,14 +183,30 @@ export default function Employees() {
         setActiveIconIndex={setActiveIconIndex}
       />
 
-      {/* ✅ المحتوى */}
+      {/* Content */}
       {renderContent()}
 
-      {/* ✅ مودال إضافة موظف */}
+      {/* Modal */}
       {isModalOpen && (
         <AddEmployeeModel
           onClose={() => setIsModalOpen(false)}
-          onSave={(data) => console.log("تم إضافة موظف:", data)}
+          onSave={async () => {
+            let previousCount = employees.length;
+
+            // إعادة المحاولة 5 مرات خلال 5 ثواني
+            for (let i = 0; i < 5; i++) {
+              const updatedList = await refreshEmployees();
+
+              if (updatedList.length > previousCount) {
+                toast.success("تم إضافة الموظف بنجاح");
+                break; // الموظف ظهر → خلص
+              }
+
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+
+            setIsModalOpen(false); // سكّر المودال بعد التحديث
+          }}
         />
       )}
 
