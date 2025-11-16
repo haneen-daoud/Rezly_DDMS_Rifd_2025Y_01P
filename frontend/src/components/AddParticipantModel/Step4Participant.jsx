@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { getAllPackages } from "../../api";
+import Select from "react-select";
+import selectStyles from "../selectStyles.js";
+import { getAllCoaches } from "../../api";
 
 export default function Step4Participant({ memberData, setMemberData, packages = [] }) {
   const [selectedPackage, setSelectedPackage] = useState(null);
   // عند تحميل العضو، تحقق من القيمة
-const [paymentMethod, setPaymentMethod] = useState(
-  memberData.paymentMethod === "نقداً"
-    ? "نقداً"
-    : memberData.paymentMethod === "بطاقة"
-    ? "بطاقة"
-    : ""
-);
+  const [paymentMethod, setPaymentMethod] = useState(memberData.paymentMethod || "");
 
+  const [coaches, setCoaches] = useState([]);
+
+
+  const paymentOptions = [
+    { value: "نقداً", label: "نقداً" },
+    { value: "بطاقة", label: "بطاقة" },
+    { value: "أونلاين", label: "أونلاين" },
+  ];
   const [trainer, setTrainer] = useState(memberData.trainer || "");
 
   const token =
@@ -36,6 +41,11 @@ const [paymentMethod, setPaymentMethod] = useState(
 
   // بعد تحميل الباقات، تعيين الباقة الحالية للعضو
   useEffect(() => {
+    const fetchCoaches = async () => {
+      const allCoaches = await getAllCoaches();
+      setCoaches(allCoaches);
+    };
+    fetchCoaches();
     if (packages.length > 0 && memberData.packageId) {
       const currentPackage = packages.find(
         (pkg) => pkg._id === memberData.packageId
@@ -61,20 +71,17 @@ const [paymentMethod, setPaymentMethod] = useState(
     updateMemberField("packageId", packageId);
   };
 
-  // تغيير طريقة الدفع
-  const handlePaymentChange = (e) => {
-    const newMethod = e.target.value;
+  const handlePaymentChange = (newMethod) => {
     setPaymentMethod(newMethod);
 
-    // تحديث في الواجهة
     setMemberData({
       ...memberData,
       paymentMethod: newMethod,
     });
 
-    // تحديث في الباك
     updateMemberField("paymentMethod", newMethod);
   };
+
 
   // تغيير المدرب
   const handleTrainerChange = (e) => {
@@ -90,10 +97,10 @@ const [paymentMethod, setPaymentMethod] = useState(
     // تحديث في الباك
     updateMemberField("coachId", newTrainer);
   };
-useEffect(() => {
- console.log(memberData);
+  useEffect(() => {
+    console.log(memberData);
 
-}, [memberData]);
+  }, [memberData]);
 
 
   return (
@@ -151,24 +158,22 @@ useEffect(() => {
           />
         </div>
 
-       {/* طريقة الدفع */}
-<div className="flex flex-col gap-2">
-  <label className="text-[14px] font-[700] text-black">
-    طريقة الدفع <span className="text-red-500">*</span>
-  </label>
- <select
-  value={paymentMethod}
-  onChange={handlePaymentChange}
-  className="w-full border border-gray-300 rounded-xl px-2.5 py-3 text-[12px] focus:outline-none focus:ring-2 focus:ring-purple-600"
->
-  <option value="">اختر طريقة الدفع</option>
-  <option value="نقداً">نقداً</option>
-  <option value="بطاقة">بطاقة</option>
-    <option value="أونلاين">أونلاين</option>
+        {/* طريقة الدفع */}
+        <div className="flex flex-col gap-2">
+          <label className="text-[14px] font-[700] text-black">
+            طريقة الدفع <span className="text-red-500">*</span>
+          </label>
 
-</select>
+          <Select
+            options={paymentOptions}
+            value={paymentOptions.find((o) => o.value === paymentMethod)}
+            onChange={(opt) => handlePaymentChange(opt.value)}
+            placeholder="اختر طريقة الدفع"
+            styles={selectStyles}
+            isRtl={true}
+          />
 
-</div>
+        </div>
 
 
 
@@ -177,23 +182,22 @@ useEffect(() => {
           <label className="text-[14px] font-[700] text-black">
             المدرب المسؤول <span className="text-red-500">*</span>
           </label>
-          <select
-            value={trainer || ""}
-            onChange={handleTrainerChange}
-            className="w-full border border-gray-300 rounded-xl px-2.5 py-3 text-[12px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-600"
-          >
-            <option value="">اختر المدرب المسؤول</option>
-            {/* إذا فيه مدرب محدد مسبقًا */}
-            {memberData.coachId && (
-              <option value={memberData.coachId._id}>
-                {memberData.coachId.firstName} {memberData.coachId.lastName}
 
-              </option>
-            )}
-            {/* باقي المدربين */}
-            <option value="68e102cb63883a6b59bf4eac">أحمد خليل</option>
-          </select>
+          <Select
+            options={coaches.map(coach => ({
+              value: coach._id,
+              label: `${coach.firstName} ${coach.lastName}`
+            }))}
+            value={coaches
+              .map(coach => ({ value: coach._id, label: `${coach.firstName} ${coach.lastName}` }))
+              .find(o => o.value === trainer)}
+            onChange={(opt) => handleTrainerChange({ target: { value: opt.value } })}
+            placeholder="اختر المدرب المسؤول"
+            styles={selectStyles}
+            isRtl={true} // لدعم الكتابة العربية
+          />
         </div>
+
 
 
       </form>

@@ -83,25 +83,41 @@ const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onS
   };
 
   const handleAddMember = async () => {
-    try {
-      if (!memberData.packageId) {
-        return toast.warn("يجب اختيار الاشتراك");
-      }
-
-      setIsLoading(true);
-      const result = await addNewMember(memberData);
-      toast.success("تم إضافة المشترك بنجاح!");
-      setIsSubmitted(true);
-
-      if (onSave) onSave(result);
-      onClose();
-    } catch (error) {
-      console.error("  خطأ أثناء الإضافة:", error);
-      toast.error("حدث خطأ أثناء إضافة المشترك!");
-    } finally {
-      setIsLoading(false);
+  try {
+    if (!memberData.packageId) {
+      return toast.warn("يجب اختيار الاشتراك");
     }
-  };
+
+    setIsLoading(true);
+    const result = await addNewMember(memberData);
+
+    // ✅ نحاول نطلع العضو من الريسبونس
+    let returnedMember =
+      result?.member ||
+      result?.data ||
+      result?.newMember ||
+      result;
+
+    // ✅ ندمج الداتا اللي بعثناها مع اللي رجعت من السيرفر
+    const createdMember = {
+      ...(memberData || {}),
+      ...(returnedMember || {}),
+    };
+
+    toast.success("تم إضافة المشترك بنجاح!");
+    setIsSubmitted(true);
+
+    // ✅ هسا onSave بوصلها عضو فيه firstName / lastName / email إلخ
+    if (onSave) onSave(createdMember);
+
+    onClose();
+  } catch (error) {
+    console.error("  خطأ أثناء الإضافة:", error);
+    toast.error("حدث خطأ أثناء إضافة المشترك!");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
 const handleSaveChanges = async () => {
   try {

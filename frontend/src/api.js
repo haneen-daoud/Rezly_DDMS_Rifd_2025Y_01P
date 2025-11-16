@@ -134,37 +134,34 @@ const res = await api.post("/auth/SignUp", formData);
 // إضافة مشترك جديد باستخدام Axios
 export const addNewMember = async (memberData) => {
   try {
-    // 🧹 إزالة الحقول غير المسموحة من البيانات
-    const { sendMethod, healthForm, ...filteredData } = memberData;
+    // إزالة الحقول غير المسموحة
+    const {
+      sendMethod,
+      healthForm,
+      userName,
+      password,
+      fullName,
+      nationalId,
+      image, // الصورة مش مدعومة، نمسحها
+      ...cleanData
+    } = memberData;
 
-    // 🧩 إضافة userName و password إذا مش موجودين
-    if (!filteredData.userName) {
-      // توليد اسم مستخدم بسيط من رقم الهوية أو الاسم الكامل
-      if (filteredData.nationalId) {
-        filteredData.userName = `user${filteredData.nationalId}`;
-      } else if (filteredData.fullName) {
-        filteredData.userName = filteredData.fullName.replace(/\s+/g, "").toLowerCase();
-      } else {
-        filteredData.userName = `user${Date.now()}`; // احتياط
-      }
+    // لو الصورة فاضية احذفها
+    if (!image) {
+      delete cleanData.image;
     }
 
-    if (!filteredData.password) {
-      filteredData.password = "123456"; // كلمة مرور مؤقتة
-    }
-
-    // 🚀 إرسال الطلب بعد التنظيف
-    const res = await api.post("/auth/addNewMember", filteredData, {
+    // إرسال JSON وليس FormData
+    const res = await api.post("/auth/addNewMember", cleanData, {
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${FIXED_TOKEN}`,
+        "Content-Type": "application/json",
       },
     });
 
-    console.log(" تم إضافة المشترك:", res.data);
     return res.data;
   } catch (err) {
-    console.error(" خطأ أثناء إضافة المشترك:", err.response?.data || err.message);
+    console.error("❌ خطأ أثناء إضافة المشترك:", err.response?.data || err.message);
     throw err;
   }
 };
@@ -274,4 +271,17 @@ export const updateMember = async (memberId, memberData) => {
     }
   };
 
+
+  // جلب جميع المدربين
+export const getAllCoaches = async () => {
+  try {
+    const res = await api.get("/auth/getAllEmployees?role=Coach", {
+      headers: { Authorization: `Bearer ${FIXED_TOKEN}` },
+    });
+    return res.data.employees || []; 
+  } catch (err) {
+    console.error("خطأ أثناء جلب المدربين:", err.response?.data || err.message);
+    return [];
+  }
+};
 export default api;

@@ -211,6 +211,8 @@ export default function Step1Booking({
   // ====== UI (نفس الشكل بالضبط) ======
   return (
     <div className="flex justify-center bg-white w-full text-black text-[14px]">
+      {/* 🟣 سكرول حول الفورم فقط عشان لما تظهر الأخطاء ما ينزل زر "التالي" */}
+      <div className="w-[343px] max-h-[500px] overflow-y-auto overflow-x-hidden custom-scrollbar">
       <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
         {/* اسم الحصة */}
         <div className="relative dropdown-step1">
@@ -379,31 +381,36 @@ export default function Step1Booking({
 </div>
 */}
           {errors?.description && (
-            <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+            <p className="text-red-500 text-xs mt-1 -mt-1">{errors.description}</p>
           )}
         </div>
 
         {/* المدرب */}
-        {!isCoach && (
-          <>
-            <div>
-              <CoachSelector
-                selectedCoach={formData.coach}
-                setSelectedCoach={(coach) => {
-                  setFormData({ ...formData, coachId: coach.id, coach });
-                  if (errors?.coach)
-                    setErrors((prev) => ({ ...prev, coach: null }));
-                }}
-                coachesList={coaches}
-                placeholderColor="text-gray-400"
-                borderStyle={errors?.coach ? "red" : "#D1D5DB"}
-              />
-            </div>
-            {errors?.coach && (
-              <p className="text-red-500 text-xs mt-1">{errors.coach}</p>
-            )}
-          </>
-        )}
+{!isCoach && (
+  <>
+    <div>
+      <CoachSelector
+        selectedCoach={formData.coach}
+        setSelectedCoach={(coach) => {
+          setFormData({ ...formData, coachId: coach.id, coach });
+          // نمسح خطأ coachId مش coach
+          if (errors?.coachId) {
+            setErrors((prev) => ({ ...prev, coachId: null }));
+          }
+        }}
+        coachesList={coaches}
+        placeholderColor="text-gray-400"
+        // نربط البوردر مع errors.coachId
+        borderStyle={errors?.coachId ? "red" : "#D1D5DB"}
+      />
+    </div>
+    {errors?.coachId && (
+      <p className="text-red-500 text-xs mt-1 -mt-1">{errors.coachId}</p>
+
+    )}
+  </>
+)}
+
 
         {/* القاعة */}
         <div>
@@ -428,28 +435,33 @@ export default function Step1Booking({
         )}
 
         {/* عدد المشتركين */}
-        <div>
-          <MaxParticipantsSelector
-            selectedMax={formData.maxMembers}
-            setSelectedMax={(value) => {
-              setFormData((prev) => ({
-                ...prev,
-                maxMembers: Number(value),
-              }));
-              if (errors?.maxMembers)
-                setErrors((prev) => ({ ...prev, maxMembers: null }));
-            }}
-            options={[
-              { label: "1 مشترك", value: 1 },
-              { label: "5 مشتركين", value: 5 },
-              { label: "10 مشتركين", value: 10 },
-              { label: "20 مشتركاً", value: 20 },
-              { label: "غير محدود", value: Infinity },
-              { label: "إدخال مخصص", value: "custom" },
-            ]}
-            borderColor={errors?.maxMembers ? "red" : "#D1D5DB"}
-          />
-        </div>
+<div>
+  <MaxParticipantsSelector
+    selectedMax={formData.maxMembers}
+    setSelectedMax={(value) => {
+      setFormData((prev) => ({
+        ...prev,
+        maxMembers: Number(value),
+      }));
+      if (errors?.maxMembers) {
+        setErrors((prev) => ({ ...prev, maxMembers: null }));
+      }
+    }}
+    options={[
+      { label: "1 مشترك", value: 1 },
+      { label: "5 مشتركين", value: 5 },
+      { label: "10 مشتركين", value: 10 },
+      { label: "20 مشتركاً", value: 20 },
+      { label: "غير محدود", value: Infinity },
+      { label: "إدخال مخصص", value: "custom" },
+    ]}
+    borderColor={errors?.maxMembers ? "red" : "#D1D5DB"}
+  />
+
+  {errors?.maxMembers && (
+    <p className="text-red-500 text-xs mt-1">{errors.maxMembers}</p>
+  )}
+</div>
 
         {/* المشتركين */}
         <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
@@ -466,10 +478,9 @@ export default function Step1Booking({
           </div>
         </div>
 
-        {errors?.maxMembers && (
-          <p className="text-red-500 text-xs mt-1">{errors.maxMembers}</p>
-        )}
+
       </form>
+      </div>
     </div>
   );
 }

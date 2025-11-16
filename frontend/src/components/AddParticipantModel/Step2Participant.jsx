@@ -1,7 +1,41 @@
 import React from "react";
-
+import Select from "react-select";
+import selectStyles from "../selectStyles.js";
 export default function Step2Participant({ memberData, setMemberData }) {
+// المدن الفلسطينية + مدن الداخل
+const allCities = [
+  "رام الله",
+  "الخليل",
+  "نابلس",
+  "بيت لحم",
+  "جنين",
+  "قلقيلية",
+  "طولكرم",
+  "أريحا",
+  "يافا",
+  "حيفا",
+  "الناصرة",
+  "عكا",
+  "طبريا",
+  "صفد",
+  "كفر قاسم",
+  "قلنسوة",
+  "طمرة",
+  "باقة الغربية",
+  "أم الفحم",
+  "شفاعمرو",
+];
 
+// المدن الرئيسية التي تريد أن تظهر أولاً
+const mainCities = ["رام الله", "الخليل", "نابلس", "بيت لحم", "جنين"];
+
+// إنشاء خيارات للقائمة
+const cityOptions = [
+  ...mainCities.map((city) => ({ value: city, label: city })),
+  ...allCities
+    .filter((city) => !mainCities.includes(city))
+    .map((city) => ({ value: city, label: city })),
+];
     //  دالة لتحديث أي حقل
     const handleChange = (field, value) => {
         setMemberData({
@@ -45,20 +79,22 @@ console.log(memberData)
                                    focus:ring-2 focus:ring-purple-500"
                     />
                 </div>
-                      <div>
-                    <label className="block text-[14px] font-[700] text-black mb-1.5">
-                        المدينة <span className="text-red-500">*</span>
-                    </label>
-                              <select
-           value={memberData.city || ""}
-                        onChange={(e) => handleChange("city", e.target.value)}
-            className="w-full p-2.5 border border-gray-300 rounded-xl text-[12px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          >
-            <option value="">اختر المدينة</option>
-            <option value="قلقيلية">قلقيلية</option>
-            <option value="نابلس">نابلس</option>
-          </select>
-                </div>
+                      <div className="flex flex-col gap-2">
+  <label className="text-[14px] font-[700] text-black">
+    المدينة <span className="text-red-500">*</span>
+  </label>
+  <Select
+    options={cityOptions}
+    value={cityOptions.find((o) => o.value === memberData.city)}
+    onChange={(opt) => handleChange("city", opt.value)}
+    placeholder="اختر المدينة"
+    styles={selectStyles}
+    isRtl={true}
+    isSearchable={true} // تفعيل البحث
+  />
+ 
+</div>
+
 
                 {/* العنوان */}
                 <div>

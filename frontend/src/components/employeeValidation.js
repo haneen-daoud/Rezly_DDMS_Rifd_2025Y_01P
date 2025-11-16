@@ -4,21 +4,27 @@ import * as Yup from "yup";
 export const step1Schema = Yup.object().shape({
   firstName: Yup.string()
     .required("الاسم الأول مطلوب")
-    .min(2, "يجب أن يحتوي على حرفين على الأقل"),
+    .min(2, "يجب أن يحتوي على حرفين على الأقل")
+    .max(15,"يجب أن يحتوي على 15حرف على الأكثر"),
+
 
   lastName: Yup.string()
     .required("الاسم الثاني مطلوب")
-    .min(2, "يجب أن يحتوي على حرفين على الأقل"),
+    .min(2, "يجب أن يحتوي على حرفين على الأقل")
+    .max(15,"يجب أن يحتوي على 15حرف على الأكثر"),
+
 
   gender: Yup.string().required("يجب اختيار الجنس"),
 
   nationalId: Yup.string()
-    .matches(/^\d{10}$/, "رقم الهوية يجب أن يتكون من 10 أرقام")
+    .matches(/^\d{9}$/, "رقم الهوية يجب أن يتكون من 9 أرقام")
     .notRequired()
     .nullable()
     .transform((value) => (value === "" ? null : value)),
 
-  birthDate: Yup.string().notRequired().nullable(),
+birthDate: Yup.string()
+  .required("تاريخ الميلاد مطلوب")
+  .nullable(),
 
   image: Yup.mixed().notRequired(),
 });
