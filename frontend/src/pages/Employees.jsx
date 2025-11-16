@@ -14,6 +14,7 @@ export default function Employees() {
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [activeIconIndex, setActiveIconIndex] = useState(0); // 0 = Card, 1 = Table
   const [loading, setLoading] = useState(true);
+const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
 
   const { activeSubTab, setActiveSubTab } = useOutletContext();
   const navigate = useNavigate();
@@ -58,7 +59,26 @@ export default function Employees() {
   /* --------------------------------------------------------
       جلب الموظفين أول مرة
   -------------------------------------------------------- */
+    /* --------------------------------------------------------
+      جلب الموظفين أول مرة + كاش محلي
+  -------------------------------------------------------- */
   useEffect(() => {
+    // 1) جرّبي تجيبي بيانات من localStorage أولاً
+    try {
+      const cached = localStorage.getItem(EMPLOYEES_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed.list)) {
+          setEmployees(parsed.list);
+          setTotalEmployees(parsed.total || parsed.list.length);
+          setLoading(false); // عندي بيانات جاهزة → ما في داعي أظهر اللودر
+        }
+      }
+    } catch (err) {
+      console.error("خطأ في قراءة الكاش:", err);
+    }
+
+    // 2) بعد هيك اعملي جلب حقيقي من الـ API لتحديث البيانات
     const fetchData = async () => {
       try {
         const data = await getAllEmployees();
@@ -68,12 +88,29 @@ export default function Employees() {
           data.employees ||
           [];
 
-        setEmployees(list);
-        setTotalEmployees(data.totalCount || list.length);
+        const cleanedList = Array.isArray(list) ? list : [];
+
+        setEmployees(cleanedList);
+        setTotalEmployees(data.totalCount || cleanedList.length);
+
+        // خزّنيهم في الكاش
+        try {
+          localStorage.setItem(
+            EMPLOYEES_CACHE_KEY,
+            JSON.stringify({
+              list: cleanedList,
+              total: data.totalCount || cleanedList.length,
+              updatedAt: Date.now(),
+            })
+          );
+        } catch (err) {
+          console.error("خطأ في تخزين الكاش:", err);
+        }
       } catch (error) {
         console.error("حدث خطأ أثناء جلب الموظفين:", error);
         toast.error("فشل تحميل بيانات الموظفين");
       } finally {
+        // إذا أول مرة ما كان في كاش، فاللودر رح يضل لحد هون
         setLoading(false);
       }
     };
@@ -81,10 +118,11 @@ export default function Employees() {
     fetchData();
   }, []);
 
+
   /* --------------------------------------------------------
       Refresh بعد الإضافة / التعديل
   -------------------------------------------------------- */
-  const refreshEmployees = async () => {
+   const refreshEmployees = async () => {
     try {
       const data = await getAllEmployees();
 
@@ -98,6 +136,20 @@ export default function Employees() {
 
       setEmployees(cleanedList);
       setTotalEmployees(cleanedList.length);
+
+      // تحديث الكاش بعد الإضافة/التعديل
+      try {
+        localStorage.setItem(
+          EMPLOYEES_CACHE_KEY,
+          JSON.stringify({
+            list: cleanedList,
+            total: cleanedList.length,
+            updatedAt: Date.now(),
+          })
+        );
+      } catch (err) {
+        console.error("خطأ في تخزين الكاش بعد التحديث:", err);
+      }
 
       return cleanedList;
     } catch (error) {

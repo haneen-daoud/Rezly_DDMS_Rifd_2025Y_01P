@@ -15,13 +15,16 @@ export const step1Schema = Yup.object().shape({
   .max(250, "الوصف يجب ألا يزيد عن 250 حرفًا"),
 
 
-  // coach موجود كـ object من الـ Selector
-  coach: Yup.object()
-    .shape({
-      id: Yup.string().required(),
-      name: Yup.string(),
-    })
-    .required("اختيار المدرب مطلوب"),
+ coachId: Yup.string()
+  .transform((value, originalValue) => {
+    // لو اجت كـ object { id, name } (حالة تعديل حجز)
+    if (originalValue && typeof originalValue === "object") {
+      return originalValue.id || originalValue._id || "";
+    }
+    return value;
+  })
+  .required("اختيار المدرب مطلوب"),
+
 
   room: Yup.string().required("اختيار القاعة مطلوب"),
 

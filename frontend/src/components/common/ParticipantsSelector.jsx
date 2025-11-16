@@ -31,15 +31,17 @@ export default function ParticipantsSelector({
   }, [open]);
 
   // المشتركين المسجلين حاليًا في هذا الحجز
+    // فقط المشتركين الفعّالين (بدون _tempRemoved)
   const currentIds = useMemo(
     () =>
       Array.isArray(booking?.members)
-        ? booking.members.map((m) =>
-            typeof m === "object" ? m.id || m._id : m
-          )
+        ? booking.members
+            .filter((m) => !m._tempRemoved)
+            .map((m) => (typeof m === "object" ? m.id || m._id : m))
         : [],
     [booking?.members]
   );
+
 
   const effectiveMembersList = booking._localMembersList || membersList;
 
@@ -103,72 +105,81 @@ export default function ParticipantsSelector({
     return () => clearTimeout(delay);
   }, [search]);
 
-  // تفعيل وإلغاء المشترك مؤقتًا (إضافة أو إزالة)
+   // تفعيل وإلغاء المشترك مؤقتًا (إضافة أو إزالة)
   const toggleMember = (member) => {
-    const id = member.id || member._id;
+  const id = member.id || member._id;
 
-    setBooking((prev) => {
-      const currentMembers = prev.members || [];
+  setBooking((prev) => {
+    let list = Array.isArray(prev.members) ? [...prev.members] : [];
 
-      const activeCount = currentMembers.filter(
-        (m) => !(typeof m === "object" && m._tempRemoved)
-      ).length;
+    const getId = (m) =>
+      typeof m === "object" ? m.id || m._id : m;
 
-      const max = prev.maxMembers;
+    let exists = list.find((m) => getId(m) === id);
 
-      const exists = currentMembers.some((m) => m === id || m.id === id);
+    const activeCount = list.filter((m) => !m._tempRemoved).length;
+    const max = prev.maxMembers || Infinity;
 
-      if (exists) {
-        const updated = currentMembers.map((m) => {
-          const memberId = typeof m === "object" ? m.id || m._id : m;
-
-          if (memberId === id) {
-            const isBeingReactivated =
-              typeof m === "object" && m._tempRemoved === true;
-
-            if (
-              isBeingReactivated &&
-              max &&
-              max !== Infinity &&
-              activeCount >= max
-            ) {
-              toast.warning(
-                `لا يمكن إضافة أكثر من ${max} مشترك${
-                  max > 1 ? "ين" : ""
-                } لهذا الحجز`
-              );
-              return m;
-            }
-
-            return { ...m, _tempRemoved: !m._tempRemoved };
-          }
-          return m;
-        });
-
-        return { ...prev, members: updated };
-      }
-
-      if (max && max !== Infinity && activeCount >= max) {
-        toast.warning(
-          `لا يمكن إضافة أكثر من ${max} مشترك${max > 1 ? "ين" : ""} لهذا الحجز`
-        );
+    // ======================
+    // 🟣 1) العضو موجود ولكن "محذوف مؤقتاً" (_tempRemoved)
+    // → رجّعيه فعال + صح ✓
+    // ======================
+    if (exists && exists._tempRemoved) {
+      if (activeCount >= max) {
+        toast.warning(`لا يمكن إضافة أكثر من ${max} مشترك`);
         return prev;
       }
 
-      const full = membersList.find((mm) => mm.id === id || mm._id === id);
-      const newMember = {
-        id,
-        name:
-          full?.name ||
-          `${full?.firstName || ""} ${full?.lastName || ""}`.trim() ||
-          full?.userName ||
-          "مشترك بدون اسم",
-        _tempRemoved: false,
+      return {
+        ...prev,
+        members: list.map((m) =>
+          getId(m) === id ? { ...m, _tempRemoved: false } : m
+        ),
       };
+    }
 
-      return { ...prev, members: [...currentMembers, newMember] };
-    });
-  };
+    // ======================
+    // 🟣 2) العضو موجود ومفعّل حالياً → اشطبيه مؤقتًا
+    // ======================
+    if (exists && !exists._tempRemoved) {
+      return {
+        ...prev,
+        members: list.map((m) =>
+          getId(m) === id ? { ...m, _tempRemoved: true } : m
+        ),
+      };
+    }
+
+    // ======================
+    // 🟣 3) إضافة عضو جديد بالكامل
+    // ======================
+    if (activeCount >= max) {
+      toast.warning(`لا يمكن إضافة أكثر من ${max} مشترك`);
+      return prev;
+    }
+
+    const full = membersList.find(
+      (mm) =>
+        String(mm._id) === String(id) ||
+        String(mm.id) === String(id)
+    );
+
+    const newMember = {
+      id,
+      name:
+        full?.name ||
+        `${full?.firstName || ""} ${full?.lastName || ""}`.trim() ||
+        full?.userName ||
+        "مشترك بدون اسم",
+      _tempRemoved: false,
+    };
+
+    return {
+      ...prev,
+      members: [...list, newMember],
+    };
+  });
+};
 
   const addNewMemberLocally = (member) => {
     if (!member) return;
@@ -195,10 +206,14 @@ export default function ParticipantsSelector({
     setBooking((prev) => {
       const already = prev.members?.some((m) => m === id || m.id === id);
       if (already) return prev;
-      return {
+            return {
         ...prev,
-        members: [...(prev.members || []), { id, name: displayName }],
+        members: [
+          ...(prev.members || []),
+          { id, name: displayName, _tempRemoved: false },
+        ],
       };
+
     });
 
     toast.success(`تمت إضافة ${displayName} مؤقتًا`);
@@ -398,36 +413,47 @@ export default function ParticipantsSelector({
                         key={id}
                         className="flex items-center justify-between h-[36px] px-3 py-1 cursor-pointer hover:bg-gray-50"
                         onClick={(e) => {
-                          e.stopPropagation();
+  e.stopPropagation();
 
-                          if (isSelected) {
-                            // لو عليه صح، نشيله من الحجز
-                            toggleMember(m);
+  // 👇 نفس الـ id اللي فوق
+  const memberId = m._id || m.id;
 
-                            // حدّث قائمة البحث نفسها عشان تعيد الرسم فوراً
-                            setAllMembers((prev) =>
-                              prev.map((mm) =>
-                                mm.id === (m.id || m._id) ||
-                                mm._id === (m.id || m._id)
-                                  ? { ...mm, _tempRemoved: true }
-                                  : mm
-                              )
-                            );
-                          } else {
-                            // لو مش مضاف، أضيفه جديد
-                            addNewMemberLocally(m);
+  if (isSelected) {
+    // كان مضاف وعليه صح → نشيله (نحط _tempRemoved = true)
+    toggleMember(m);
 
-                            // حدّث قائمة البحث ليظهر عليه الصح فوراً
-                            setAllMembers((prev) =>
-                              prev.map((mm) =>
-                                mm.id === (m.id || m._id) ||
-                                mm._id === (m.id || m._id)
-                                  ? { ...mm, _tempRemoved: false }
-                                  : mm
-                              )
-                            );
-                          }
-                        }}
+    setAllMembers((prev) =>
+      prev.map((mm) =>
+        mm.id === memberId || mm._id === memberId
+          ? { ...mm, _tempRemoved: true }
+          : mm
+      )
+    );
+  } else if (isRemoved) {
+    // كان محذوف مؤقتًا → نرجّعه فعّال (_tempRemoved = false)
+    toggleMember(m);
+
+    setAllMembers((prev) =>
+      prev.map((mm) =>
+        mm.id === memberId || mm._id === memberId
+          ? { ...mm, _tempRemoved: false }
+          : mm
+      )
+    );
+  } else {
+    // أول مرة ينضاف
+    addNewMemberLocally(m);
+
+    setAllMembers((prev) =>
+      prev.map((mm) =>
+        mm.id === memberId || mm._id === memberId
+          ? { ...mm, _tempRemoved: false }
+          : mm
+      )
+    );
+  }
+}}
+
                       >
                         <div className="flex items-center gap-2">
                           {isSelected ? (

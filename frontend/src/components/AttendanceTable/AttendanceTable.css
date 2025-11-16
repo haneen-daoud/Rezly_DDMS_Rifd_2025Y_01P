@@ -5,10 +5,10 @@
   width: 100%;
   max-width: 600px;
   margin: auto;
-  font-family: "Cairo", sans-serif; /* تم التغيير */
-  font-size: 12px; /* تم التغيير */
-  font-weight: 700; /* تم التغيير */
-  line-height: 150%; /* تم التغيير */
+  font-family: "Cairo", sans-serif; 
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 150%; 
   direction: rtl;
 }
 
@@ -41,7 +41,7 @@
   width: 100%;
   border-collapse: collapse;
   text-align: center;
-  font-size: 12px; /* تم التغيير */
+  font-size: 12px; 
 color: #000;
 
 }
@@ -70,7 +70,7 @@ color: #000;
 }
 .SubscribersTab-table th,
 .SubscribersTab-table td {
-  padding: 8px 2rem; /* بدل 12px */
+  padding: 8px 2rem; 
   border-bottom: 1px solid #eee;
   text-align: center;
 }
@@ -82,7 +82,8 @@ font-family: Cairo;
 font-size: 12px;
 font-style: normal;
 font-weight: 700;
-line-height: 150%; /* 18px */
+line-height: 150%;
+ /* 18px */
 
 }
 /* تلوين الصفوف الزوجية */
@@ -91,13 +92,37 @@ line-height: 150%; /* 18px */
 }
 
 /* الحالات */
-.status-badge {
-  padding: 4px 10px;
+.subscription-badge {
+  display: inline-block;
+  padding: 6px 10px;
   border-radius: 8px;
-  font-weight: bold;
+  font-size: 12px;
+  font-weight: 700;
   color: #fff;
-  font-size: 10px; /* تم التغيير */
+  width: 70px;     
+  text-align: center;
 }
+
+.badge-month {
+  background-color: var(--color-green);
+}
+
+.badge-week {
+  background-color: #1E90FF;
+}
+
+.badge-day {
+  background-color: #6A0EAD; 
+}
+
+.badge-year {
+  background-color: #0A84FF; 
+}
+
+.badge-empty {
+  background-color: #999;
+}
+
 
 .status-complete {
   background: var(--color-green);

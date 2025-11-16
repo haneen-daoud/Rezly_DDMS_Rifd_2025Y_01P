@@ -66,6 +66,26 @@ const { bookings, loading, setBookings } = useBookings();
     fetchMembers();
   }, []);
 
+  // ✅ تحديث عداد المشتركين كل ما تتغير البيانات (إضافة / تعديل / حذف)
+useEffect(() => {
+  const handleMembersUpdated = (e) => {
+    let members = e.detail;
+
+    if (!Array.isArray(members)) {
+      const localData = localStorage.getItem("membersData");
+      members = localData ? JSON.parse(localData) : [];
+    }
+
+    setTotalMembers(Array.isArray(members) ? members.length : 0);
+  };
+
+  window.addEventListener("membersUpdated", handleMembersUpdated);
+
+  return () => {
+    window.removeEventListener("membersUpdated", handleMembersUpdated);
+  };
+}, []);
+
   {/*
   // ✅ جلب عدد الحجوزات
   useEffect(() => {
@@ -127,11 +147,30 @@ useEffect(() => {
 
       {/* ✅ مودال إضافة المشتركين */}
       {isModalOpen && activeTab === "المشتركين" && (
-        <AddParticipantModel
-          onClose={() => setIsModalOpen(false)}
-          onSave={(data) => console.log("تم إضافة مشترك:", data)}
-        />
-      )}
+  <AddParticipantModel
+    onClose={() => setIsModalOpen(false)}
+    onSave={(newMember) => {
+      try {
+        const local = JSON.parse(localStorage.getItem("membersData") || "[]");
+        const updated = [newMember, ...local];
+
+        // ✅ تحديث localStorage
+        localStorage.setItem("membersData", JSON.stringify(updated));
+
+        // ✅ إيفينت عام عشان كل الصفحة تعرف إنه صار تحديث
+        window.dispatchEvent(
+          new CustomEvent("membersUpdated", { detail: updated })
+        );
+
+        // ✅ تحديث عداد المشتركين في الهيدر مباشرة
+        setTotalMembers(updated.length);
+      } catch (err) {
+        console.error("خطأ أثناء تحديث المشتركين محلياً:", err);
+      }
+    }}
+  />
+)}
+
 
       {/* ✅ مسار فرعي (اختياري لمرونة التوسع لاحقاً) */}
       <Outlet />

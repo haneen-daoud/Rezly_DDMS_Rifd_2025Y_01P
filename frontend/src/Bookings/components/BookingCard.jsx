@@ -54,23 +54,133 @@ export default function BookingCard({
     }))
   );
 
-  const today = new Date();
-  const upcomingSchedule =
-    allSchedules
-      .filter((s) => s.date && s.date >= today)
-      .sort((a, b) => a.date - b.date)[0] ||
-    allSchedules.sort((a, b) => b.date - a.date)[0];
+  // ========================
+  // المواعيد حسب التاريخ + الوقت
+  // ========================
 
-  const upcomingDateLabel = upcomingSchedule?.date
-  ? upcomingSchedule.date.toLocaleDateString("ar-EG", {
+  // 🟣 دالة مساعدة لتحويل string الوقت لـ ساعات + دقائق
+  function parseTime(timeStr) {
+    if (!timeStr) return null;
+
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})(?:\s*([صمAPMapm]+))?$/);
+    if (!match) return null;
+
+    let hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    const suffix = match[3]?.trim();
+
+    // دعم ص/م و am/pm
+    if (suffix) {
+      if (["م", "pm", "PM"].includes(suffix) && hours < 12) {
+        hours += 12;
+      } else if (["ص", "am", "AM"].includes(suffix) && hours === 12) {
+        hours = 0;
+      }
+    }
+
+    return { hours, minutes };
+  }
+
+  // 🟣 نبني تاريخ/وقت البداية أو النهاية
+  function buildDateTime(dateObj, timeStr, type = "start") {
+    if (!dateObj) return null;
+
+    const d = new Date(dateObj);
+    const parsed = parseTime(timeStr);
+
+    if (parsed) {
+      d.setHours(parsed.hours, parsed.minutes, 0, 0);
+    } else {
+      // لو ما في وقت: البداية = أول اليوم، النهاية = آخر اليوم
+      if (type === "start") {
+        d.setHours(0, 0, 0, 0);
+      } else {
+        d.setHours(23, 59, 0, 0);
+      }
+    }
+
+    return d;
+  }
+
+  // 🟣 تنسيق التاريخ بدون وقت (نفس ستايلك القديم)
+  function formatDateLabel(date) {
+    if (!date) return "غير محدد";
+    const d = date instanceof Date ? date : new Date(date);
+    return d.toLocaleDateString("ar-EG", {
       day: "numeric",
       month: "long",
-      ...(upcomingSchedule.date.getFullYear() !== new Date().getFullYear()
+      ...(d.getFullYear() !== new Date().getFullYear()
         ? { year: "numeric" }
         : {}),
-    })
-  : "غير محدد";
+    });
+  }
 
+  const now = new Date();
+
+  // نبني start/end لكل جلسة
+  const schedulesWithTimes = allSchedules
+    .filter((s) => s.date)
+    .map((s) => {
+      const startDateTime = buildDateTime(s.date, s.timeStart, "start");
+      const endDateTime = buildDateTime(
+        s.date,
+        s.timeEnd || s.timeStart,
+        "end"
+      );
+
+      return {
+        ...s,
+        startDateTime,
+        endDateTime,
+      };
+    })
+    .filter((s) => s.startDateTime && s.endDateTime);
+
+  // المواعيد اللي لسه ما خلص وقتها
+  const futureSchedules = schedulesWithTimes.filter(
+    (s) => s.endDateTime > now
+  );
+
+  // أقرب موعد قادم
+  const nextSchedule =
+    futureSchedules.length > 0
+      ? [...futureSchedules].sort(
+          (a, b) => a.startDateTime - b.startDateTime
+        )[0]
+      : null;
+
+  // آخر جلسة في الجدول (حسب وقت النهاية)
+  const lastSchedule =
+    schedulesWithTimes.length > 0
+      ? [...schedulesWithTimes].sort(
+          (a, b) => b.endDateTime - a.endDateTime
+        )[0]
+      : null;
+
+  // هذا اللي بنستخدمه لعرض المدرب + الوقت + عدد المشتركين
+  const upcomingSchedule = nextSchedule || lastSchedule;
+
+  // التاريخ لعرضه بدون وقت
+  const upcomingDateLabel = nextSchedule
+    ? formatDateLabel(nextSchedule.startDateTime || nextSchedule.date)
+    : "غير محدد";
+
+  const endedDateLabel =
+    !nextSchedule && lastSchedule
+      ? formatDateLabel(lastSchedule.endDateTime || lastSchedule.date)
+      : "";
+
+  // نص الشريط البنفسجي فوق
+  let headerText = "لا يوجد مواعيد قادمة";
+  if (nextSchedule) {
+    headerText = `الموعد القادم ${upcomingDateLabel}`;
+  } else if (
+    !nextSchedule &&
+    lastSchedule?.endDateTime &&
+    lastSchedule.endDateTime < now
+  ) {
+    headerText = `انتهى بتاريخ ${endedDateLabel}`;
+  }
 
   // ========================
   // المدرب
@@ -159,108 +269,96 @@ export default function BookingCard({
   }
 
   // ========================
-// الحالة
-// ========================
-const now = new Date();
-const lastSchedule =
-  allSchedules.length > 0
-    ? allSchedules
-        .filter((s) => s.date)
-        .sort((a, b) => b.date - a.date)[0]
-    : null;
+  // الحالة
+  // ========================
+  let statusText = "متاح";
+  let statusColor = "bg-green-100 text-green-700";
 
-let statusText = "متاح";
-let statusColor = "bg-green-100 text-green-700";
-
-// 🟣 لو الحجز ملغي
-if (["cancelled", "ملغي"].includes(booking.status)) {
-  statusText = "ملغي";
-  statusColor = "bg-red-100 text-red-700";
-}
-// 🟣 لو جميع المواعيد خلصت (منتهي)
-else if (lastSchedule?.date && lastSchedule.date < now) {
-  statusText = "منتهي";
-  statusColor = "bg-gray-200 text-gray-700";
-}
-// 🟣 لو الحجز ممتلئ
-else if (membersCount >= maxMembers && maxMembers !== 0) {
-  statusText = "ممتلئ";
-  statusColor = "bg-blue-100 text-blue-700";
-}
-
-
-// 🔹 مرجع للزر لتحديد موقعه
-const menuButtonRef = useRef(null);
-const [menuCoords, setMenuCoords] = useState({ top: 0, left: 0 });
-
-// 🔹 تحديث موقع المنيو كل ما يتغير الحجم أو السكروول
-useLayoutEffect(() => {
-  function updateMenuPosition() {
-    if (openMenu === index && menuButtonRef.current) {
-      const rect = menuButtonRef.current.getBoundingClientRect();
-      const menuWidth = 131;
-      const menuHeight = 82;
-      const margin = 8;
-
-      // ✅ نستخدم window.scrollX/Y فقط مرة واحدة (لو فعلاً body هي اللي فيها scroll)
-      const scrollTop =
-        window.scrollY ||
-        document.documentElement.scrollTop ||
-        document.body.scrollTop ||
-        0;
-      const scrollLeft =
-        window.scrollX ||
-        document.documentElement.scrollLeft ||
-        document.body.scrollLeft ||
-        0;
-
-      let top = rect.bottom + scrollTop + margin;
-      let left = rect.left + scrollLeft - 90;
-
-      // ✅ لو ما في مساحة لتحت → نفتح لفوق
-      if (rect.bottom + menuHeight + margin > window.innerHeight) {
-        top = rect.top + scrollTop - menuHeight - margin;
-      }
-
-      // ✅ تصحيح الاتجاه الأفقي لو قريب من الحافة
-      if (rect.left + menuWidth > window.innerWidth) {
-        left = window.innerWidth - menuWidth - margin;
-      }
-      if (rect.left < 0) {
-        left = margin;
-      }
-
-      setMenuCoords({ top, left });
-    }
+  // لو الحجز ملغي
+  if (["cancelled", "ملغي"].includes(booking.status)) {
+    statusText = "ملغي";
+    statusColor = "bg-red-100 text-red-700";
+  }
+  // لو كل المواعيد انتهت (ما في nextSchedule)
+  else if (
+    !nextSchedule &&
+    lastSchedule?.endDateTime &&
+    lastSchedule.endDateTime < now
+  ) {
+    statusText = "منتهي";
+    statusColor = "bg-gray-200 text-gray-700";
+  }
+  // لو الحجز ممتلئ
+  else if (membersCount >= maxMembers && maxMembers !== 0) {
+    statusText = "ممتلئ";
+    statusColor = "bg-blue-100 text-blue-700";
   }
 
-  // 🔹 استدعاء فوري عند الفتح
-  updateMenuPosition();
+  // 🔹 مرجع للزر لتحديد موقعه
+  const menuButtonRef = useRef(null);
+  const [menuCoords, setMenuCoords] = useState({ top: 0, left: 0 });
 
-  // 🔹 تحديث عند scroll و resize
-  window.addEventListener("scroll", updateMenuPosition, true);
-  window.addEventListener("resize", updateMenuPosition);
+  // 🔹 تحديث موقع المنيو كل ما يتغير الحجم أو السكروول
+  useLayoutEffect(() => {
+    function updateMenuPosition() {
+      if (openMenu === index && menuButtonRef.current) {
+        const rect = menuButtonRef.current.getBoundingClientRect();
+        const menuWidth = 131;
+        const menuHeight = 82;
+        const margin = 8;
 
-  // 🔹 إغلاق عند النقر خارج المنيو
-  function handleClickOutside(e) {
-    const menuEl = document.getElementById(`menu-${index}`);
-    const btnEl = menuButtonRef.current;
-    if (!btnEl || !menuEl) return;
-    if (btnEl.contains(e.target)) return; // لو ضغط على الزر نفسه
-    if (!menuEl.contains(e.target)) {
-      setOpenMenu(null);
+        const scrollTop =
+          window.scrollY ||
+          document.documentElement.scrollTop ||
+          document.body.scrollTop ||
+          0;
+        const scrollLeft =
+          window.scrollX ||
+          document.documentElement.scrollLeft ||
+          document.body.scrollLeft ||
+          0;
+
+        let top = rect.bottom + scrollTop + margin;
+        let left = rect.left + scrollLeft - 90;
+
+        if (rect.bottom + menuHeight + margin > window.innerHeight) {
+          top = rect.top + scrollTop - menuHeight - margin;
+        }
+
+        if (rect.left + menuWidth > window.innerWidth) {
+          left = window.innerWidth - menuWidth - margin;
+        }
+        if (rect.left < 0) {
+          left = margin;
+        }
+
+        setMenuCoords({ top, left });
+      }
     }
-  }
 
-  document.addEventListener("mousedown", handleClickOutside);
+    updateMenuPosition();
 
-  return () => {
-    window.removeEventListener("scroll", updateMenuPosition, true);
-    window.removeEventListener("resize", updateMenuPosition);
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, [openMenu, index]);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    window.addEventListener("resize", updateMenuPosition);
 
+    function handleClickOutside(e) {
+      const menuEl = document.getElementById(`menu-${index}`);
+      const btnEl = menuButtonRef.current;
+      if (!btnEl || !menuEl) return;
+      if (btnEl.contains(e.target)) return;
+      if (!menuEl.contains(e.target)) {
+        setOpenMenu(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      window.removeEventListener("scroll", updateMenuPosition, true);
+      window.removeEventListener("resize", updateMenuPosition);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [openMenu, index]);
 
   // ========================
   // عرض الكرت
@@ -276,30 +374,31 @@ useLayoutEffect(() => {
       relative z-0
     "
     >
-      {/* 🟣 الموعد القادم */}
-<div
-  className="
-    absolute top-0 left-0 
-    bg-[var(--color-purple)] text-white 
-    text-[13px] md:text-[14px] font-semibold 
-    px-3 md:px-4 py-[3px] md:py-[4px]
-    rounded-tl-[16px]
-    text-center min-w-[138px] md:min-w-[149px]
-  "
->
-  الموعد القادم {upcomingDateLabel}
-</div>
+      {/* 🟣 الشريط العلوي (الموعد القادم / منتهي) */}
+      <div
+        className="
+          absolute top-0 left-0 
+          bg-[var(--color-purple)] text-white 
+          text-[13px] md:text-[14px] font-semibold 
+          px-3 md:px-4 py-[3px] md:py-[4px]
+          rounded-tl-[16px]
+          text-center min-w-[138px] md:min-w-[149px]
+        "
+      >
+        {headerText}
+      </div>
 
-{/* العنوان والمدرب */}
-<div className="mt-[20px] md:mt-[22px]">
-  <div className="flex items-center justify-between mb-[2px] md:mb-[4px]">
-    <h3 className="font-bold text-[16px] md:text-[18px] text-black leading-[1.3]">
-      حجز {booking.service || "غير محدد"}
-    </h3>
-  </div>
-  <p className="text-[13px] md:text-[14px] text-gray-600 leading-[1.2]">{coachName}</p>
-</div>
-
+      {/* العنوان والمدرب */}
+      <div className="mt-[20px] md:mt-[22px]">
+        <div className="flex items-center justify-between mb-[2px] md:mb-[4px]">
+          <h3 className="font-bold text-[16px] md:text-[18px] text-black leading-[1.3]">
+            حجز {booking.service || "غير محدد"}
+          </h3>
+        </div>
+        <p className="text-[13px] md:text-[14px] text-gray-600 leading-[1.2]">
+          {coachName}
+        </p>
+      </div>
 
       {/* الأيام والتاريخ */}
       <div className="flex items-center justify-between text-gray-700 mt-3 text-[13px] md:text-[14px]">
@@ -383,22 +482,21 @@ useLayoutEffect(() => {
         </div>
 
         <span
-  className={`
-    text-[12.5px] md:text-[13.5px] font-semibold 
-    flex items-center justify-center
-    rounded-full 
-    px-[12px] md:px-[14px] py-[3px] md:py-[4px]
-    ${statusColor}
-  `}
-  style={{
-    minHeight: "22px",
-    maxHeight: "24px",
-    minWidth: "77px",
-  }}
->
-  {statusText}
-</span>
-
+          className={`
+            text-[12.5px] md:text-[13.5px] font-semibold 
+            flex items-center justify-center
+            rounded-full 
+            px-[12px] md:px-[14px] py-[3px] md:py-[4px]
+            ${statusColor}
+          `}
+          style={{
+            minHeight: "22px",
+            maxHeight: "24px",
+            minWidth: "77px",
+          }}
+        >
+          {statusText}
+        </span>
       </div>
 
       {/* الأزرار */}
@@ -421,98 +519,101 @@ useLayoutEffect(() => {
 
         <div className="relative">
           <button
-  ref={menuButtonRef}
-  onClick={() => setOpenMenu(openMenu === index ? null : index)}
-
+            ref={menuButtonRef}
+            onClick={() =>
+              setOpenMenu(openMenu === index ? null : index)
+            }
             className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
           >
             <span className="text-xl leading-none text-[#000]">⋯</span>
           </button>
 
-         {openMenu === index &&
-  ReactDOM.createPortal(
-    (() => {
-      if (!menuButtonRef.current) return null;
+          {openMenu === index &&
+            ReactDOM.createPortal(
+              (() => {
+                if (!menuButtonRef.current) return null;
 
-      const rect = menuButtonRef.current.getBoundingClientRect();
-      const menuWidth = 131;
-      const menuHeight = 82;
-      const margin = 8;
+                const rect =
+                  menuButtonRef.current.getBoundingClientRect();
+                const menuWidth = 131;
+                const menuHeight = 82;
+                const margin = 8;
 
-      // 🔹 الوضع الافتراضي (لتحت)
-      let top = rect.bottom + margin - 10;
-      let left = rect.right - menuWidth;
+                let top = rect.bottom + margin - 10;
+                let left = rect.right - menuWidth;
 
-      // 🔹 لو ما في مساحة لتحت → خليها فوق الزر
-      if (rect.bottom + menuHeight + margin > window.innerHeight) {
-        top = rect.top - menuHeight - margin + 10;
-      }
+                if (
+                  rect.bottom + menuHeight + margin >
+                  window.innerHeight
+                ) {
+                  top = rect.top - menuHeight - margin + 10;
+                }
 
-      // 🔹 تصحيح الاتجاه الأفقي لو قريب من اليمين أو اليسار
-      if (left < 0) left = 8;
-      if (left + menuWidth > window.innerWidth) left = window.innerWidth - menuWidth - 8;
+                if (left < 0) left = 8;
+                if (left + menuWidth > window.innerWidth)
+                  left = window.innerWidth - menuWidth - 8;
 
-      return (
-        <div
-          id={`menu-${index}`}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="fixed bg-white border border-[#D1D5DB] rounded-[16px]
+                return (
+                  <div
+                    id={`menu-${index}`}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="fixed bg-white border border-[#D1D5DB] rounded-[16px]
                      shadow-[0_4px_8px_rgba(0,0,0,0.25)]
                      flex flex-col justify-center pointer-events-auto z-[999999]"
-          style={{
-            top: `${top}px`,
-            left: `${left}px`,
-            width: `${menuWidth}px`,
-            height: `${menuHeight}px`,
-            padding: "8px",
-            transition: "opacity 0.15s ease, transform 0.15s ease",
-            transformOrigin:
-              rect.bottom + menuHeight + margin > window.innerHeight
-                ? "bottom right"
-                : "top right",
-          }}
-        >
-          {/* تعديل */}
-          <button
-            onClick={() => {
-              window.dispatchEvent(
-                new CustomEvent("openBookingEdit", {
-                  detail: { ...booking, groupBookings: bookingGroup },
-                })
-              );
-              setOpenMenu(null);
-            }}
-            className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-[var(--color-purple)] transition-colors"
-          >
-            <EditIcon className="w-4 h-4 text-[var(--color-purple)]" />
-            تعديل
-          </button>
+                    style={{
+                      top: `${top}px`,
+                      left: `${left}px`,
+                      width: `${menuWidth}px`,
+                      height: `${menuHeight}px`,
+                      padding: "8px",
+                      transition:
+                        "opacity 0.15s ease, transform 0.15s ease",
+                      transformOrigin:
+                        rect.bottom + menuHeight + margin >
+                        window.innerHeight
+                          ? "bottom right"
+                          : "top right",
+                    }}
+                  >
+                    {/* تعديل */}
+                    <button
+                      onClick={() => {
+                        window.dispatchEvent(
+                          new CustomEvent("openBookingEdit", {
+                            detail: {
+                              ...booking,
+                              groupBookings: bookingGroup,
+                            },
+                          })
+                        );
+                        setOpenMenu(null);
+                      }}
+                      className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-[var(--color-purple)] transition-colors"
+                    >
+                      <EditIcon className="w-4 h-4 text-[var(--color-purple)]" />
+                      تعديل
+                    </button>
 
-          <div className="my-[6px] mx-[6px] border-t border-[#D1D5DB]" />
+                    <div className="my-[6px] mx-[6px] border-t border-[#D1D5DB]" />
 
-          {/* حذف */}
-          {isAdmin && (
-            <button
-              onClick={() => {
-                setShowDeleteModal(true);
-                setOpenMenu(null);
-              }}
-              className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-red-600 transition-colors"
-            >
-              <DeleteIcon className="w-4 h-4" />
-              حذف
-            </button>
-          )}
-        </div>
-      );
-    })(),
-    document.body
-  )}
-
-
-
-
-
+                    {/* حذف */}
+                    {isAdmin && (
+                      <button
+                        onClick={() => {
+                          setShowDeleteModal(true);
+                          setOpenMenu(null);
+                        }}
+                        className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-red-600 transition-colors"
+                      >
+                        <DeleteIcon className="w-4 h-4" />
+                        حذف
+                      </button>
+                    )}
+                  </div>
+                );
+              })(),
+              document.body
+            )}
         </div>
       </div>
 
@@ -524,23 +625,23 @@ useLayoutEffect(() => {
             isLoading={deleting}
             onCancel={() => setShowDeleteModal(false)}
             onConfirm={async () => {
-  try {
-    setDeleting(true);
-    await deleteBookingAPI(booking._id);
+              try {
+                setDeleting(true);
+                await deleteBookingAPI(booking._id);
 
-    // ✅ تحديث محلي لقائمة الحجوزات بدون ريفرش
-    setBookings((prev) => prev.filter((b) => b._id !== booking._id));
+                setBookings((prev) =>
+                  prev.filter((b) => b._id !== booking._id)
+                );
 
-    toast.success("تم حذف الحجز ✅");
-    setShowDeleteModal(false);
-  } catch (err) {
-    console.error(err);
-    toast.error("حدث خطأ أثناء الحذف");
-  } finally {
-    setDeleting(false);
-  }
-}}
-
+                toast.success("تم حذف الحجز ✅");
+                setShowDeleteModal(false);
+              } catch (err) {
+                console.error(err);
+                toast.error("حدث خطأ أثناء الحذف");
+              } finally {
+                setDeleting(false);
+              }
+            }}
           />,
           document.body
         )}
