@@ -454,41 +454,87 @@ export default function AddBookingModal({ onChange }) {
     console.log("✅ تم تحديث formData للفردي:", updatedForm);
   };
 
-  // ✅ دوال مساعدة للتنسيق المحلي للتاريخ والوقت
-const pad2 = (n) => String(n).padStart(2, "0");
-const formatLocalDate = (d) =>
-  `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-const formatLocalTime = (d) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+    // ✅ دوال مساعدة للتنسيق المحلي للتاريخ والوقت
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const formatLocalDate = (d) =>
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const formatLocalTime = (d) =>
+    `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
+  // ✅ Helper: يبني Date من "YYYY-MM-DD" + "HH:mm" (محلي، مش UTC)
+  const buildBaseDateTime = (baseDateStr, hhmm) => {
+    if (!baseDateStr) return new Date();
+    const [y, mo, d] = baseDateStr.split("-").map(Number); // YYYY-MM-DD
+    const [h, m] = (hhmm || "09:00").split(":").map(Number); // HH:mm
+    return new Date(
+      y || 1970,
+      (mo || 1) - 1,
+      d || 1,
+      h || 0,
+      m || 0,
+      0,
+      0
+    );
+  };
 
-  // ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت الحجز
-function transformRemindersForCreateOrGroup(formData) {
-  if (!Array.isArray(formData.reminders)) return [];
+  // ✅ تحويل reminders لصيغة الباك إند:
+  //  - السترنغز: "30min" / "1hour" / "1day" / "none" تضل زي ما هي
+  //  - الكستمايز: { hoursBefore: 5 } → { date: "...", time: "..." } حسب أول موعد
+  //  - لو أصلاً جاي {date,time} من الباك إند (تعديل) منرجّعه زي ما هو
+  function transformRemindersForCreateOrGroup(formData) {
+    if (!Array.isArray(formData.reminders)) return [];
 
-  return formData.reminders.map((r) => {
-    // أنواع جاهزة: none, 30min, 1hour, 1day
-    if (typeof r === "string") return r;
-
-    // تذكير مخصص قبل X ساعات
-    if (r && typeof r.hoursBefore === "number") {
-      return { hoursBefore: r.hoursBefore };
+    // 👈 نحدد "وقت الأساس" للحجز
+    let base;
+    if (formData.start) {
+      // حالة الفردي: عندنا start جاهز
+      base = new Date(formData.start);
+    } else if (
+      formData.dateOnly &&
+      Array.isArray(formData.daysSchedule) &&
+      formData.daysSchedule.length > 0
+    ) {
+      // حالة الحجز الجماعي: نستخدم أول يوم في الجدول
+      const first = formData.daysSchedule[0];
+      base = buildBaseDateTime(formData.dateOnly, first.start);
+    } else {
+      // fallback
+      base = new Date();
     }
 
-    // fallback
-    return r;
-  });
-}
+    return formData.reminders.map((r) => {
+      // الأنواع الجاهزة (30 دقيقة، ساعة، يوم...)
+      if (typeof r === "string") return r;
+
+      // تذكير مخصّص قبل X ساعات → نحوله لـ {date,time}
+      if (r && typeof r.hoursBefore === "number") {
+        const reminderDate = new Date(
+          base.getTime() - r.hoursBefore * 60 * 60 * 1000
+        );
+
+        const y = reminderDate.getFullYear();
+        const mo = String(reminderDate.getMonth() + 1).padStart(2, "0");
+        const d = String(reminderDate.getDate()).padStart(2, "0");
+        const hh = String(reminderDate.getHours()).padStart(2, "0");
+        const mm = String(reminderDate.getMinutes()).padStart(2, "0");
+
+        return {
+          date: `${y}-${mo}-${d}`,
+          time: `${hh}:${mm}`,
+        };
+      }
+
+      // لو جاي أصلًا من الباك إند كـ {date,time}
+      if (typeof r === "object" && r.date && r.time) return r;
+
+      // أي شكل غريب يرجع زي ما هو (عشان ما نكسر الداتا)
+      return r;
+    });
+  }
 
 
-  const buildRequestBodyForBackend = () => {
-    // 1) service / description / location / maxMembers من Step1
-    // 2) coachId (لو المستخدم كوتش بنحطه من التوكن)
-    // 3) startDate من formData.dateOnly
-    // 4) subscriptionDuration بنبعتها على شكل كود الباك رح يفهمه
-    //    مبدئياً رح نبعتها مثل ما هي بالنص العربي، ولما يعطونا الـ mapping النهائي
-    //    (أسبوع -> 1week مثلا) منعدلها بمكان واحد هون
-    // 5) schedules: تحويل daysSchedule → [{dayOfWeek, timeStart, timeEnd}]
 
+    const buildRequestBodyForBackend = () => {
     // خريطة اليوم عربي → رقم يوم الأسبوع (حسب JS)
     const dayToIndex = {
       أحد: 0,
@@ -500,7 +546,7 @@ function transformRemindersForCreateOrGroup(formData) {
       سبت: 6,
     };
 
-    // خريطة مدة الاشتراك عربي → كود الباك (مبدئي، عدليه حسب اللي عطاكم هو)
+    // خريطة مدة الاشتراك عربي → كود الباك (مبدئي)
     const durationMap = {
       أسبوع: "1week",
       أسبوعين: "2weeks",
@@ -511,7 +557,7 @@ function transformRemindersForCreateOrGroup(formData) {
       سنة: "1year",
     };
 
-    // helper لتحويل "08:00" → "08:00 ص" / "09:30" → "09:30 م"
+    // helper لتحويل "08:00" → "8:00 ص" / "09:30" → "9:30 م"
     const toArabic12h = (time24) => {
       if (!time24) return "";
       let [h, m] = time24.split(":").map(Number);
@@ -519,7 +565,7 @@ function transformRemindersForCreateOrGroup(formData) {
       let displayH = h;
       if (displayH === 0) displayH = 12; // 00 -> 12 ص
       else if (displayH > 12) displayH = displayH - 12;
-      const hh = String(displayH).padStart(1, ""); // خليه طبيعي بدون صفر عاليسار
+      const hh = String(displayH).padStart(1, ""); // بدون صفر على اليسار
       const mm = String(m).padStart(2, "0");
       return `${hh}:${mm} ${isPM ? "م" : "ص"}`;
     };
@@ -535,71 +581,8 @@ function transformRemindersForCreateOrGroup(formData) {
           }))
       : [];
 
-    // ✅ حساب التذكير بناءً على وقت الحجز
-// ✅ Helper صغير لتحويل hh:mm (24h) إلى Date مبني على baseDate (YYYY-MM-DD)
-// ✅ ابني Date محلّي من "YYYY-MM-DD" + "HH:mm" بدون UTC
-const buildBaseDateTime = (baseDateStr, hhmm) => {
-  const [y, mo, d] = baseDateStr.split("-").map(Number); // YYYY, MM, DD
-  const [h, m] = (hhmm || "09:00").split(":").map(Number); // HH:mm
-  // 👈 هذا يبني التاريخ/الوقت محليًا (Asia/Hebron)، مش UTC
-  return new Date(y, (mo || 1) - 1, d || 1, h || 0, m || 0, 0, 0);
-};
-
-
-
-// ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت الحجز
-const transformRemindersForCreateOrGroup = () => {
-  let base = null;
-
-  // قاعدة وقت الحجز
-  if (formData.start) {
-    base = new Date(formData.start);
-  } else if (
-    formData.dateOnly &&
-    Array.isArray(formData.daysSchedule) &&
-    formData.daysSchedule.length > 0
-  ) {
-    const first = formData.daysSchedule[0];
-    base = buildBaseDateTime(formData.dateOnly, first.start);
-  } else {
-    base = new Date();
-  }
-
-  return Array.isArray(formData.reminders)
-    ? formData.reminders.map((r) => {
-        if (typeof r === "string") return r;
-
-        // ⚡ حساب الوقت المحلي وليس UTC
-        if (typeof r === "object" && typeof r.hoursBefore === "number") {
-          const reminderDate = new Date(
-            base.getTime() - r.hoursBefore * 60 * 60 * 1000
-          );
-
-          const y = reminderDate.getFullYear();
-          const mo = String(reminderDate.getMonth() + 1).padStart(2, "0");
-          const d = String(reminderDate.getDate()).padStart(2, "0");
-          const hh = String(reminderDate.getHours()).padStart(2, "0");
-          const mm = String(reminderDate.getMinutes()).padStart(2, "0");
-
-          return {
-            date: `${y}-${mo}-${d}`,
-            time: `${hh}:${mm}`,
-          };
-        }
-
-        // جاهز date/time
-        if (typeof r === "object" && r.date && r.time) return r;
-
-        return r;
-      })
-    : [];
-};
-
-
-const reminders = transformRemindersForCreateOrGroup(formData);
-
-
-
+    // 🔔 reminders: نستخدم الفنكشن اللي فوق
+    const reminders = transformRemindersForCreateOrGroup(formData);
 
     // coachId:
     // - لو المستخدم كوتش: من التوكن
@@ -627,16 +610,14 @@ const reminders = transformRemindersForCreateOrGroup(formData);
         formData.subscriptionDuration ||
         "",
 
-      schedules, // ← أهم جزء جديد
-
+      schedules,
       reminders,
-      // مبدئياً مش عم نبعت members هون لأن اختيارهم لسه ما اندمج بالـ AddModal
-      // لو بدنا نبعتهم بعدين: members: [...ids]
     };
 
     console.log("📤 requestBody to backend:", requestBody);
     return requestBody;
   };
+
 
   // الحفظ
   const handleSubmit = async (e) => {

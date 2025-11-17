@@ -18,7 +18,10 @@ export default function Step4Participant({ memberData, setMemberData, packages =
     { value: "بطاقة", label: "بطاقة" },
     { value: "أونلاين", label: "أونلاين" },
   ];
-  const [trainer, setTrainer] = useState(memberData.trainer || "");
+  const [trainer, setTrainer] = useState(
+  memberData.coachId || memberData.trainer || ""
+);
+
 
   const token =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4ZTgxNjE2YWRkZWM2YmI5OTYzYTBkMyIsImlhdCI6MTc2MDI4ODExOSwiZXhwIjoxNzYyODgwMTE5fQ.otxs7BqWLTxQxjYmMJ8gXqnl5pbyOB0_VgwX1E6OQR0";
@@ -53,6 +56,14 @@ export default function Step4Participant({ memberData, setMemberData, packages =
       if (currentPackage) setSelectedPackage(currentPackage);
     }
   }, [packages, memberData.packageId]);
+
+
+    // مزامنة المدرب المسؤول مع البيانات القادمة من المودال (خصوصاً في وضع التعديل)
+  useEffect(() => {
+    if (memberData.coachId && memberData.coachId !== trainer) {
+      setTrainer(memberData.coachId);
+    }
+  }, [memberData.coachId]);
 
   // تغيير الباقة
   const handlePackageChange = (packageId) => {

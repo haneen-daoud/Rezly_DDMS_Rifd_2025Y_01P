@@ -5,6 +5,65 @@ import DeleteConfirmationModal from "../DeleteConfirmationModal";
 import AddParticipantModel from "../AddParticipantModel/AddParticipantModel.jsx";
 import { toast } from "react-toastify";
 
+// ✅ دالة لتنضيف بيانات المشترك قبل تخزينها في localStorage أو تمريرها بالإيفنت
+const sanitizeMember = (member) => {
+  if (!member) return member;
+
+  const {
+    _id,
+    firstName,
+    lastName,
+    gender,
+    idNumber,
+    birthDate,
+    phone,
+    email,
+    city,
+    address,
+    image,
+    packageId,
+    paymentMethod,
+    coachId,
+    startDate,
+    endDate,
+    confirmEmail,
+    isActive,
+    file,
+    createdAt,
+    updatedAt,
+  } = member;
+
+  return {
+    _id,
+    firstName,
+    lastName,
+    gender,
+    idNumber,
+    birthDate,
+    phone,
+    email,
+    city,
+    address,
+    image,
+    packageId,
+    paymentMethod,
+    coachId,
+    startDate,
+    endDate,
+    confirmEmail,
+    isActive,
+    file,
+    createdAt,
+    updatedAt,
+  };
+};
+
+const sanitizeMembers = (members = []) =>
+  (Array.isArray(members) ? members : [])
+    .filter(Boolean)
+    .map(sanitizeMember);
+
+
 export default function SubscribersTab() {
   const [clients, setClients] = useState([]);
   const [selectedClients, setSelectedClients] = useState([]);
@@ -22,92 +81,112 @@ export default function SubscribersTab() {
 
     // جلب جميع المشتركين
   useEffect(() => {
-    // 👇 نقرأ البيانات اللي في localStorage أولاً
-    let localMembers = [];
-    const localData = localStorage.getItem("membersData");
+  // 👇 نقرأ البيانات اللي في localStorage أولاً
+  let localMembers = [];
+  const localData = localStorage.getItem("membersData");
 
-    if (localData) {
-      try {
-        localMembers = JSON.parse(localData) || [];
-        setClients(localMembers); // نعرضهم فوراً
-      } catch (e) {
-        console.error("خطأ في قراءة membersData من localStorage", e);
+  if (localData) {
+    try {
+      localMembers = sanitizeMembers(JSON.parse(localData) || []);
+      setClients(localMembers); // نعرضهم فوراً بعد التنضيف
+    } catch (e) {
+      console.error("خطأ في قراءة membersData من localStorage", e);
+    }
+  }
+
+  const fetchAllMembers = async () => {
+    try {
+      let allMembers = [];
+      let currentPage = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const data = await getAllMembers(currentPage);
+        const members = data.members || data.data || [];
+        console.log("📦 API DATA PAGE:", currentPage, data);
+        console.log("📦 MEMBERS FROM API:", members);
+
+        allMembers = [...allMembers, ...members];
+
+        if (members.length < 10) {
+          hasMore = false;
+        } else {
+          currentPage++;
+        }
       }
+
+      // 👇 نحول الـ localMembers لماب حسب الـ id
+      const localById = {};
+      localMembers.forEach((m) => {
+        if (m && m._id) {
+          localById[m._id] = m;
+        }
+      });
+
+      const mergedMembersRaw = allMembers.map((m) =>
+        m && m._id && localById[m._id]
+          ? { ...localById[m._id], ...m } // السيرفر يغلب لو في تعارض
+          : m
+      );
+
+      // ✅ ننضف قبل التخزين والعرض
+      const mergedMembers = sanitizeMembers(mergedMembersRaw);
+
+      setClients(mergedMembers);
+      localStorage.setItem("membersData", JSON.stringify(mergedMembers));
+
+      console.log("تم جلب جميع المشتركين:", mergedMembers.length);
+    } catch (error) {
+      console.error(" حدث خطأ أثناء جلب المشتركين", error);
+    }
+  };
+
+  fetchAllMembers();
+}, []);
+
+
+
+
+    // تحديث جدول المشتركين لما أي جزء من السيستم يغيّر البيانات (إضافة/تعديل/حذف)
+useEffect(() => {
+  const handleMembersUpdated = (e) => {
+    const detail = e.detail;
+
+    // 🟣 حالة: إضافة مشترك جديد من الهيدر (Clients.jsx)
+    if (detail && detail.type === "add" && detail.member) {
+      const cleanedMember = sanitizeMember(detail.member);
+
+      setClients((prev) => {
+        // نتأكد ما نكرّر نفس المشترك لو موجود
+        if (prev.some((c) => c._id === cleanedMember._id)) {
+          return prev;
+        }
+        return [...prev, cleanedMember];
+      });
+
+      return;
     }
 
-    const fetchAllMembers = async () => {
-      try {
-        let allMembers = [];
-        let currentPage = 1;
-        let hasMore = true;
+    // 🟣 حالة: تحديث القائمة كاملة (مثلاً بعد حذف)
+    if (Array.isArray(detail)) {
+      const cleaned = sanitizeMembers(detail);
+      setClients(cleaned);
 
-        // نجلب كل الصفحات وحدة وحدة من الـ API
-        while (hasMore) {
-          const data = await getAllMembers(currentPage);
-          const members = data.members || data.data || [];
+      // لو حابة يضل اللوكال محدث بهالحالة بس:
+      localStorage.setItem("membersData", JSON.stringify(cleaned));
 
-          allMembers = [...allMembers, ...members];
+      return;
+    }
 
-          if (members.length < 10) {
-            hasMore = false;
-          } else {
-            currentPage++;
-          }
-        }
+    // غير هيك نتجاهل الإيفنت (ما يهمنا)
+  };
 
-        // 👇 نعمل ماب من الـ localMembers بالإيد
-        const localById = {};
-        localMembers.forEach((m) => {
-          if (m && m._id) {
-            localById[m._id] = m;
-          }
-        });
+  window.addEventListener("membersUpdated", handleMembersUpdated);
 
-        // 👈 ندمج: العضو من local + العضو من السيرفر
-        // السيرفر يغلب لو في تعارض، بس بنحافظ على الحقول الزيادة اللي عندنا
-        const mergedMembers = allMembers.map((m) =>
-          m && m._id && localById[m._id]
-            ? { ...localById[m._id], ...m }
-            : m
-        );
-
-        setClients(mergedMembers);
-        localStorage.setItem("membersData", JSON.stringify(mergedMembers));
-
-        console.log("تم جلب جميع المشتركين:", mergedMembers.length);
-      } catch (error) {
-        console.error(" حدث خطأ أثناء جلب المشتركين", error);
-      }
-    };
-
-    fetchAllMembers();
-  }, []);
-
-
-
-    // تحديث جدول المشتركين لما أي جزء من السيستم يغيّر البيانات (إضافة/تعديل/حذف)
-    // تحديث جدول المشتركين لما أي جزء من السيستم يغيّر البيانات (إضافة/تعديل/حذف)
-  useEffect(() => {
-    const handleMembersUpdated = (e) => {
-      let members = e.detail;
-
-      // لو لأي سبب ما وصلتش مصفوفة من الإيفنت، منرجع بنقرأ من localStorage
-      if (!Array.isArray(members)) {
-        const localData = localStorage.getItem("membersData");
-        members = localData ? JSON.parse(localData) : [];
-      }
-
-      if (Array.isArray(members)) {
-        setClients(members);
-      }
-    };
-
-    window.addEventListener("membersUpdated", handleMembersUpdated);
-
-    return () => {
-      window.removeEventListener("membersUpdated", handleMembersUpdated);
-    };
-  }, []);
+  return () => {
+    window.removeEventListener("membersUpdated", handleMembersUpdated);
+  };
+}, []);
 
 
 
@@ -129,16 +208,17 @@ export default function SubscribersTab() {
     (c) => c._id !== selectedClientToDelete._id
   );
 
-  // ✅ تحديث localStorage
-  localStorage.setItem("membersData", JSON.stringify(updated));
+  const cleaned = sanitizeMembers(updated);
 
-  // ✅ إعلام باقي الصفحات
+  localStorage.setItem("membersData", JSON.stringify(cleaned));
+
   window.dispatchEvent(
-    new CustomEvent("membersUpdated", { detail: updated })
+    new CustomEvent("membersUpdated", { detail: cleaned })
   );
 
-  return updated;
+  return cleaned;
 });
+
 
 
       toast.success("تم حذف المشترك بنجاح");
@@ -275,88 +355,74 @@ export default function SubscribersTab() {
         </tbody>
       </table>
 
-      {/* مودال التعديل/الإضافة */}
-        {isModalOpen && (
-  <AddParticipantModel
-    onClose={() => {
-      setIsModalOpen(false);
-      setEditClientData(null);
-    }}
-    isEditMode={!!editClientData}
-    editData={editClientData}
-    onSave={(response) => {
-      console.log("📩 الريسبونس الراجع من المودال:", response);
+            {/* مودال التعديل/الإضافة */}
+      {isModalOpen && (
+        <AddParticipantModel
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditClientData(null);
+          }}
+          isEditMode={!!editClientData}
+          editData={editClientData}
+          onSave={(response) => {
+            console.log("📩 الريسبونس الراجع من المودال:", response);
 
-      // ✅ نحاول نطلع العضو الحقيقي من الريسبونس (member أو data أو نفسه)
-      let member =
-        response?.member || response?.data || response;
+            let member =
+              response?.member || response?.data || response;
 
-      // لو ما فيه _id، استخدم تبع العضو اللي كنا بنعدله
-      if (!member?._id && editClientData?._id) {
-        member = { ...member, _id: editClientData._id };
-      }
+            if (!member?._id && editClientData?._id) {
+              member = { ...member, _id: editClientData._id };
+            }
 
-      // حماية إضافية: لو لسه ما قدرنا نجيب العضو
-      if (!member || !member._id) {
-        console.error("⚠ ما قدرنا نحدد بيانات العضو بعد التعديل", response);
-        return;
-      }
+            if (!member || !member._id) {
+              console.error("⚠ ما قدرنا نحدد بيانات العضو بعد التعديل", response);
+              return;
+            }
 
-      // ✅ تجهيز الـ packageId (إما id بس أو object كامل)
-      const oldClient = clients.find((c) => c._id === member._id);
+            const oldClient = clients.find((c) => c._id === member._id);
 
-      let fixedPackage;
-      if (typeof member.packageId === "string") {
-        fixedPackage = {
-          _id: member.packageId,
-          slug: oldClient?.packageId?.slug || "غير معروف",
-          name: oldClient?.packageId?.name || oldClient?.packageId?.slug,
-        };
-      } else {
-        fixedPackage = member.packageId || oldClient?.packageId;
-      }
+            let fixedPackage;
+            if (typeof member.packageId === "string") {
+              fixedPackage = {
+                _id: member.packageId,
+                slug: oldClient?.packageId?.slug || "غير معروف",
+                name: oldClient?.packageId?.name || oldClient?.packageId?.slug,
+              };
+            } else {
+              fixedPackage = member.packageId || oldClient?.packageId;
+            }
 
-      setClients((prev) => {
-        let updated;
-
-        if (editClientData) {
-          // ✅ تعديل عضو موجود
-          updated = prev.map((c) =>
-            c._id === member._id
-              ? {
-                  ...c,
-                  ...member,
-                  packageId: fixedPackage,
-                }
-              : c
-          );
-        } else {
-          // ✅ إضافة عضو جديد
-          updated = [
-            {
+            // ✅ ننضف العضو قبل ما نحطه في الـ state فقط (بدون localStorage)
+            const cleanedMember = sanitizeMember({
               ...member,
               packageId: fixedPackage,
-            },
-            ...prev,
-          ];
-        }
+            });
 
-        // ✅ تحديث localStorage
-        localStorage.setItem("membersData", JSON.stringify(updated));
+            setClients((prev) => {
+              let updated;
 
-        // ✅ إعلام باقي الصفحات (Clients.jsx / العداد / الخ...)
-        window.dispatchEvent(
-          new CustomEvent("membersUpdated", { detail: updated })
-        );
+              if (editClientData) {
+                // تعديل عضو موجود
+                updated = prev.map((c) =>
+                  c._id === cleanedMember._id ? cleanedMember : c
+                );
+              } else {
+                // إضافة عضو جديد
+                return [...prev, cleanedMember];
+              }
 
-        return updated;
-      });
+              // نرجع لستة نظيفة، بس **بدون** تخزين في localStorage
+              const cleanedList = sanitizeMembers(updated);
+              return cleanedList;
+            });
 
-      setIsModalOpen(false);
-      setEditClientData(null);
-    }}
-  />
-)}
+            setIsModalOpen(false);
+            setEditClientData(null);
+          }}
+        />
+      )}
+
+
 
 
       <DeleteConfirmationModal
