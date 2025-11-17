@@ -84,10 +84,15 @@
   min-height: 0 !important;
 }
 
+/*
 .fc-col-header {
   display: none !important;
 }
-
+*/
+/* نخفي هيدر الأيام فقط لما نحط كلاس hide-fc-header على الكونتينر */
+.hide-fc-header .fc-col-header {
+  display: none !important;
+}
 
 /* الغاء الحد الأيمن لكل الأعمدة الأخيرة في FullCalendar */
 .fc-theme-standard .fc-scrollgrid-section>*:last-child {
@@ -165,4 +170,38 @@
 .fc-theme-standard .fc-scrollgrid {
   border-left: none !important;
 }
+
+/* تنسيق هيدر الأسبوع في FullCalendar */
+.fc-timeGridWeek-view .fc-col-header-cell {
+  padding: 6px 0 !important;
+}
+
+/* اسم اليوم */
+.fc-timeGridWeek-view .fc-col-header-cell .fc-col-header-cell-cushion {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #555 !important; /* رمادي ناعم */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* التاريخ تحت اسم اليوم */
+.fc-timeGridWeek-view .fc-col-header-cell .fc-col-header-cell-cushion span {
+  font-size: 11px !important;
+  color: #777 !important;
+  margin-top: 2px;
+}
+
+/* اليوم الحالي تمييز بسيط */
+.fc-timeGridWeek-view .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+  color: #000 !important; 
+  font-weight: 700 !important;
+}
+
+.fc-timeGridWeek-view .fc-col-header-cell.fc-day-today span {
+  color: #000 !important;
+  font-weight: 700 !important;
+}
+
 

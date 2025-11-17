@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { BookingsProvider } from "../Bookings/BookingsContext";
+import { getUserFromToken } from "../api/bookingsApi";
 
 export default function Layout() {
   const [openSidebar, setOpenSidebar] = useState(false);
@@ -11,6 +12,8 @@ export default function Layout() {
 
   const [selectedTab, setSelectedTab] = useState("");
   const [activeSubTab, setActiveSubTab] = useState("");
+
+  const [currentUser, setCurrentUser] = useState(null);
 
   // ✅ استخراج التاب النشط من الـ URL تلقائياً
   useEffect(() => {
@@ -79,6 +82,27 @@ export default function Layout() {
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+    async function loadUser() {
+      // 1) جرّب نقرأ من localStorage (فيه الاسم كامل)
+      const saved = localStorage.getItem("currentUser");
+
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setCurrentUser(parsed);
+        console.log("👤 تم تحميل المستخدم من localStorage:", parsed);
+        return;
+      }
+
+      // 2) لو مش موجود → نروح نفك التوكن
+      const u = await getUserFromToken();
+      setCurrentUser(u);
+      console.log("👤 تم تحميل المستخدم من التوكن فقط:", u);
+    }
+
+    loadUser();
+  }, []);
+
   // ✅ العنوان في التوب بار
   const topbarTitle =
     location.pathname === "/dashboard"
@@ -90,6 +114,7 @@ export default function Layout() {
       {/* ✅ Sidebar (ديسكتوب) */}
       <div className="hidden lg:block w-[22%] max-w-[280px]">
         <Sidebar
+          user={currentUser}
           onClose={() => setOpenSidebar(false)}
           onSelectTab={setSelectedTab}
           setActiveSubTab={setActiveSubTab}
@@ -106,6 +131,7 @@ export default function Layout() {
 
           <div className="absolute top-0 right-0 h-full bg-white w-[212px] shadow-xl animate-slideIn">
             <Sidebar
+              user={currentUser}
               onClose={() => setOpenSidebar(false)}
               onSelectTab={setSelectedTab}
               setActiveSubTab={setActiveSubTab}
@@ -118,6 +144,7 @@ export default function Layout() {
       <div className="flex flex-col w-full">
         {/* التوب بار */}
         <Topbar
+          user={currentUser}
           title={topbarTitle}
           onMenuClick={() => setOpenSidebar((prev) => !prev)}
         />

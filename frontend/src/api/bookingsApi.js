@@ -58,7 +58,6 @@ export async function getUserFromToken() {
     const role = (decoded.role || decoded.userRole || "").toLowerCase();
 
     const user = { id, role };
-    localStorage.setItem("currentUser", JSON.stringify(user));
     return user;
   } catch (err) {
     console.error("❌ فشل فك التوكن:", err);

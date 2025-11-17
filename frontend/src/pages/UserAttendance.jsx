@@ -85,10 +85,10 @@ export default function UserAttendance() {
 
               {/* نص المحتوى */}
               <div className="mb-4 text-right">
-                <h2 className="text-[16px] font-[800] text-[#111827] mb-1">
+                <h2 className="text-[16px] font-[800] text-center text-[#111827] mb-1">
                   دخولك وخروجك بخطوة واحدة
                 </h2>
-                <p className="text-[13px] text-[#6B7280] leading-relaxed">
+                <p className="text-[13px] text-center text-[#6B7280] leading-relaxed">
                   {descriptionText}
                 </p>
               </div>
