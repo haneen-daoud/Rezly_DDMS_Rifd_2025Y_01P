@@ -52,15 +52,41 @@ const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onS
 
   // تحميل بيانات العضو للتعديل
   useEffect(() => {
-    if (isEditMode && editData) {
-      setMemberData({
-        ...memberData,
-        ...editData,
-        packageId: editData.packageId?._id || editData.packageId || "",
-        coachId: editData.coachId?._id || editData.coachId || "",
-      });
-    }
-  }, [isEditMode, editData]);
+  if (!isEditMode || !editData) return;
+
+  setMemberData((prev) => ({
+    ...prev,
+
+    // ✅ المعلومات الشخصية
+    firstName: editData.firstName || "",
+    lastName: editData.lastName || "",
+    gender: editData.gender || "",
+    idNumber: editData.idNumber || "",
+    birthDate: editData.birthDate
+      ? editData.birthDate.slice(0, 10) // عشان input type="date"
+      : "",
+
+    // ✅ بيانات الاتصال
+    phone: editData.phone || "",
+    email: editData.email || "",
+    city: editData.city || "",
+    address: editData.address || "",
+
+    // ✅ تفاصيل الاشتراك
+    packageId:
+      editData.packageId?._id ||
+      editData.packageId ||
+      "",
+    paymentMethod: editData.paymentMethod || "",
+    coachId:
+      editData.coachId?._id ||
+      editData.coachId ||
+      "",
+
+    // ❌ ما بننسخ لا sendMethod ولا healthForm
+    // عشان ما نعتمد على قيم local بس عندك
+  }));
+}, [isEditMode, editData]);
 
   const handleNext = async () => {
     let isValid = true;
@@ -82,7 +108,7 @@ const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onS
     if (activeStep > 0) setActiveStep(activeStep - 1);
   };
 
-  const handleAddMember = async () => {
+ const handleAddMember = async () => {
   try {
     if (!memberData.packageId) {
       return toast.warn("يجب اختيار الاشتراك");
@@ -98,16 +124,22 @@ const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onS
       result?.newMember ||
       result;
 
+    const selectedPackage =
+      (packages || []).find((p) => p._id === memberData.packageId) ||
+      returnedMember?.packageId || // لو السيرفر رجعها جاهزة
+      null;
+
     // ✅ ندمج الداتا اللي بعثناها مع اللي رجعت من السيرفر
+    //   ونضمن إن packageId يكون OBJECT فيه name/slug عشان الجدول يفهمه
     const createdMember = {
       ...(memberData || {}),
       ...(returnedMember || {}),
+      packageId: selectedPackage || memberData.packageId,
     };
 
     toast.success("تم إضافة المشترك بنجاح!");
     setIsSubmitted(true);
 
-    // ✅ هسا onSave بوصلها عضو فيه firstName / lastName / email إلخ
     if (onSave) onSave(createdMember);
 
     onClose();
@@ -122,6 +154,7 @@ const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onS
 const handleSaveChanges = async () => {
   try {
     setIsLoading(true);
+
     const updatedMember = {
       firstName: memberData.firstName,
       lastName: memberData.lastName,
@@ -139,10 +172,32 @@ const handleSaveChanges = async () => {
     };
 
     const res = await updateMember(editData._id, updatedMember);
+
+    // نحاول نطلع العضو من الريسبونس لو الباك برجع واحد
+    let baseMember =
+      res?.member ||
+      res?.data ||
+      res?.updatedMember ||
+      res;
+
+    // 🟣 نجيب الباقة الكاملة من الـ packages حسب الـ _id الجديد
+    const selectedPackage =
+      (packages || []).find((p) => p._id === updatedMember.packageId) ||
+      baseMember?.packageId ||
+      editData?.packageId ||
+      null;
+
+    // ✅ ندمج القديم + اللي رجع من السيرفر + الباقة الجديدة كـ OBJECT
+    const finalMember = {
+      ...(editData || {}),
+      ...(baseMember || updatedMember),
+      packageId: selectedPackage || updatedMember.packageId,
+    };
+
     toast.success("تم حفظ التعديلات بنجاح!");
     setIsSubmitted(true);
 
-    if (onSave) onSave(res);
+    if (onSave) onSave(finalMember);
   } catch (error) {
     console.error("  خطأ أثناء التعديل:", error);
     toast.error("حدث خطأ أثناء حفظ التعديلات!");
@@ -150,6 +205,7 @@ const handleSaveChanges = async () => {
     setIsLoading(false);
   }
 };
+
 
 
   return (

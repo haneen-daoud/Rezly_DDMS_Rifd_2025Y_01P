@@ -131,6 +131,58 @@ useEffect(() => {
     }
   };
 
+  const sanitizeMemberForCache = (member) => {
+  if (!member) return member;
+
+  const {
+    _id,
+    firstName,
+    lastName,
+    gender,
+    idNumber,
+    birthDate,
+    phone,
+    email,
+    city,
+    address,
+    image,
+    packageId,
+    paymentMethod,
+    coachId,
+    startDate,
+    endDate,
+    confirmEmail,
+    isActive,
+    file,
+    createdAt,
+    updatedAt,
+  } = member;
+
+  return {
+    _id,
+    firstName,
+    lastName,
+    gender,
+    idNumber,
+    birthDate,
+    phone,
+    email,
+    city,
+    address,
+    image,
+    packageId,
+    paymentMethod,
+    coachId,
+    startDate,
+    endDate,
+    confirmEmail,
+    isActive,
+    file,
+    createdAt,
+    updatedAt,
+  };
+};
+
   return (
     <div className="flex flex-col gap-3 flex-1 w-full">
       {/* ✅ الهيدر الجديد */}
@@ -145,31 +197,29 @@ useEffect(() => {
       {/* ✅ محتوى الصفحة حسب التاب */}
       {renderContent()}
 
-      {/* ✅ مودال إضافة المشتركين */}
-      {isModalOpen && activeTab === "المشتركين" && (
+{/* ✅ مودال إضافة المشتركين */}
+{isModalOpen && activeTab === "المشتركين" && (
   <AddParticipantModel
     onClose={() => setIsModalOpen(false)}
     onSave={(newMember) => {
-      try {
-        const local = JSON.parse(localStorage.getItem("membersData") || "[]");
-        const updated = [newMember, ...local];
+      // 🔔 نخبر باقي السيستم إنه في مشترك جديد انضاف
+      window.dispatchEvent(
+        new CustomEvent("membersUpdated", {
+          detail: { type: "add", member: newMember },
+        })
+      );
 
-        // ✅ تحديث localStorage
-        localStorage.setItem("membersData", JSON.stringify(updated));
+      // نرفع عداد المشتركين في الهيدر (اختياري بس حلو)
+      setTotalMembers((prev) => prev + 1);
 
-        // ✅ إيفينت عام عشان كل الصفحة تعرف إنه صار تحديث
-        window.dispatchEvent(
-          new CustomEvent("membersUpdated", { detail: updated })
-        );
-
-        // ✅ تحديث عداد المشتركين في الهيدر مباشرة
-        setTotalMembers(updated.length);
-      } catch (err) {
-        console.error("خطأ أثناء تحديث المشتركين محلياً:", err);
-      }
+      // نسكّر المودال
+      setIsModalOpen(false);
     }}
   />
 )}
+
+
+
 
 
       {/* ✅ مسار فرعي (اختياري لمرونة التوسع لاحقاً) */}
