@@ -8,7 +8,12 @@ import { addNewMember, updateMember, getAllPackages } from "../../api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onSave }) => {
+const AddParticipantModel = ({
+  onClose,
+  isEditMode = false,
+  editData = null,
+  onSave,
+}) => {
   const [activeStep, setActiveStep] = useState(0);
   const [packages, setPackages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +35,12 @@ const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onS
     coachId: "",
   });
 
-  const steps = ["المعلومات الشخصية", "بيانات الاتصال", "الملف الصحي", "تفاصيل الاشتراك"];
+  const steps = [
+    "المعلومات الشخصية",
+    "بيانات الاتصال",
+    "الملف الصحي",
+    "تفاصيل الاشتراك",
+  ];
 
   const step1Ref = useRef();
   const step2Ref = useRef();
@@ -52,48 +62,35 @@ const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onS
 
   // تحميل بيانات العضو للتعديل
   useEffect(() => {
-  if (!isEditMode || !editData) return;
+    if (!isEditMode || !editData) return;
 
-  setMemberData((prev) => ({
-    ...prev,
+    setMemberData((prev) => ({
+      ...prev,
 
-    // ✅ المعلومات الشخصية
-    firstName: editData.firstName || "",
-    lastName: editData.lastName || "",
-    gender: editData.gender || "",
-    idNumber: editData.idNumber || "",
-    birthDate: editData.birthDate
-      ? editData.birthDate.slice(0, 10) // عشان input type="date"
-      : "",
+      // ✅ المعلومات الشخصية
+      firstName: editData.firstName || "",
+      lastName: editData.lastName || "",
+      gender: editData.gender || "",
+      idNumber: editData.idNumber || "",
+      birthDate: editData.birthDate
+        ? editData.birthDate.slice(0, 10) // عشان input type="date"
+        : "",
 
-    // ✅ بيانات الاتصال
-    phone: editData.phone || "",
-    email: editData.email || "",
-    city: editData.city || "",
-    address: editData.address || "",
+      // ✅ بيانات الاتصال
+      phone: editData.phone || "",
+      email: editData.email || "",
+      city: editData.city || "",
+      address: editData.address || "",
 
-    // ✅ تفاصيل الاشتراك
-    packageId:
-      editData.packageId?._id ||
-      editData.packageId ||
-      "",
-    paymentMethod: editData.paymentMethod || "",
-    coachId:
-      editData.coachId?._id ||
-      editData.coachId ||
-      "",
-
-    // ❌ ما بننسخ لا sendMethod ولا healthForm
-    // عشان ما نعتمد على قيم local بس عندك
-  }));
-}, [isEditMode, editData]);
+      // ✅ تفاصيل الاشتراك
+      packageId: editData.packageId?._id || editData.packageId || "",
+      paymentMethod: editData.paymentMethod || "",
+      coachId: editData.coachId?._id || editData.coachId || "",
+    }));
+  }, [isEditMode, editData]);
 
   const handleNext = async () => {
     let isValid = true;
-
-    // إذا عندك validation لكل step، ضع هنا
-    // مثال:
-    // if (activeStep === 0 && step1Ref.current) isValid = await step1Ref.current.validateAll();
 
     if (isValid) {
       if (activeStep < steps.length - 1) {
@@ -108,105 +105,95 @@ const AddParticipantModel = ({ onClose, isEditMode = false, editData = null, onS
     if (activeStep > 0) setActiveStep(activeStep - 1);
   };
 
- const handleAddMember = async () => {
-  try {
-    if (!memberData.packageId) {
-      return toast.warn("يجب اختيار الاشتراك");
+  const handleAddMember = async () => {
+    try {
+      if (!memberData.packageId) {
+        return toast.warn("يجب اختيار الاشتراك");
+      }
+
+      setIsLoading(true);
+      const result = await addNewMember(memberData);
+
+      // ✅ نحاول نطلع العضو من الريسبونس
+      let returnedMember =
+        result?.member || result?.data || result?.newMember || result;
+
+      const selectedPackage =
+        (packages || []).find((p) => p._id === memberData.packageId) ||
+        returnedMember?.packageId || // لو السيرفر رجعها جاهزة
+        null;
+
+      //   ونضمن إن packageId يكون OBJECT فيه name/slug عشان الجدول يفهمه
+      const createdMember = {
+        ...(memberData || {}),
+        ...(returnedMember || {}),
+        packageId: selectedPackage || memberData.packageId,
+      };
+
+      toast.success("تم إضافة المشترك بنجاح!");
+      setIsSubmitted(true);
+
+      if (onSave) onSave(createdMember);
+
+      onClose();
+    } catch (error) {
+      console.error("  خطأ أثناء الإضافة:", error);
+      toast.error("حدث خطأ أثناء إضافة المشترك!");
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    setIsLoading(true);
-    const result = await addNewMember(memberData);
+  const handleSaveChanges = async () => {
+    try {
+      setIsLoading(true);
 
-    // ✅ نحاول نطلع العضو من الريسبونس
-    let returnedMember =
-      result?.member ||
-      result?.data ||
-      result?.newMember ||
-      result;
+      const updatedMember = {
+        firstName: memberData.firstName,
+        lastName: memberData.lastName,
+        gender: memberData.gender,
+        idNumber: memberData.idNumber,
+        birthDate: memberData.birthDate,
+        phone: memberData.phone,
+        email: memberData.email,
+        address: memberData.address,
+        packageId: memberData.packageId,
+        // إذا paymentMethod فارغ، استخدم القيمة القديمة من editData
+        paymentMethod: memberData.paymentMethod || editData.paymentMethod || "",
+        coachId: memberData.coachId,
+        city: memberData.city || "رام الله",
+      };
 
-    const selectedPackage =
-      (packages || []).find((p) => p._id === memberData.packageId) ||
-      returnedMember?.packageId || // لو السيرفر رجعها جاهزة
-      null;
+      const res = await updateMember(editData._id, updatedMember);
 
-    // ✅ ندمج الداتا اللي بعثناها مع اللي رجعت من السيرفر
-    //   ونضمن إن packageId يكون OBJECT فيه name/slug عشان الجدول يفهمه
-    const createdMember = {
-      ...(memberData || {}),
-      ...(returnedMember || {}),
-      packageId: selectedPackage || memberData.packageId,
-    };
+      // نحاول نطلع العضو من الريسبونس لو الباك برجع واحد
+      let baseMember = res?.member || res?.data || res?.updatedMember || res;
 
-    toast.success("تم إضافة المشترك بنجاح!");
-    setIsSubmitted(true);
+      // 🟣 نجيب الباقة الكاملة من الـ packages حسب الـ _id الجديد
+      const selectedPackage =
+        (packages || []).find((p) => p._id === updatedMember.packageId) ||
+        baseMember?.packageId ||
+        editData?.packageId ||
+        null;
 
-    if (onSave) onSave(createdMember);
+      // ✅ ندمج القديم + اللي رجع من السيرفر + الباقة الجديدة كـ OBJECT
+      const finalMember = {
+        ...(editData || {}),
+        ...(baseMember || updatedMember),
+        packageId: selectedPackage || updatedMember.packageId,
+      };
 
-    onClose();
-  } catch (error) {
-    console.error("  خطأ أثناء الإضافة:", error);
-    toast.error("حدث خطأ أثناء إضافة المشترك!");
-  } finally {
-    setIsLoading(false);
-  }
-};
+      toast.success("تم حفظ التعديلات بنجاح!");
+      setIsSubmitted(true);
 
-const handleSaveChanges = async () => {
-  try {
-    setIsLoading(true);
-
-    const updatedMember = {
-      firstName: memberData.firstName,
-      lastName: memberData.lastName,
-      gender: memberData.gender,
-      idNumber: memberData.idNumber,
-      birthDate: memberData.birthDate,
-      phone: memberData.phone,
-      email: memberData.email,
-      address: memberData.address,
-      packageId: memberData.packageId,
-      // إذا paymentMethod فارغ، استخدم القيمة القديمة من editData
-      paymentMethod: memberData.paymentMethod || editData.paymentMethod || "",
-      coachId: memberData.coachId,
-      city: memberData.city || "رام الله",
-    };
-
-    const res = await updateMember(editData._id, updatedMember);
-
-    // نحاول نطلع العضو من الريسبونس لو الباك برجع واحد
-    let baseMember =
-      res?.member ||
-      res?.data ||
-      res?.updatedMember ||
-      res;
-
-    // 🟣 نجيب الباقة الكاملة من الـ packages حسب الـ _id الجديد
-    const selectedPackage =
-      (packages || []).find((p) => p._id === updatedMember.packageId) ||
-      baseMember?.packageId ||
-      editData?.packageId ||
-      null;
-
-    // ✅ ندمج القديم + اللي رجع من السيرفر + الباقة الجديدة كـ OBJECT
-    const finalMember = {
-      ...(editData || {}),
-      ...(baseMember || updatedMember),
-      packageId: selectedPackage || updatedMember.packageId,
-    };
-
-    toast.success("تم حفظ التعديلات بنجاح!");
-    setIsSubmitted(true);
-
-    if (onSave) onSave(finalMember);
-  } catch (error) {
-    console.error("  خطأ أثناء التعديل:", error);
-    toast.error("حدث خطأ أثناء حفظ التعديلات!");
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
+      if (onSave) onSave(finalMember);
+    } catch (error) {
+      console.error("  خطأ أثناء التعديل:", error);
+      toast.error("حدث خطأ أثناء حفظ التعديلات!");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/25 z-50">
@@ -281,17 +268,44 @@ const handleSaveChanges = async () => {
                       {step}
                     </span>
                   </div>
-                  {index < steps.length - 1 && <div className="w-[51px] h-[1px] bg-gray-200"></div>}
+                  {index < steps.length - 1 && (
+                    <div className="w-[51px] h-[1px] bg-gray-200"></div>
+                  )}
                 </React.Fragment>
               ))}
             </div>
 
             {/* محتوى الخطوات */}
             <div className="flex-grow flex flex-col justify-between pr-2 text-[14px]">
-              {activeStep === 0 && <Step1Participant memberData={memberData} setMemberData={setMemberData} ref={step1Ref} />}
-              {activeStep === 1 && <Step2Participant memberData={memberData} setMemberData={setMemberData} ref={step2Ref} />}
-              {activeStep === 2 && <Step3Participant memberData={memberData} setMemberData={setMemberData} ref={step3Ref} />}
-              {activeStep === 3 && <Step4Participant memberData={memberData} setMemberData={setMemberData} packages={packages} ref={step4Ref} />}
+              {activeStep === 0 && (
+                <Step1Participant
+                  memberData={memberData}
+                  setMemberData={setMemberData}
+                  ref={step1Ref}
+                />
+              )}
+              {activeStep === 1 && (
+                <Step2Participant
+                  memberData={memberData}
+                  setMemberData={setMemberData}
+                  ref={step2Ref}
+                />
+              )}
+              {activeStep === 2 && (
+                <Step3Participant
+                  memberData={memberData}
+                  setMemberData={setMemberData}
+                  ref={step3Ref}
+                />
+              )}
+              {activeStep === 3 && (
+                <Step4Participant
+                  memberData={memberData}
+                  setMemberData={setMemberData}
+                  packages={packages}
+                  ref={step4Ref}
+                />
+              )}
             </div>
 
             {/* أزرار التنقل */}

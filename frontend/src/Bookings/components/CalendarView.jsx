@@ -296,9 +296,12 @@ setTimeout(() => {
         }`}
       >
         <div
-          className="bg-white rounded-[16px] overflow-hidden flex-1 flex flex-col"
-          dir="rtl"
-        >
+  className={`bg-white rounded-[16px] overflow-hidden flex-1 flex flex-col ${
+    view === "timeGridWeek" ? "" : "hide-fc-header"
+  }`}
+  dir="rtl"
+>
+
           {/* الهيدر */}
           <div className="grid grid-cols-[50px_1fr]">
             <div className="border-l border-[#eee] w-[46px] pt-[12px]"></div>
@@ -399,6 +402,8 @@ setTimeout(() => {
             slotMaxTime="24:00:00"
             slotDuration="00:30:00"
             events={events}
+            dayMaxEvents={3}
+            eventMaxStack={4}
             eventClick={(info) => {
               const scheduleId = info.event.id;
               const foundBooking = bookings.find((b) =>

@@ -6,7 +6,19 @@ import PromotionIcon from "../icons/promotion.svg?react";
 import NotificationIcon from "../icons/notification.svg?react";
 import DownVectorIcon from "../icons/downVector.svg?react";
 
-export default function Topbar({ title, onMenuClick }) {
+export default function Topbar({ title, onMenuClick, user }) {
+
+  const roleArabic = {
+    admin: "أدمن",
+    coach: "مدرب",
+    receptionist: "استقبال",
+    accountant: "محاسب",
+    member: "مشترك",
+  };
+
+  const userName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+  const userRole = roleArabic[user?.role?.toLowerCase()] || "مستخدم";
+
   return (
     <>
       {/* ديسكتوب */}
@@ -15,7 +27,6 @@ export default function Topbar({ title, onMenuClick }) {
           hidden lg:flex w-full items-center justify-between 
           px-6 
           h-[72px] 
-          
           font-cairo
         "
       >
@@ -27,16 +38,15 @@ export default function Topbar({ title, onMenuClick }) {
         {/* العناصر الجانبية */}
         <div className="flex gap-7 items-center">
           <div className="icon-box flex gap-4 items-center">
-            {/* بحث */}
             <SearchIcon className="w-6 h-6 text-[var(--color-purple)]" />
-            {/* بروموشن */}
+
             <div className="relative">
               <PromotionIcon className="w-6 h-6 text-[var(--color-purple)]" />
               <span className="absolute -top-1 -right-0 bg-[var(--color-danger)] text-white text-[10px] px-1 rounded-full">
                 2
               </span>
             </div>
-            {/* جرس */}
+
             <div className="relative">
               <NotificationIcon className="w-6 h-6 text-[var(--color-purple)]" />
               <span className="absolute -top-1 -right-0 bg-[var(--color-danger)] text-white text-[10px] px-1 rounded-full">
@@ -48,20 +58,23 @@ export default function Topbar({ title, onMenuClick }) {
           {/* صورة المستخدم */}
           <div className="flex items-center gap-3 py-1">
             <DownVectorIcon className="w-3 h-5 text-[var(--color-purple)]" />
+
             <div className="flex flex-col text-right leading-tight">
               <span className="text-black text-[12px] font-[600]">
-                معاذ حجاوي
+                {userName || "مستخدم"}
               </span>
+
               <span className="text-[var(--color-purple)] text-[12px] font-[700]">
-                أدمن
+                {userRole}
               </span>
             </div>
+
             <img
               src={AdminImg}
               width="40"
               height="40"
               className="rounded-full"
-              alt="admin"
+              alt="user"
             />
           </div>
         </div>
@@ -69,7 +82,6 @@ export default function Topbar({ title, onMenuClick }) {
 
       {/* موبايل */}
       <header className="flex lg:hidden w-full items-center justify-between bg-white px-4 h-[72px] shadow-sm">
-        {/* زر القائمة */}
         <button
           onClick={onMenuClick}
           className="flex flex-col justify-center items-center w-10 h-10 rounded-md bg-white"
@@ -81,7 +93,6 @@ export default function Topbar({ title, onMenuClick }) {
 
         <img src={Logo} alt="logo" className="w-24 h-auto" />
 
-        {/* صورة المستخدم */}
         <img
           src={AdminImg}
           alt="user"

@@ -8,7 +8,6 @@ import login from "../icons/login.svg";
 import { useNavigate } from "react-router-dom";
 import { signIn } from "../api.js";
 import { toast } from "react-toastify";
-
 const Login = () => {
   const [formData, setFormData] = useState({
     identifier: "",
@@ -44,33 +43,62 @@ const Login = () => {
 
   // إرسال الطلب
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    console.log("🟣 SUBMITTED:", formData);
+  e.preventDefault();
 
-    if (!validate()) return;
+  if (!validate()) return;
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      const res = await signIn(formData);
+  try {
+    console.log("🟢 TRY STARTED");
+    const res = await signIn(formData);
 
-      if (res.status === 200) {
-        localStorage.setItem("token", res.data.token);
+    console.log("🔵 LOGIN RESPONSE:", res);
 
-        // ❌ حذف toast النجاح كما طلبتِ
-        navigate("/dashboard");
-      }
-    } catch (err) {
-      const message =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "حدث خطأ أثناء تسجيل الدخول";
+    if (res.status === 200) {
 
-      toast.error(`❌ ${message}`, {
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    token,
+    firstName,
+    lastName,
+    role,
+    id,
+  } = res.data || {};
+
+  // تخزين التوكن
+if (token) {
+  localStorage.setItem("token", token);
+  localStorage.setItem("authToken", token);
+}
+
+// تخزين اليوزر كامل
+const currentUser = {
+  id: id,
+  firstName: firstName,
+  lastName: lastName,
+  role: role,
+};
+
+localStorage.setItem("currentUser", JSON.stringify(currentUser));
+console.log("🔥 CURRENT USER SAVED:", currentUser);
+
+  // تحويل المستخدم
+  navigate("/dashboard", { replace: true });
+}
+
+
+  } catch (err) {
+    const message =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      "حدث خطأ أثناء تسجيل الدخول";
+
+    toast.error(`❌ ${message}`);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div

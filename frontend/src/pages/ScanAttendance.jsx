@@ -12,6 +12,22 @@ export default function ScanAttendance() {
   const [status, setStatus] = useState("loading"); // loading | success | error
   const [message, setMessage] = useState("جاري معالجة الطلب...");
 
+  // 🔁 دالة صغيرة تحدد وين نوجّه اليوزر بعد النجاح
+  const redirectByRole = () => {
+    const role = localStorage.getItem("role"); // حسب اللي بتخزّلوه بجلسة اللوج إن
+
+    let redirectPath = "/dashboard";
+
+    if (role === "Member") {
+      redirectPath = "/user";
+    } else {
+      // Admin, Coach, Accountant, Receptionist
+      redirectPath = "/dashboard";
+    }
+
+    navigate(redirectPath, { replace: true });
+  };
+
   useEffect(() => {
     const doScan = async () => {
       const params = new URLSearchParams(location.search);
@@ -23,16 +39,21 @@ export default function ScanAttendance() {
         return;
       }
 
-      try {
-        // لازم يكون اليوزر/الموظف مسجل دخول وفي توكن
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setStatus("error");
-          setMessage("يجب تسجيل الدخول أولاً قبل استخدام هذا الرابط.");
-          toast.error("سجّل الدخول ثم أعد المحاولة.");
-          return;
-        }
+      const token = localStorage.getItem("token");
 
+      // 🟥 لو مش مسجل دخول، نوديه على صفحة اللوج إن ونحفظ مكان الرجوع
+      if (!token) {
+        toast.error("يجب تسجيل الدخول أولاً.");
+        const redirectUrl =
+          location.pathname + location.search; // /scan?type=CHECK_IN
+
+        navigate(`/login?redirect=${encodeURIComponent(redirectUrl)}`, {
+          replace: true,
+        });
+        return;
+      }
+
+      try {
         const res = await axios.post(
           `${API_BASE}/attendance/scan`,
           { qrType: type },
@@ -47,6 +68,11 @@ export default function ScanAttendance() {
         setStatus("success");
         setMessage(msg);
         toast.success(msg);
+
+        // ⏱ نعطيه لحظات يشوف الرسالة، بعدين نودّيه على صفحته
+        setTimeout(() => {
+          redirectByRole();
+        }, 1500);
       } catch (err) {
         console.error("Scan attendance error:", err);
         const apiMsg = err?.response?.data?.message;
@@ -57,7 +83,7 @@ export default function ScanAttendance() {
     };
 
     doScan();
-  }, [location.search]);
+  }, [location.search, navigate]);
 
   return (
     <div
@@ -82,10 +108,10 @@ export default function ScanAttendance() {
         </p>
 
         <button
-          onClick={() => navigate("/user")}
+          onClick={redirectByRole}
           className="px-4 py-2 rounded-xl bg-[var(--color-purple)] text-white text-sm font-bold w-full"
         >
-          العودة لصفحة الحضور
+          الانتقال إلى صفحتك
         </button>
       </div>
     </div>
