@@ -5,6 +5,7 @@ import { Outlet } from "react-router-dom";
 
 export default function UserLayout() {
   const [openSidebar, setOpenSidebar] = useState(false);
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   return (
     <div className="w-full min-h-screen flex bg-[#F8F8F8]">
@@ -32,6 +33,7 @@ export default function UserLayout() {
         {/* التوب بار */}
         <Topbar
           title="سجل حضورك اليوم 💪"
+          user={currentUser}
           onMenuClick={() => setOpenSidebar((prev) => !prev)}
         />
 

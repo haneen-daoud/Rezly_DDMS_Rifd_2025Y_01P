@@ -189,28 +189,27 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
           </div>
 
           {/* رسالة الخطأ */}
-          {combinedErrors.birthDate && (
-            <p className="text-red-500 text-[11px] mt-1">
-              {combinedErrors.birthDate}
-            </p>
-          )}
+{combinedErrors.birthDate && (
+  <p className="text-red-500 text-[11px] mt-1">
+    {combinedErrors.birthDate}
+  </p>
+)}
 
-          {/* 🌟 الميني كاليندر */}
-          {showCalendar && (
-            <div className="absolute z-50 top-[100%] right-0">
-              <MiniCalender
-                currentDate={
-                  data.birthDate ? new Date(data.birthDate) : new Date()
-                }
-                variant="employee"
-                handleDateChange={(date) => {
-                  const iso = date.toISOString().split("T")[0];
-                  handleChange("birthDate", iso);
-                  setShowCalendar(false);
-                }}
-              />
-            </div>
-          )}
+{/* 🌟 الميني كاليندر */}
+{showCalendar && (
+  <MiniCalender
+    currentDate={
+      data.birthDate ? new Date(data.birthDate) : new Date()
+    }
+    variant="employee"
+    handleDateChange={(date) => {
+      const iso = date.toISOString().split("T")[0];
+      handleChange("birthDate", iso);
+      setShowCalendar(false);
+    }}
+  />
+)}
+
         </div>
 
         {/* ------------------- صورة الملف ------------------- */}

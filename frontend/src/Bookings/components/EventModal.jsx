@@ -39,12 +39,21 @@ export default function EventModal({
   const [memberSearch, setMemberSearch] = useState("");
   const [coaches, setCoaches] = useState([]);
 
-  const { bookings, setBookings, role } = useBookings(); // من الكونتست
-  const isAdmin = (role || "").toLowerCase() === "admin";
+  // من الكونتِكست: بنستفيد من isAdmin, isCoach الجاهزين
+  const {
+    bookings,
+    setBookings,
+    role,
+    isAdmin,
+    isCoach,
+    isReceptionist,
+    currentUser,
+  } = useBookings();
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const locations = ["قاعة 1", "قاعة 2", "قاعة 3", "قاعة 4"];
 
@@ -267,9 +276,15 @@ export default function EventModal({
 
   // ✅ جلب قائمة المدربين (نفس منطق Step1Booking)
   useEffect(() => {
+    // لو المستخدم الحالي مدرب، ما في داعي نجيب المدربين ولا نضرب صلاحيات الباك
+    if (isCoach) {
+      setCoaches([]);
+      return;
+    }
+
     const loadCoachesInstantly = async () => {
       try {
-        // ✅ أولاً: حمّل مباشرة من localStorage لتظهر الأسماء فوراً
+        // من localStorage
         const local = JSON.parse(localStorage.getItem("allEmployees") || "[]");
         if (Array.isArray(local) && local.length > 0) {
           const formattedLocal = local.map((c) => ({
@@ -286,7 +301,7 @@ export default function EventModal({
           );
         }
 
-        // ✅ ثانياً: بالتوازي، نعمل تحديث من السيرفر بخلفية الصفحة
+        // ✅ ثانياً: تحديث من السيرفر
         const remote = await getAllCoachesAPI();
         if (Array.isArray(remote) && remote.length > 0) {
           const formattedRemote = remote.map((c) => ({
@@ -301,16 +316,15 @@ export default function EventModal({
             "✅ [EventModal] المدربين بعد تحديث السيرفر:",
             formattedRemote
           );
-          // 🔹 احفظ نسخة جديدة بالكاش
           localStorage.setItem("allEmployees", JSON.stringify(remote));
         }
       } catch (err) {
-        console.error("❌ [EventModal] فشل جلب المدربين:", err);
+        console.error("[EventModal] فشل جلب المدربين:", err);
       }
     };
 
     loadCoachesInstantly();
-  }, []);
+  }, [isCoach]);
 
   // تغيير التاريخ
   const handleDateChange = (date) => {
@@ -395,7 +409,12 @@ export default function EventModal({
   // 🟣 تعديل الحجز الفردي (schedule)
   // 🟣 تعديل الحجز الفردي (schedule)
   const handleUpdateSingleSchedule = async () => {
+    // لو الضغط مزدوج على الزر، ما نعيد الطلب
+    if (saving) return;
+
     try {
+      setSaving(true);
+
       const bookingId = booking._id;
       const scheduleId = booking.selectedScheduleId;
 
@@ -451,32 +470,31 @@ export default function EventModal({
       booking.members = cleanedMembers;
 
       // 🟣 تحويل التذكيرات {hoursBefore} إلى {date,time} بناءً على وقت الحجز الحالي
-// 🟣 تحويل التذكيرات {hoursBefore} إلى {date,time} بناءً على وقت الحجز الحالي (محلي)
-let transformedReminders = [];
-if (Array.isArray(booking.reminders)) {
-  transformedReminders = booking.reminders.map((r) => {
-    if (typeof r === "object" && typeof r.hoursBefore === "number") {
-      const bookingDate = new Date(booking.start);
-      const reminderDate = new Date(
-        bookingDate.getTime() - r.hoursBefore * 60 * 60 * 1000
-      );
+      // 🟣 تحويل التذكيرات {hoursBefore} إلى {date,time} بناءً على وقت الحجز الحالي (محلي)
+      let transformedReminders = [];
+      if (Array.isArray(booking.reminders)) {
+        transformedReminders = booking.reminders.map((r) => {
+          if (typeof r === "object" && typeof r.hoursBefore === "number") {
+            const bookingDate = new Date(booking.start);
+            const reminderDate = new Date(
+              bookingDate.getTime() - r.hoursBefore * 60 * 60 * 1000
+            );
 
-      // 🕒 استخدم التوقيت المحلي بدل UTC
-      const year = reminderDate.getFullYear();
-      const month = String(reminderDate.getMonth() + 1).padStart(2, "0");
-      const day = String(reminderDate.getDate()).padStart(2, "0");
-      const hours = String(reminderDate.getHours()).padStart(2, "0");
-      const minutes = String(reminderDate.getMinutes()).padStart(2, "0");
+            // 🕒 استخدم التوقيت المحلي بدل UTC
+            const year = reminderDate.getFullYear();
+            const month = String(reminderDate.getMonth() + 1).padStart(2, "0");
+            const day = String(reminderDate.getDate()).padStart(2, "0");
+            const hours = String(reminderDate.getHours()).padStart(2, "0");
+            const minutes = String(reminderDate.getMinutes()).padStart(2, "0");
 
-      return {
-        date: `${year}-${month}-${day}`,
-        time: `${hours}:${minutes}`,
-      };
-    }
-    return r;
-  });
-}
-
+            return {
+              date: `${year}-${month}-${day}`,
+              time: `${hours}:${minutes}`,
+            };
+          }
+          return r;
+        });
+      }
 
       // 🔹 بناء جسم الطلب مثل ما بدو الباك
       const updateBody = {
@@ -558,6 +576,8 @@ if (Array.isArray(booking.reminders)) {
         "❌ فشل تعديل الحجز الفردي:",
         err.response?.data || err.message
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -589,12 +609,11 @@ if (Array.isArray(booking.reminders)) {
         <div className="w-[313px] h-[40px] flex items-center justify-between mb-[8px]">
           <h3 className="text-[16px] font-bold">تفاصيل الحجز</h3>
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <DeleteIcon
-                className="w-8 h-8 text-red-500 cursor-pointer"
-                onClick={() => setShowConfirm(true)}
-              />
-            )}
+            {/* زر الحذف متاح لكل الأدوار */}
+            <DeleteIcon
+              className="w-8 h-8 text-red-500 cursor-pointer"
+              onClick={() => setShowConfirm(true)}
+            />
 
             <img
               src={CloseIcon}
@@ -675,15 +694,13 @@ if (Array.isArray(booking.reminders)) {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MiniCalender
-  variant="event"
-  hideTodayHighlight={false}
-  currentDate={
-    booking.start ? new Date(booking.start) : new Date()
-  }
-  handleDateChange={handleDateChange}
-/>
-
-
+                      variant="event"
+                      hideTodayHighlight={false}
+                      currentDate={
+                        booking.start ? new Date(booking.start) : new Date()
+                      }
+                      handleDateChange={handleDateChange}
+                    />
                   </div>
                 </div>
               )}
@@ -739,23 +756,25 @@ if (Array.isArray(booking.reminders)) {
           </div>
 
           {/* المدرب */}
-          <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
-            <label className="text-[12px] font-bold leading-[18px]">
-              اسم المدرب
-            </label>
-            <div className="relative">
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
-              <CoachSelector
-                showLabel={false}
-                variant="event"
-                selectedCoach={booking.coach}
-                setSelectedCoach={(coach) =>
-                  setBooking({ ...booking, coach, coachId: coach.id })
-                }
-                coachesList={coaches}
-              />
+          {!isCoach && (
+            <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+              <label className="text-[12px] font-bold leading-[18px]">
+                اسم المدرب
+              </label>
+              <div className="relative">
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
+                <CoachSelector
+                  showLabel={false}
+                  variant="event"
+                  selectedCoach={booking.coach}
+                  setSelectedCoach={(coach) =>
+                    setBooking({ ...booking, coach, coachId: coach.id })
+                  }
+                  coachesList={coaches}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* الحد الأقصى للمشتركين */}
           <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
@@ -825,18 +844,17 @@ if (Array.isArray(booking.reminders)) {
             <div className="relative">
               <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4" />
               <ReminderSelector
-  variant="event"
-  showLabel={false}
-  selectedReminders={booking.reminders || []}
-  setSelectedReminders={(rem) =>
-    setBooking({ ...booking, reminders: rem })
-  }
-  showIconInInput
-  borderStyle="#7E818C"
-  placeholderColor="text-gray-400"
-  baseDateTime={booking.start} // 🟣 نمرّر وقت الحجز الحالي لحساب الفرق
-/>
-
+                variant="event"
+                showLabel={false}
+                selectedReminders={booking.reminders || []}
+                setSelectedReminders={(rem) =>
+                  setBooking({ ...booking, reminders: rem })
+                }
+                showIconInInput
+                borderStyle="#7E818C"
+                placeholderColor="text-gray-400"
+                baseDateTime={booking.start} // 🟣 نمرّر وقت الحجز الحالي لحساب الفرق
+              />
             </div>
           </div>
         </div>
@@ -844,15 +862,24 @@ if (Array.isArray(booking.reminders)) {
         {/* حفظ */}
         <div className="pt-2">
           <button
-            className="w-[313px] h-10 bg-[var(--color-purple)] text-white rounded-[8px] font-bold text-[14px] hover:bg-[var(--color-purple)] transition"
-            onClick={handleUpdateSingleSchedule}
-          >
-            حفظ
-          </button>
+  onClick={handleUpdateSingleSchedule}
+  disabled={saving || deleting}
+  className={`
+    w-[313px] h-10 
+    bg-[var(--color-purple)] text-white 
+    rounded-[8px] font-bold text-[14px]
+    hover:bg-[var(--color-purple)] transition
+    flex items-center justify-center
+    ${saving || deleting ? "opacity-70 cursor-not-allowed" : ""}
+  `}
+>
+  {saving ? "جاري الحفظ..." : "حفظ"}
+</button>
+
         </div>
       </div>
 
-      {isAdmin && showConfirm && (
+      {showConfirm && (
         <ConfirmDeleteModal
           event={booking.selectedSchedule || booking}
           isLoading={deleting}

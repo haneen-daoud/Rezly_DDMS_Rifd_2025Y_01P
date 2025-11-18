@@ -190,19 +190,18 @@ export default function Sidebar({
       {/* تسجيل الخروج */}
       <div className="mt-auto pt-5 border-t border-[#eee]">
         <button
-  onClick={() => {
-    // 🔥 امسحي كل شيء له علاقة بتسجيل الدخول
-    localStorage.removeItem("token");
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("role");
-    localStorage.removeItem("currentUser");
+          onClick={() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("role");
+            localStorage.removeItem("currentUser");
 
-    // لو حابة كمان تمسحي كاش الحجوزات للمستخدم السابق:
-    // localStorage.removeItem("cachedBookings");
+            // لو حابة كمان تمسحي كاش الحجوزات للمستخدم السابق:
+            // localStorage.removeItem("cachedBookings");
 
-    navigate("/"); 
-    onClose && onClose();
-  }}
+            navigate("/");
+            onClose && onClose();
+          }}
           className="flex items-center gap-2 text-[14px] text-[#7E818C] hover:text-black transition-colors duration-200 w-full"
         >
           <svg

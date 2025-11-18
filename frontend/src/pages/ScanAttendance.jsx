@@ -14,14 +14,33 @@ export default function ScanAttendance() {
 
   // 🔁 دالة صغيرة تحدد وين نوجّه اليوزر بعد النجاح
   const redirectByRole = () => {
-    const role = localStorage.getItem("role"); // حسب اللي بتخزّلوه بجلسة اللوج إن
+    let role = null;
+
+    // نحاول نقرأ الدور من currentUser
+    const savedUser = localStorage.getItem("currentUser");
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        role = parsed.role;
+      } catch (e) {
+        console.error("خطأ في قراءة currentUser من localStorage:", e);
+      }
+    }
+
+    // لو مش مزبوط، نجرب نقرأ من key قديم لو موجود
+    if (!role) {
+      role = localStorage.getItem("role");
+    }
+
+    // ⭐ نخلي المقارنة lowerCase عشان لو إجى Member أو member
+    const normalizedRole = role ? role.toLowerCase() : null;
 
     let redirectPath = "/dashboard";
 
-    if (role === "Member") {
+    if (normalizedRole === "member") {
       redirectPath = "/user";
     } else {
-      // Admin, Coach, Accountant, Receptionist
+      // Admin, Coach, Accountant, Receptionist ...
       redirectPath = "/dashboard";
     }
 
@@ -40,7 +59,13 @@ export default function ScanAttendance() {
       }
 
       const token = localStorage.getItem("token");
-
+try {
+  const parts = token.split(".");
+  const payload = JSON.parse(atob(parts[1]));
+  console.log("📦 JWT PAYLOAD:", payload);
+} catch (e) {
+  console.log("❌ Failed to decode JWT", e);
+}
       // 🟥 لو مش مسجل دخول، نوديه على صفحة اللوج إن ونحفظ مكان الرجوع
       if (!token) {
         toast.error("يجب تسجيل الدخول أولاً.");
@@ -53,10 +78,34 @@ export default function ScanAttendance() {
         return;
       }
 
+      // ⭐⭐⭐ نجيب الرول من اللوكال ستوريج ونبعتها مع الطلب
+      let role = null;
+      const savedUser = localStorage.getItem("currentUser");
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+        } catch (e) {
+          console.error("خطأ في قراءة currentUser من localStorage:", e);
+        }
+      }
+
+      if (!role) {
+        role = localStorage.getItem("role");
+      }
+
       try {
+        // ⭐⭐ نضيف role في البودي لو موجود
+        const payload = {
+          qrType: type,
+        };
+
+        if (role) {
+          payload.role = role;
+        }
+
         const res = await axios.post(
           `${API_BASE}/attendance/scan`,
-          { qrType: type },
+          payload,
           {
             headers: {
               Authorization: `Bearer ${token}`,

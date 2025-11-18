@@ -27,9 +27,9 @@ export default function BookingCard({
   onChange,
 }) {
   if (!bookingGroup.length) return null;
-  const { setBookings } = useBookings();
-  const { role } = useBookings();
-  const isAdmin = (role || "").toLowerCase() === "admin";
+
+  // 🟣 نستخدم الكونتِكست عشان نعرف دور المستخدم الحالي + بياناته
+  const { setBookings, role, currentUser, isAdmin, isCoach } = useBookings();
 
   const booking = bookingGroup[0];
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -206,6 +206,17 @@ export default function BookingCard({
         "مدرب غير معروف";
     }
   }
+
+    // لو المستخدم الحالي مدرب، نستخدم اسمه من بيانات تسجيل الدخول
+  if (isCoach && currentUser) {
+    const fullName = `${currentUser.firstName || ""} ${
+      currentUser.lastName || ""
+    }`.trim();
+    if (fullName) {
+      coachName = fullName;
+    }
+  }
+
 
   const timeStart = upcomingSchedule?.timeStart || "غير محدد";
   const timeEnd = upcomingSchedule?.timeEnd || "";
@@ -597,18 +608,18 @@ export default function BookingCard({
                     <div className="my-[6px] mx-[6px] border-t border-[#D1D5DB]" />
 
                     {/* حذف */}
-                    {isAdmin && (
-                      <button
-                        onClick={() => {
-                          setShowDeleteModal(true);
-                          setOpenMenu(null);
-                        }}
-                        className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-red-600 transition-colors"
-                      >
-                        <DeleteIcon className="w-4 h-4" />
-                        حذف
-                      </button>
-                    )}
+                    {/* حذف - متاح لكل الأدوار */}
+<button
+  onClick={() => {
+    setShowDeleteModal(true);
+    setOpenMenu(null);
+  }}
+  className="flex items-center pr-1 gap-2 text-[13px] md:text-[14px] font-bold text-black hover:text-red-600 transition-colors"
+>
+  <DeleteIcon className="w-4 h-4" />
+  حذف
+</button>
+
                   </div>
                 );
               })(),

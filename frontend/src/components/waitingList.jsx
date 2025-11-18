@@ -3,7 +3,7 @@ import { XMarkIcon, CheckIcon } from "@heroicons/react/24/solid";
 
 const WaitingList = ({ items }) => {
     return (
-        <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-md p-4">
+        <div className="w-full max-w-md mx-auto bg-white rounded-lg font-Cairo p-4">
             {/* رأس القائمة */}
             <div className="flex items-center justify-between mb-4">
 
@@ -40,11 +40,11 @@ const WaitingList = ({ items }) => {
             </div>
 
             {/* قائمة العناصر */}
-            <div className="space-y-3">
+            <div className="space-y-2">
                 {items.map((item, index) => (
                     <div
                         key={index}
-                        className="flex items-center justify-between bg-gray-50 p-3 rounded-lg shadow-sm"
+                        className="flex items-center justify-between bg-gray-50 p-1 rounded-lg "
                     >
                         {/* أيقونات أقصى اليسار */}
                         <img
