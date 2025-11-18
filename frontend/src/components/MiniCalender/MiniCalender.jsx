@@ -14,6 +14,26 @@ const arLocale = {
 };
 registerLocale("ar", arLocale);
 
+const YEARS = [];
+for (let y = 2000; y <= 2035; y++) {
+  YEARS.push(y);
+}
+
+const MONTHS = [
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
+];
+
 export default function MiniCalender({
   currentDate,
   handleDateChange,
@@ -50,7 +70,6 @@ export default function MiniCalender({
     return map[nameOfDay] || nameOfDay?.charAt(0) || "";
   };
 
-  // إعداد القياسات حسب الصفحة
   const styleMap = {
     step2: {
       container:
@@ -65,15 +84,13 @@ export default function MiniCalender({
     calender: {
       container:
         "absolute top-[calc(100%)-27px] -left-[180px] z-50 w-[313px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
-
       inner: "flex flex-col w-full items-center py-3 px-4",
     },
     employee: {
-  container:
-    "absolute top-[10px] right-0 z-50 w-[343px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
-  inner: "flex flex-col w-full items-center py-3 px-4",
-},
-
+    container:
+      "absolute top-[calc(100%+8px)] right-0 z-50 w-full max-w-[343px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
+    inner: "flex flex-col w-full items-center py-3 px-4",
+  },
     default: {
       container:
         "absolute left-0 top-full mt-2 w-[500px] rounded-[12px] bg-white shadow-lg",
@@ -84,11 +101,19 @@ export default function MiniCalender({
   const styles = styleMap[variant] || styleMap.default;
 
   return (
-<div className={`${styles.container} ${variant === "employee" ? "employee-mini-calendar" : ""}`}>
+    <div
+      className={`${styles.container} ${
+        variant === "employee" ? "employee-mini-calendar" : ""
+      }`}
+    >
       <div className={styles.inner}>
         <DatePicker
           inline
           selected={tempDate}
+          onChange={(date) => setTempDate(date)}
+          locale="ar"
+          calendarClassName="calendar-inside ![&_.react-datepicker__day--today]:!top-0 ![&_.react-datepicker__day--today]:!relative"
+          formatWeekDay={formatWeekDay}
           dayClassName={(date) => {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -114,14 +139,12 @@ export default function MiniCalender({
                   "0"
                 )}`;
 
-            // إذا اليوم فعلاً عليه حجز
             if (normalizedHighlighted.includes(formatted)) {
               return selected
                 ? "!bg-[#D8B7F8] !text-white font-bold rounded-[6px]"
                 : "!bg-[var(--color-purple)] !text-white font-bold rounded-[6px]";
             }
 
-            // اليوم الحالي بدون حجز → لو hideTodayHighlight true ما نظهر تظليل
             if (
               formatted === todayStr &&
               !normalizedHighlighted.includes(formatted)
@@ -131,42 +154,70 @@ export default function MiniCalender({
                 : "!bg-[rgba(106,14,173,0.15)] !text-black font-semibold rounded-[6px]";
             }
 
-            // الأيام العادية
             return "text-black bg-transparent";
           }}
-          onChange={(date) => setTempDate(date)}
-          locale="ar"
-          calendarClassName="calendar-inside ![&_.react-datepicker__day--today]:!top-0 ![&_.react-datepicker__day--today]:!relative"
-          formatWeekDay={formatWeekDay}
-          renderCustomHeader={({ date, decreaseMonth, increaseMonth }) => (
-            <div className="flex items-center justify-between w-full mb-2">
-              <div
-                className="text-[14px] font-bold"
-                style={{ direction: "rtl" }}
-              >
-                {date.toLocaleDateString("ar-EG", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                type = "button"
-                  onClick={decreaseMonth}
-                  className="flex items-center justify-center w-[28px] h-[28px] rounded-[6px] bg-gray-200"
-                >
-                  <img src={RightArrowIcon} alt="prev" />
-                </button>
-                <button
-                type = "button"
-                  onClick={increaseMonth}
-                  className="flex items-center justify-center w-[28px] h-[28px] rounded-[6px] bg-gray-200"
-                >
-                  <img src={LeftArrowIcon} alt="next" />
-                </button>
-              </div>
-            </div>
-          )}
+          renderCustomHeader={({
+  date,
+  changeYear,
+  changeMonth,
+  decreaseMonth,
+  increaseMonth,
+}) => (
+  <div
+    className="mini-calendar-header flex items-center justify-between w-full mb-2"
+    style={{ direction: "rtl" }}
+  >
+    {/* حقل اختيار الشهر + حقل اختيار السنة */}
+    <div className="flex items-center gap-2">
+      <select
+        className="mini-calendar-header-select"
+        value={date.getMonth()}
+        onChange={(e) => changeMonth(Number(e.target.value))}
+      >
+        {MONTHS.map((month, idx) => (
+          <option key={month} value={idx}>
+            {month}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className="mini-calendar-header-select"
+        value={date.getFullYear()}
+        onChange={(e) => changeYear(Number(e.target.value))}
+      >
+        {YEARS.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* أسهم الشهر بس */}
+    <div className="flex items-center gap-1">
+      {/* شهر سابق */}
+      <button
+        type="button"
+        onClick={decreaseMonth}
+        className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200"
+        title="الشهر السابق"
+      >
+        <img src={RightArrowIcon} alt="prev-month" />
+      </button>
+
+      {/* شهر تالي */}
+      <button
+        type="button"
+        onClick={increaseMonth}
+        className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200"
+        title="الشهر التالي"
+      >
+        <img src={LeftArrowIcon} alt="next-month" />
+      </button>
+    </div>
+  </div>
+)}
         />
 
         <button

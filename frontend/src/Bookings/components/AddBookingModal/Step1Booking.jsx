@@ -45,42 +45,51 @@ export default function Step1Booking({
   }, [formData?.title]);
 
   // ====== جلب المدربين (فوري من الكاش، ثم تحديث بالخلفية) ======
-  useEffect(() => {
-    const loadCoachesInstantly = async () => {
-      try {
-        // من الـ localStorage لإظهار فوري
-        const local = JSON.parse(localStorage.getItem("allEmployees") || "[]");
-        if (Array.isArray(local) && local.length > 0) {
-          const formattedLocal = local.map((c) => ({
-            id: c._id || c.id,
-            name:
-              c.name ||
-              `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
-              "مدرب غير معروف",
-          }));
-          setCoaches(formattedLocal);
-        }
+useEffect(() => {
+  // لو لسه ما عرفنا الدور → ما نعمل ولا اشي
+  if (isCoach === null) return;
 
-        // تحديث من السيرفر بالخلفية
-        const remote = await getAllCoachesAPI();
-        if (Array.isArray(remote) && remote.length > 0) {
-          const formattedRemote = remote.map((c) => ({
-            id: c._id || c.id,
-            name:
-              c.name ||
-              `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
-              "مدرب غير معروف",
-          }));
-          setCoaches(formattedRemote);
-          localStorage.setItem("allEmployees", JSON.stringify(remote));
-        }
-      } catch (err) {
-        console.error("[Step1Booking] فشل جلب المدربين:", err);
+  // لو المستخدم الحالي مدرب → ما في داعي نجيب قائمة المدربين
+  if (isCoach) {
+    setCoaches([]);
+    return;
+  }
+
+  const loadCoachesInstantly = async () => {
+    try {
+      // من الـ localStorage لإظهار فوري
+      const local = JSON.parse(localStorage.getItem("allEmployees") || "[]");
+      if (Array.isArray(local) && local.length > 0) {
+        const formattedLocal = local.map((c) => ({
+          id: c._id || c.id,
+          name:
+            c.name ||
+            `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
+            "مدرب غير معروف",
+        }));
+        setCoaches(formattedLocal);
       }
-    };
 
-    loadCoachesInstantly();
-  }, []); // :contentReference[oaicite:2]{index=2}
+      // تحديث من السيرفر بالخلفية
+      const remote = await getAllCoachesAPI();
+      if (Array.isArray(remote) && remote.length > 0) {
+        const formattedRemote = remote.map((c) => ({
+          id: c._id || c.id,
+          name:
+            c.name ||
+            `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
+            "مدرب غير معروف",
+        }));
+        setCoaches(formattedRemote);
+        localStorage.setItem("allEmployees", JSON.stringify(remote));
+      }
+    } catch (err) {
+      console.error("[Step1Booking] فشل جلب المدربين:", err);
+    }
+  };
+
+  loadCoachesInstantly();
+}, [isCoach]);
 
   // ====== جلب المشتركين (صفحة أولى فورًا + باقي الصفحات بالخلفية) ======
   useEffect(() => {
@@ -209,11 +218,22 @@ export default function Step1Booking({
   }, []);
 
   // ====== UI (نفس الشكل بالضبط) ======
+  // نحدد إذا في أخطاء ظاهرة عشان نفعّل السكرول بس وقتها
+  const hasErrors = errors && Object.values(errors).some(Boolean);
+
   return (
     <div className="flex justify-center bg-white w-full text-black text-[14px]">
-      {/* 🟣 سكرول حول الفورم فقط عشان لما تظهر الأخطاء ما ينزل زر "التالي" */}
-      <div className="w-[343px] max-h-[500px] overflow-y-auto overflow-x-hidden custom-scrollbar">
-      <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
+      {/* 🟣 سكرول حول الفورم بس لما يكون في أخطاء عشان زر "التالي" يضل مبين */}
+      <div
+        className={
+          "w-[343px]" +
+          (hasErrors
+            ? " max-h-[500px] overflow-y-auto overflow-x-hidden custom-scrollbar"
+            : "")
+        }
+      >
+        <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
+
         {/* اسم الحصة */}
         <div className="relative dropdown-step1">
           <label className="block font-bold text-sm mb-1">
@@ -386,30 +406,28 @@ export default function Step1Booking({
         </div>
 
         {/* المدرب */}
-{!isCoach && (
+{isCoach === false && (
   <>
     <div>
       <CoachSelector
         selectedCoach={formData.coach}
         setSelectedCoach={(coach) => {
           setFormData({ ...formData, coachId: coach.id, coach });
-          // نمسح خطأ coachId مش coach
           if (errors?.coachId) {
             setErrors((prev) => ({ ...prev, coachId: null }));
           }
         }}
         coachesList={coaches}
         placeholderColor="text-gray-400"
-        // نربط البوردر مع errors.coachId
         borderStyle={errors?.coachId ? "red" : "#D1D5DB"}
       />
     </div>
     {errors?.coachId && (
       <p className="text-red-500 text-xs mt-1 -mt-1">{errors.coachId}</p>
-
     )}
   </>
 )}
+
 
 
         {/* القاعة */}

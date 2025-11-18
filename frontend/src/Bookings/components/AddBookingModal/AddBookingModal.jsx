@@ -52,7 +52,11 @@ function convertToBackendTimeFormat(hhmm, fullDateTime) {
   return `${h}:${mStr} ${suffix}`;
 }
 
-export default function AddBookingModal({ onChange }) {
+export default function AddBookingModal({
+  onChange = () => {},
+  openEventName = "openAddBooking",
+  editEventName = "openBookingEdit",
+})  {
   const { setBookings } = useBookings();
 
   const [open, setOpen] = useState(false);
@@ -78,7 +82,7 @@ export default function AddBookingModal({ onChange }) {
 
   const [fullBookingData, setFullBookingData] = useState(null);
 
-  const [isCoach, setIsCoach] = useState(false);
+  const [isCoach, setIsCoach] = useState(null);
   const [coachId, setCoachId] = useState(null);
 
   const [allMembers, setAllMembers] = useState([]);
@@ -454,7 +458,7 @@ export default function AddBookingModal({ onChange }) {
     console.log("✅ تم تحديث formData للفردي:", updatedForm);
   };
 
-    // ✅ دوال مساعدة للتنسيق المحلي للتاريخ والوقت
+  // ✅ دوال مساعدة للتنسيق المحلي للتاريخ والوقت
   const pad2 = (n) => String(n).padStart(2, "0");
   const formatLocalDate = (d) =>
     `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
@@ -466,15 +470,7 @@ export default function AddBookingModal({ onChange }) {
     if (!baseDateStr) return new Date();
     const [y, mo, d] = baseDateStr.split("-").map(Number); // YYYY-MM-DD
     const [h, m] = (hhmm || "09:00").split(":").map(Number); // HH:mm
-    return new Date(
-      y || 1970,
-      (mo || 1) - 1,
-      d || 1,
-      h || 0,
-      m || 0,
-      0,
-      0
-    );
+    return new Date(y || 1970, (mo || 1) - 1, d || 1, h || 0, m || 0, 0, 0);
   };
 
   // ✅ تحويل reminders لصيغة الباك إند:
@@ -532,9 +528,7 @@ export default function AddBookingModal({ onChange }) {
     });
   }
 
-
-
-    const buildRequestBodyForBackend = () => {
+  const buildRequestBodyForBackend = () => {
     // خريطة اليوم عربي → رقم يوم الأسبوع (حسب JS)
     const dayToIndex = {
       أحد: 0,
@@ -617,7 +611,6 @@ export default function AddBookingModal({ onChange }) {
     console.log("📤 requestBody to backend:", requestBody);
     return requestBody;
   };
-
 
   // الحفظ
   const handleSubmit = async (e) => {
@@ -734,7 +727,6 @@ export default function AddBookingModal({ onChange }) {
           maxMembers: Number(formData.maxMembers) || 0,
           reminders: transformRemindersForCreateOrGroup(formData),
 
-
           members: Array.isArray(formData.members)
             ? [
                 ...new Set(
@@ -839,26 +831,27 @@ export default function AddBookingModal({ onChange }) {
         };
 
         // ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت هذا اليوم (formData.start)
-const remindersSingle = Array.isArray(formData.reminders)
-  ? formData.reminders.map((r) => {
-      if (typeof r === "string") return r;
-      if (typeof r === "object" && typeof r.hoursBefore === "number") {
-  const base = new Date(formData.start); // "YYYY-MM-DDTHH:mm" تُفهم محليًا
-  const reminderDate = new Date(base.getTime() - r.hoursBefore * 60 * 60 * 1000);
-  const y = reminderDate.getFullYear();
-const mo = String(reminderDate.getMonth() + 1).padStart(2, "0");
-const d = String(reminderDate.getDate()).padStart(2, "0");
-const hh = String(reminderDate.getHours()).padStart(2, "0");
-const mm = String(reminderDate.getMinutes()).padStart(2, "0");
+        const remindersSingle = Array.isArray(formData.reminders)
+          ? formData.reminders.map((r) => {
+              if (typeof r === "string") return r;
+              if (typeof r === "object" && typeof r.hoursBefore === "number") {
+                const base = new Date(formData.start); // "YYYY-MM-DDTHH:mm" تُفهم محليًا
+                const reminderDate = new Date(
+                  base.getTime() - r.hoursBefore * 60 * 60 * 1000
+                );
+                const y = reminderDate.getFullYear();
+                const mo = String(reminderDate.getMonth() + 1).padStart(2, "0");
+                const d = String(reminderDate.getDate()).padStart(2, "0");
+                const hh = String(reminderDate.getHours()).padStart(2, "0");
+                const mm = String(reminderDate.getMinutes()).padStart(2, "0");
 
-return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
+                return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
+              }
 
-}
-
-      if (typeof r === "object" && r.date && r.time) return r;
-      return r;
-    })
-  : [];
+              if (typeof r === "object" && r.date && r.time) return r;
+              return r;
+            })
+          : [];
 
         // ⚡ نرسلها داخل مصفوفة schedules
         const updateBody = {
@@ -870,7 +863,6 @@ return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
           location: formData.location || formData.room || "",
           maxMembers: Number(formData.maxMembers) || 0,
           reminders: remindersSingle,
-
 
           timeStart: toArabic12h(formData.start?.split("T")[1]?.slice(0, 5)),
           timeEnd: toArabic12h(formData.end?.split("T")[1]?.slice(0, 5)),
@@ -958,15 +950,20 @@ return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
     }
   };
 
-  // فتح المودال من الخارج (زر إضافة)
-  useEffect(() => {
+    // فتح المودال من الخارج (زر إضافة)
+    useEffect(() => {
+    if (!openEventName) return;
+
     const handleOpenAdd = () => handleOpen();
-    window.addEventListener("openAddBooking", handleOpenAdd);
-    return () => window.removeEventListener("openAddBooking", handleOpenAdd);
-  }, []);
+    window.addEventListener(openEventName, handleOpenAdd);
+
+    return () => window.removeEventListener(openEventName, handleOpenAdd);
+  }, [openEventName]);
 
   // فتح للتعديل (من 3 نقاط على الكارت)
   useEffect(() => {
+    if (!editEventName) return;
+
     const handleOpenEdit = (event) => {
       const booking = event.detail;
       if (!booking) return;
@@ -1035,9 +1032,9 @@ return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
       );
     };
 
-    window.addEventListener("openBookingEdit", handleOpenEdit);
-    return () => window.removeEventListener("openBookingEdit", handleOpenEdit);
-  }, []);
+     window.addEventListener(editEventName, handleOpenEdit);
+    return () => window.removeEventListener(editEventName, handleOpenEdit);
+  }, [editEventName]);
 
   useEffect(() => {
     // كل ما تتغير بيانات الحجز أو تتبدل الحالة (فتح/تعديل جديد)
@@ -1045,9 +1042,8 @@ return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
     setShowCalendar(false);
   }, [formData, isEditing]);
 
-    // 🟣 وقت الأساس لحساب التذكير في Step2 (نفس منطق التحويل للبك تقريباً)
-  const baseDateTimeForStep2 =
-  formData?.start
+  // 🟣 وقت الأساس لحساب التذكير في Step2 (نفس منطق التحويل للبك تقريباً)
+  const baseDateTimeForStep2 = formData?.start
     ? formData.start
     : formData?.dateOnly &&
       Array.isArray(formData.daysSchedule) &&
@@ -1056,10 +1052,9 @@ return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
     ? `${formData.dateOnly}T${formData.daysSchedule[0].start}:00`
     : null;
 
-    const normalizedBaseDateTime = baseDateTimeForStep2
-  ? new Date(baseDateTimeForStep2).toISOString()
-  : null;
-
+  const normalizedBaseDateTime = baseDateTimeForStep2
+    ? new Date(baseDateTimeForStep2).toISOString()
+    : null;
 
   return (
     <>
@@ -1291,7 +1286,6 @@ return { date: `${y}-${mo}-${d}`, time: `${hh}:${mm}` };
                   isIndividual={!!selectedBooking}
                   isEditing={isEditing}
                   baseDateTime={normalizedBaseDateTime}
-
                 />
               )}
 

@@ -1,4 +1,5 @@
 import React from "react";
+import User1 from "../img/User1.svg";
 
 export default function MembersNotes() {
   const notes = [
@@ -7,21 +8,21 @@ export default function MembersNotes() {
       date: "2025-11-2",
       note: "يتأخر دائماً" ,
       color: "red",
-      img: "https://i.pravatar.cc/100?img=6",
+      img: User1,
     },
     {
       name: "فاطمة علي",
       date: "2025-11-2",
       note: "طلب تجديد اشتراك",
       color: "#2084DB",
-      img: "https://i.pravatar.cc/100?img=6",
+      img: User1,
     },
     {
       name: "خالد محمد",
       date: "2025-11-2",
       note: "مشكلة في الدفع",
       color: "red",
-      img: "https://i.pravatar.cc/100?img=6",
+      img: User1,
     },
   ];
 
@@ -36,8 +37,8 @@ export default function MembersNotes() {
   };
 
   return (
-    <div className="w-full flex justify-center p-4 bg-gray-50  rtl text-right">
-      <div className="w-full max-w-xl bg-white p-4 rounded-2xl shadow-md">
+    <div className="w-full flex justify-center p-4   rtl text-right">
+      <div className="w-full max-w-xl bg-white p-4 rounded-2xl ">
 
         {/* عنوان + زر */}
         <div className="flex text-black items-center justify-between mb-4">

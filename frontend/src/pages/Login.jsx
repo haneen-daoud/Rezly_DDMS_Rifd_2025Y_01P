@@ -83,8 +83,15 @@ const currentUser = {
 localStorage.setItem("currentUser", JSON.stringify(currentUser));
 console.log("🔥 CURRENT USER SAVED:", currentUser);
 
-  // تحويل المستخدم
-  navigate("/dashboard", { replace: true });
+// 🔀 تحويل المستخدم حسب الرول
+let targetPath = "/dashboard";
+
+if (role && role.toLowerCase() === "member") {
+  targetPath = "/user";
+}
+
+navigate(targetPath, { replace: true });
+
 }
 
 

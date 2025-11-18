@@ -150,3 +150,40 @@
   margin: 0 !important;
   padding: 0 !important;
 }
+
+.mini-calendar-header-select {
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid #E5E7EB;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: 'Cairo', sans-serif;
+  background-color: #F9FAFB;
+  outline: none;
+  cursor: pointer;
+}
+
+/* تثبيت ارتفاع شبكة الأيام داخل الميني كاليندر */
+.calendar-inside .react-datepicker__month {
+  height: 213px !important;              /* نفس الارتفاع اللي متعودين عليه */
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+}
+
+/* نخلي كل أسبوع صف كامل يتوزع فيه الأيام */
+.calendar-inside .react-datepicker__week {
+  display: flex !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+/* الأيام تتكيّف مع ارتفاع الصف بدل ما يكون إلها ارتفاع ثابت */
+.calendar-inside .react-datepicker__day,
+.calendar-inside .react-datepicker__day--selected {
+  width: 38px !important;          /* زي ما هو */
+  height: 100% !important;         /* تاخد ارتفاع الصف */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}

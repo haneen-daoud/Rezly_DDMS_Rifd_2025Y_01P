@@ -26,6 +26,24 @@ export default function ClientsHeader({
   const navigate = useNavigate();
   const location = useLocation();
 
+  const [userRole, setUserRole] = React.useState(null);
+
+React.useEffect(() => {
+  try {
+    const savedUser = localStorage.getItem("currentUser");
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      const role = (parsed.role || "").toLowerCase();
+      setUserRole(role);
+    }
+  } catch (err) {
+    console.error("[ClientsHeader] فشل قراءة currentUser من localStorage:", err);
+  }
+}, []);
+
+const isCoach = userRole === "coach";
+
+
   // ✅ عند الضغط على تب → يغير التاب والرابط
   const handleTabClick = (tab) => {
     setActiveTab(tab.name);
@@ -107,27 +125,32 @@ export default function ClientsHeader({
         {/* زر الإضافة + العدادات */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
           {/* زر الإضافة */}
-          {(activeTab === "المشتركين" || activeTab === "الحجوزات") && (
-            <button
-              onClick={handleAddBookingClick}
-              className="
-                flex items-center justify-center gap-[8px]
-                bg-[var(--color-purple)] text-white 
-                w-full lg:w-[144px] h-[40px] sm:h-[32px]
-                rounded-lg transition
-                text-sm font-semibold font-Cairo
-              "
-            >
-              {activeTab === "المشتركين" ? (
-                <MembersIcon className="w-4 h-4" />
-              ) : (
-                <BookingIcon className="w-4 h-4" />
-              )}
-              <span>
-                {activeTab === "المشتركين" ? "إضافة مشترك" : "إضافة حجز"}
-              </span>
-            </button>
-          )}
+          {(
+  // في تبويب الحجوزات: الكل يقدر يضيف (أدمن + استقبال + مدرب)
+  activeTab === "الحجوزات" ||
+  // في تبويب المشتركين: بس لو مش مدرب
+  (activeTab === "المشتركين" && !isCoach)
+) && (
+  <button
+    onClick={handleAddBookingClick}
+    className="
+      flex items-center justify-center gap-[8px]
+      bg-[var(--color-purple)] text-white 
+      w-full lg:w-[144px] h-[40px] sm:h-[32px]
+      rounded-lg transition
+      text-sm font-semibold font-Cairo
+    "
+  >
+    {activeTab === "المشتركين" ? (
+      <MembersIcon className="w-4 h-4" />
+    ) : (
+      <BookingIcon className="w-4 h-4" />
+    )}
+    <span>
+      {activeTab === "المشتركين" ? "إضافة مشترك" : "إضافة حجز"}
+    </span>
+  </button>
+)}
 
           {/* زر الفلتر والعدادات (ديسكتوب) */}
           <div className="hidden md:flex items-center gap-3 w-full sm:w-auto">
