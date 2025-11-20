@@ -6,9 +6,19 @@ import Step3Employee from "./Step3Employee.jsx";
 import Step4Employee from "./Step4Employee.jsx";
 import { createEmployee, updateEmployee } from "../../api";
 import { toast } from "react-toastify";
-import { step1Schema, step2Schema, step3Schema, step4Schema } from "../../components/employeeValidation";
+import {
+  step1Schema,
+  step2Schema,
+  step3Schema,
+  step4Schema,
+} from "../../components/employeeValidation";
 
-const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) => {
+const AddEmployeeModel = ({
+  onClose,
+  onSave,
+  type = "add",
+  employeeData = {},
+}) => {
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,14 +45,18 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
   });
 
   useEffect(() => {
-    if (type === "edit" && employeeData && Object.keys(employeeData).length > 0) {
+    if (
+      type === "edit" &&
+      employeeData &&
+      Object.keys(employeeData).length > 0
+    ) {
       console.log(" البيانات الأصلية من السيرفر:", employeeData);
 
       setEmployeeDataState({
         _id: employeeData._id,
         firstName: employeeData.firstName || "",
         lastName: employeeData.lastName || "",
-        birthDate: employeeData.birthDate || "",
+        birthDate: employeeData.birthDate.slice(0, 10) || "",
         nationalId: employeeData.nationalId || "",
         gender: employeeData.gender || "",
         address: employeeData.address || "",
@@ -55,94 +69,100 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
         password: employeeData.password || "",
         role: employeeData.role || "",
         username: employeeData.username || "",
-        startDate: employeeData.startDate || "",
+        startDate: employeeData.startDate.slice(0, 10) || "",
       });
     }
   }, [type, employeeData]);
 
-  const steps = ["المعلومات الشخصية", "بيانات الاتصال", "المعلومات الوظيفية", "بيانات النظام"];
+  const steps = [
+    "المعلومات الشخصية",
+    "بيانات الاتصال",
+    "المعلومات الوظيفية",
+    "بيانات النظام",
+  ];
 
   const handleChange = (key, value) => {
     setEmployeeDataState((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async () => {
-  console.log(type === "add" ? " بدء الإضافة" : "🛠 بدء التعديل");
-  setIsLoading(true);
+    console.log(type === "add" ? "بدء الإضافة" : " بدء التعديل");
+    setIsLoading(true);
 
-  try {
-    const formData = new FormData();
-    Object.entries(employeeDataState).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== "") {
-        formData.append(key, value);
+    try {
+      const formData = new FormData();
+
+      Object.entries(employeeDataState).forEach(([key, value]) => {
+        // تجاهل الفاضي
+        if (value === null || value === undefined || value === "") return;
+
+        if (key === "image") {
+          // ما نبعت الصورة إلا إذا فعلاً ملف
+          if (value instanceof File) {
+            formData.append("image", value);
+          }
+        } else {
+          formData.append(key, value);
+        }
+      });
+
+      console.group("محتوى formData قبل الإرسال:");
+      for (const [key, value] of formData.entries()) {
+        console.log(`${key}`, value);
       }
-    });
+      console.groupEnd();
 
-    console.group(" محتوى formData قبل الإرسال:");
-    for (const [key, value] of formData.entries()) {
-      console.log(`${key}`, value);
-    }
-    console.groupEnd();
+      let res;
 
-    let res;
+      if (type === "add") {
+        // إضافة موظف جديد
+        res = await createEmployee(formData);
+        console.log("تمّت الإضافة بنجاح:", res);
 
-    if (type === "add") {
-      // ➜ إضافة موظف
-      res = await createEmployee(formData);
-      console.log("  تمّت الإضافة بنجاح:", res);
-      toast.success("تم إضافة الموظف بنجاح");
-
-      // لو بدك تحدث الليستة بعد الإضافة (للكرتات مثلاً)
-      if (onSave) {
+        // الموظف الجديد من الريسبونس
         const newEmployee =
           res?.data?.employee || res?.employee || res?.data || res;
-        onSave(newEmployee);
+
+        // أولاً: نحدّث قائمة الموظفين من خلال الـ parent
+        if (onSave) {
+          await onSave(newEmployee);
+        }
+
+        // بعد ما تتحدّث القائمة فعلياً، نعرض التوست
+        toast.success("تم إضافة الموظف بنجاح");
+      } else {
+        // ➜ تعديل موظف موجود
+        if (!employeeDataState._id) {
+          console.error("لا يوجد _id لتحديث الموظف");
+          setIsLoading(false);
+          toast.error("لم يتم حفظ التعديلات");
+          return;
+        }
+
+        res = await updateEmployee(employeeDataState._id, formData);
+        console.log("تمّ التعديل بنجاح:", res);
+        toast.success("تم تعديل بيانات الموظف بنجاح");
+
+        if (onSave) {
+          const updatedEmployee =
+            res?.data?.employee || res?.employee || res?.data || res;
+          onSave(updatedEmployee);
+        }
       }
-    } else {
-      // ➜ تعديل موظف
-      if (!employeeDataState._id) {
-        console.error("   لا يوجد _id لتحديث الموظف");
-        setIsLoading(false);
-        toast.error("لم يتم إضافة الموظف بنجاح ");
-        return;
-      }
 
-      res = await updateEmployee(employeeDataState._id, formData);
-      console.log("تمّ التعديل بنجاح:", res);
-      toast.success("تم تعديل بيانات الموظف بنجاح");
-
-      if (onSave) {
-        // نحاول نطلع الأوبجكت الحقيقي للموظف من الريسبونس
-        const updatedEmployee =
-          res?.data?.employee || // لو الباك رجع data.employee
-          res?.employee ||       // لو رجع employee مباشرة
-          res?.data ||           // لو رجع data فيها الموظف
-          res;                   // آخر حل
-
-        onSave(updatedEmployee);
-      }
-    }
-
-    setIsSubmitted(true);
-
-    setTimeout(() => {
       setIsLoading(false);
       onClose();
-    }, 100);
-  } catch (err) {
-    console.error("خطأ:", err.response?.data || err.message);
-    setIsLoading(false);
-  }
-};
-
+    } catch (err) {
+      console.error("خطأ:", err.response?.data || err.message);
+      setIsLoading(false);
+      toast.error("حدث خطأ أثناء حفظ بيانات الموظف");
+    }
+  };
 
   const step1Ref = React.useRef();
   const step2Ref = React.useRef();
   const step3Ref = React.useRef();
   const step4Ref = React.useRef();
-
-
-
 
   const handleNext = async () => {
     let isValid = false;
@@ -199,7 +219,9 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
           {!isLoading && isSubmitted ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <h3 className="text-[20px] font-bold text-[var(--color-purple)] mb-2">
-                {type === "add" ? "تمت الإضافة بنجاح!" : "تم حفظ التعديلات بنجاح!"}
+                {type === "add"
+                  ? "تمت الإضافة بنجاح!"
+                  : "تم حفظ التعديلات بنجاح!"}
               </h3>
               <p className="text-gray-600 mb-6">
                 {type === "add"
@@ -224,20 +246,22 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
                       onClick={() => setActiveStep(index)}
                     >
                       <div
-                        className={`w-[20px] h-[20px] flex items-center justify-center rounded-full text-xs font-medium border ${index < activeStep
-                          ? "border-[#6A0EAD] bg-[#6A0EAD] text-white"
-                          : index === activeStep
+                        className={`w-[20px] h-[20px] flex items-center justify-center rounded-full text-xs font-medium border ${
+                          index < activeStep
+                            ? "border-[#6A0EAD] bg-[#6A0EAD] text-white"
+                            : index === activeStep
                             ? "border-[#6A0EAD] text-[#6A0EAD]"
                             : "border-gray-300 text-gray-500"
-                          }`}
+                        }`}
                       >
                         {index < activeStep ? "✓" : index + 1}
                       </div>
                       <span
-                        className={`text-sm hidden sm:inline font-medium ${index <= activeStep
-                          ? "text-[var(--color-purple)]"
-                          : "text-gray-500"
-                          }`}
+                        className={`text-sm hidden sm:inline font-medium ${
+                          index <= activeStep
+                            ? "text-[var(--color-purple)]"
+                            : "text-gray-500"
+                        }`}
                       >
                         {step}
                       </span>
@@ -263,21 +287,27 @@ const AddEmployeeModel = ({ onClose, onSave, type = "add", employeeData = {} }) 
                 {activeStep === 1 && (
                   <Step2Employee
                     ref={step2Ref}
-                    data={employeeDataState} onChange={handleChange} errors={errors} />
+                    data={employeeDataState}
+                    onChange={handleChange}
+                    errors={errors}
+                  />
                 )}
                 {activeStep === 2 && (
                   <Step3Employee
                     ref={step3Ref}
-
-                    data={employeeDataState} onChange={handleChange} errors={errors} />
+                    data={employeeDataState}
+                    onChange={handleChange}
+                    errors={errors}
+                  />
                 )}
                 {activeStep === 3 && (
                   <Step4Employee
                     ref={step4Ref}
-
-                    data={employeeDataState} onChange={handleChange} errors={errors} />
+                    data={employeeDataState}
+                    onChange={handleChange}
+                    errors={errors}
+                  />
                 )}
-
               </div>
 
               {/* أزرار التنقل */}

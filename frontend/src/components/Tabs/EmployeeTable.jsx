@@ -11,7 +11,8 @@ export default function EmployeeTable({ employees = [], loading = false, onDelet
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // فتح مودال التعديل
@@ -96,7 +97,10 @@ export default function EmployeeTable({ employees = [], loading = false, onDelet
               </td>
             </tr>
           ) : (
-            employees.map((emp) => (
+              [...employees]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map((emp) => (
+
               <tr key={emp._id}>
                 <td>
                   <input
@@ -172,19 +176,39 @@ export default function EmployeeTable({ employees = [], loading = false, onDelet
         </tbody>
       </table>
 
-      {/* Delete Modal */}
+            {/* Delete Modal */}
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={() => {
-          toggleEmployeeStatus(selectedEmployee._id, false);
-          onDelete(selectedEmployee._id);
+        isLoading={isDeleting} // 👈 نمرّر حالة اللودر للمودال
+        onClose={() => {
+          if (isDeleting) return; // ما نسمح بإغلاق المودال أثناء الحذف
           setIsDeleteModalOpen(false);
+        }}
+        onConfirm={async () => {
+          try {
+            setIsDeleting(true); // تشغيل اللودر
+
+            // استدعاء الـ API للحذف (تعطيل الموظف)
+            await toggleEmployeeStatus(selectedEmployee._id, false);
+
+            // تحديث بيانات الجدول من الأب
+            if (onDelete) {
+              onDelete(selectedEmployee._id);
+            }
+
+            setIsDeleteModalOpen(false); // إغلاق المودال بعد الحذف
+          } catch (error) {
+            console.error("خطأ أثناء حذف الموظف:", error);
+            toast.error("تعذر حذف الموظف، حاول مرة أخرى");
+          } finally {
+            setIsDeleting(false); // إطفاء اللودر مهما صار
+          }
         }}
         employeeName={`${selectedEmployee?.firstName} ${selectedEmployee?.lastName}`}
         itemType="الموظف"
         itemPosition={selectedEmployee?.jobTitle}
       />
+
 
       {/* Edit Modal */}
       {isEditModalOpen && selectedEmployee && (

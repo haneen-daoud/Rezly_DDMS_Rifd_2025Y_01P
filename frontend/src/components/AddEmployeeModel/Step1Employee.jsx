@@ -3,11 +3,11 @@ import { step1Schema } from "../employeeValidation.js";
 import Select from "react-select";
 import selectStyles from "../selectStyles.js";
 import CalenderIcon from "../../icons/calender.svg?react";
-
 import MiniCalender from "../MiniCalender/MiniCalender.jsx";
+
 const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
   const [localErrors, setLocalErrors] = useState({});
-  const [showCalendar, setShowCalendar] = useState(false); // 👈 فتح/إغلاق الكاليندر
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const genderOptions = [
     { value: "ذكر", label: "ذكر" },
@@ -62,7 +62,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
   return (
     <div className="flex justify-center bg-white w-full relative">
       <form className="w-[343px] flex flex-col gap-2 font-[Cairo] relative">
-        {/* ------------------- الاسم الأول ------------------- */}
+        {/* الاسم الأول + الثاني */}
         <div className="flex gap-3 align-item-center">
           <div className="flex-1">
             <label className="block text-[14px] font-[700] text-black mb-1.5">
@@ -87,7 +87,6 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
             )}
           </div>
 
-          {/* ------------------- الاسم الثاني ------------------- */}
           <div className="flex-1">
             <label className="block text-[14px] font-[700] text-black mb-1.5">
               الاسم الثاني <span className="text-red-500">*</span>
@@ -112,12 +111,11 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
           </div>
         </div>
 
-        {/* ------------------- الجنس ------------------- */}
+        {/* الجنس */}
         <div>
           <label className="block text-[14px] font-[700] text-black mb-1.5">
             الجنس <span className="text-red-500">*</span>
           </label>
-
           <Select
             options={genderOptions}
             value={genderOptions.find((o) => o.value === data.gender)}
@@ -126,7 +124,6 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
             styles={selectStyles}
             isRtl={true}
           />
-
           {combinedErrors.gender && (
             <p className="text-red-500 text-[11px] mt-1">
               {combinedErrors.gender}
@@ -134,7 +131,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
           )}
         </div>
 
-        {/* ------------------- رقم الهوية ------------------- */}
+        {/* رقم الهوية */}
         <div>
           <label className="block text-[14px] font-[700] text-black mb-1.5">
             رقم الهوية
@@ -151,7 +148,6 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
                   : "border-gray-300 focus:ring-purple-500"
               }`}
           />
-
           {combinedErrors.nationalId && (
             <p className="text-red-500 text-[11px] mt-1">
               {combinedErrors.nationalId}
@@ -159,60 +155,52 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
           )}
         </div>
 
-        {/* ------------------- تاريخ الميلاد + MiniCalender ------------------- */}
+        {/* تاريخ الميلاد + MiniCalender */}
         <div className="relative">
           <label className="block text-[14px] font-[700] text-black mb-1.5">
             تاريخ الميلاد
           </label>
 
-          {/* ◀️ الحقل الجديد (div بدل input) */}
           <div
             onClick={() => setShowCalendar(!showCalendar)}
             className={`w-full flex items-center gap-2 border rounded-xl px-3 py-2.5 cursor-pointer 
-      text-[12px] placeholder-[#7E818C] 
-      ${combinedErrors.birthDate ? "border-red-500" : "border-gray-300"}
-      focus-within:ring-2 ${
-        combinedErrors.birthDate
-          ? "focus-within:ring-red-400"
-          : "focus-within:ring-purple-500"
-      }
-    `}
+              text-[12px] placeholder-[#7E818C] 
+              ${combinedErrors.birthDate ? "border-red-500" : "border-gray-300"}
+              focus-within:ring-2 ${
+                combinedErrors.birthDate
+                  ? "focus-within:ring-red-400"
+                  : "focus-within:ring-purple-500"
+              }
+            `}
           >
-            {/* أيقونة الكاليندر */}
-
             <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
-
-            {/* placeholder أو التاريخ */}
             <span className={data.birthDate ? "text-black" : "text-[#7E818C]"}>
               {data.birthDate || "اختر تاريخ الميلاد"}
             </span>
           </div>
 
-          {/* رسالة الخطأ */}
-{combinedErrors.birthDate && (
-  <p className="text-red-500 text-[11px] mt-1">
-    {combinedErrors.birthDate}
-  </p>
-)}
+          {combinedErrors.birthDate && (
+            <p className="text-red-500 text-[11px] mt-1">
+              {combinedErrors.birthDate}
+            </p>
+          )}
 
-{/* 🌟 الميني كاليندر */}
-{showCalendar && (
-  <MiniCalender
-    currentDate={
-      data.birthDate ? new Date(data.birthDate) : new Date()
-    }
-    variant="employee"
-    handleDateChange={(date) => {
-      const iso = date.toISOString().split("T")[0];
-      handleChange("birthDate", iso);
-      setShowCalendar(false);
-    }}
-  />
-)}
-
+          {showCalendar && (
+            <MiniCalender
+              currentDate={
+                data.birthDate ? new Date(data.birthDate) : new Date()
+              }
+              variant="employee"
+              handleDateChange={(date) => {
+                const iso = date.toISOString().split("T")[0];
+                handleChange("birthDate", iso);
+                setShowCalendar(false);
+              }}
+            />
+          )}
         </div>
 
-        {/* ------------------- صورة الملف ------------------- */}
+        {/* صورة الملف الشخصي */}
         <div>
           <label className="block text-[14px] font-[700] text-black mb-1.5">
             صورة الملف الشخصي

@@ -31,7 +31,7 @@ export default function ParticipantsSelector({
   }, [open]);
 
   // المشتركين المسجلين حاليًا في هذا الحجز
-    // فقط المشتركين الفعّالين (بدون _tempRemoved)
+  // فقط المشتركين الفعّالين (بدون _tempRemoved)
   const currentIds = useMemo(
     () =>
       Array.isArray(booking?.members)
@@ -41,7 +41,6 @@ export default function ParticipantsSelector({
         : [],
     [booking?.members]
   );
-
 
   const effectiveMembersList = booking._localMembersList || membersList;
 
@@ -82,14 +81,39 @@ export default function ParticipantsSelector({
   }, [booking.members, effectiveMembersList]);
 
   const handleSearch = async (term) => {
-    if (!term.trim()) {
+    const q = term.trim();
+
+    if (!q) {
       setAllMembers([]);
       return;
     }
+
     setLoading(true);
     try {
-      const members = await searchMembersAPI(term);
-      setAllMembers(members);
+      const members = await searchMembersAPI(q);
+
+      const normalized = q.toLowerCase();
+
+      // فلترة محلية حسب الاسم واليوزر نيم وأشياء ثانية
+      const filtered = members.filter((m) => {
+        const firstName = (m.firstName || "").toLowerCase();
+        const lastName = (m.lastName || "").toLowerCase();
+        const fullName = `${firstName} ${lastName}`.trim();
+        const userName = (m.userName || "").toLowerCase();
+        const phone = (m.phone || "").toLowerCase();
+        const idNumber = (m.idNumber || "").toLowerCase();
+
+        return (
+          firstName.includes(normalized) ||
+          lastName.includes(normalized) ||
+          fullName.includes(normalized) ||
+          userName.includes(normalized) ||
+          phone.includes(normalized) ||
+          idNumber.includes(normalized)
+        );
+      });
+
+      setAllMembers(filtered);
     } catch (err) {
       toast.error("حدث خطأ أثناء البحث عن المشتركين");
     } finally {
@@ -100,86 +124,88 @@ export default function ParticipantsSelector({
   // كل ما تغيّر البحث، نبدأ الجلب بعد نصف ثانية
   useEffect(() => {
     const delay = setTimeout(() => {
-      if (search) handleSearch(search);
+      if (search.trim()) {
+        handleSearch(search);
+      } else {
+        setAllMembers([]);
+      }
     }, 500);
+
     return () => clearTimeout(delay);
   }, [search]);
 
-   // تفعيل وإلغاء المشترك مؤقتًا (إضافة أو إزالة)
+  // تفعيل وإلغاء المشترك مؤقتًا (إضافة أو إزالة)
   const toggleMember = (member) => {
-  const id = member.id || member._id;
+    const id = member.id || member._id;
 
-  setBooking((prev) => {
-    let list = Array.isArray(prev.members) ? [...prev.members] : [];
+    setBooking((prev) => {
+      let list = Array.isArray(prev.members) ? [...prev.members] : [];
 
-    const getId = (m) =>
-      typeof m === "object" ? m.id || m._id : m;
+      const getId = (m) => (typeof m === "object" ? m.id || m._id : m);
 
-    let exists = list.find((m) => getId(m) === id);
+      let exists = list.find((m) => getId(m) === id);
 
-    const activeCount = list.filter((m) => !m._tempRemoved).length;
-    const max = prev.maxMembers || Infinity;
+      const activeCount = list.filter((m) => !m._tempRemoved).length;
+      const max = prev.maxMembers || Infinity;
 
-    // ======================
-    // 🟣 1) العضو موجود ولكن "محذوف مؤقتاً" (_tempRemoved)
-    // → رجّعيه فعال + صح ✓
-    // ======================
-    if (exists && exists._tempRemoved) {
+      // ======================
+      // 1) العضو موجود ولكن "محذوف مؤقتاً" (_tempRemoved)
+      // → رجّعه فعال + صح ✓
+      // ======================
+      if (exists && exists._tempRemoved) {
+        if (activeCount >= max) {
+          toast.warning(`لا يمكن إضافة أكثر من ${max} مشترك`);
+          return prev;
+        }
+
+        return {
+          ...prev,
+          members: list.map((m) =>
+            getId(m) === id ? { ...m, _tempRemoved: false } : m
+          ),
+        };
+      }
+
+      // ======================
+      // 2) العضو موجود ومفعّل حالياً → اشطبه مؤقتًا
+      // ======================
+      if (exists && !exists._tempRemoved) {
+        return {
+          ...prev,
+          members: list.map((m) =>
+            getId(m) === id ? { ...m, _tempRemoved: true } : m
+          ),
+        };
+      }
+
+      // ======================
+      // 3) إضافة عضو جديد بالكامل
+      // ======================
       if (activeCount >= max) {
         toast.warning(`لا يمكن إضافة أكثر من ${max} مشترك`);
         return prev;
       }
 
+      const full = membersList.find(
+        (mm) => String(mm._id) === String(id) || String(mm.id) === String(id)
+      );
+
+      const newMember = {
+        id,
+        name:
+          full?.name ||
+          `${full?.firstName || ""} ${full?.lastName || ""}`.trim() ||
+          full?.userName ||
+          "مشترك بدون اسم",
+        _tempRemoved: false,
+      };
+
       return {
         ...prev,
-        members: list.map((m) =>
-          getId(m) === id ? { ...m, _tempRemoved: false } : m
-        ),
+        members: [...list, newMember],
       };
-    }
-
-    // ======================
-    // 🟣 2) العضو موجود ومفعّل حالياً → اشطبيه مؤقتًا
-    // ======================
-    if (exists && !exists._tempRemoved) {
-      return {
-        ...prev,
-        members: list.map((m) =>
-          getId(m) === id ? { ...m, _tempRemoved: true } : m
-        ),
-      };
-    }
-
-    // ======================
-    // 🟣 3) إضافة عضو جديد بالكامل
-    // ======================
-    if (activeCount >= max) {
-      toast.warning(`لا يمكن إضافة أكثر من ${max} مشترك`);
-      return prev;
-    }
-
-    const full = membersList.find(
-      (mm) =>
-        String(mm._id) === String(id) ||
-        String(mm.id) === String(id)
-    );
-
-    const newMember = {
-      id,
-      name:
-        full?.name ||
-        `${full?.firstName || ""} ${full?.lastName || ""}`.trim() ||
-        full?.userName ||
-        "مشترك بدون اسم",
-      _tempRemoved: false,
-    };
-
-    return {
-      ...prev,
-      members: [...list, newMember],
-    };
-  });
-};
+    });
+  };
 
   const addNewMemberLocally = (member) => {
     if (!member) return;
@@ -206,14 +232,13 @@ export default function ParticipantsSelector({
     setBooking((prev) => {
       const already = prev.members?.some((m) => m === id || m.id === id);
       if (already) return prev;
-            return {
+      return {
         ...prev,
         members: [
           ...(prev.members || []),
           { id, name: displayName, _tempRemoved: false },
         ],
       };
-
     });
 
     toast.success(`تمت إضافة ${displayName} مؤقتًا`);
@@ -341,7 +366,7 @@ export default function ParticipantsSelector({
           >
             {currentIds.length > 0
               ? `${currentIds.length} مشترك${currentIds.length > 1 ? "ين" : ""}`
-              : "لا يوجد مشتركين"}
+              : "لا يوجد مشتركين مضافين لهذا الحجز"}
           </span>
 
           <AddCircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
@@ -413,47 +438,46 @@ export default function ParticipantsSelector({
                         key={id}
                         className="flex items-center justify-between h-[36px] px-3 py-1 cursor-pointer hover:bg-gray-50"
                         onClick={(e) => {
-  e.stopPropagation();
+                          e.stopPropagation();
 
-  // 👇 نفس الـ id اللي فوق
-  const memberId = m._id || m.id;
+                          // 👇 نفس الـ id اللي فوق
+                          const memberId = m._id || m.id;
 
-  if (isSelected) {
-    // كان مضاف وعليه صح → نشيله (نحط _tempRemoved = true)
-    toggleMember(m);
+                          if (isSelected) {
+                            // كان مضاف وعليه صح → نشيله (نحط _tempRemoved = true)
+                            toggleMember(m);
 
-    setAllMembers((prev) =>
-      prev.map((mm) =>
-        mm.id === memberId || mm._id === memberId
-          ? { ...mm, _tempRemoved: true }
-          : mm
-      )
-    );
-  } else if (isRemoved) {
-    // كان محذوف مؤقتًا → نرجّعه فعّال (_tempRemoved = false)
-    toggleMember(m);
+                            setAllMembers((prev) =>
+                              prev.map((mm) =>
+                                mm.id === memberId || mm._id === memberId
+                                  ? { ...mm, _tempRemoved: true }
+                                  : mm
+                              )
+                            );
+                          } else if (isRemoved) {
+                            // كان محذوف مؤقتًا → نرجّعه فعّال (_tempRemoved = false)
+                            toggleMember(m);
 
-    setAllMembers((prev) =>
-      prev.map((mm) =>
-        mm.id === memberId || mm._id === memberId
-          ? { ...mm, _tempRemoved: false }
-          : mm
-      )
-    );
-  } else {
-    // أول مرة ينضاف
-    addNewMemberLocally(m);
+                            setAllMembers((prev) =>
+                              prev.map((mm) =>
+                                mm.id === memberId || mm._id === memberId
+                                  ? { ...mm, _tempRemoved: false }
+                                  : mm
+                              )
+                            );
+                          } else {
+                            // أول مرة ينضاف
+                            addNewMemberLocally(m);
 
-    setAllMembers((prev) =>
-      prev.map((mm) =>
-        mm.id === memberId || mm._id === memberId
-          ? { ...mm, _tempRemoved: false }
-          : mm
-      )
-    );
-  }
-}}
-
+                            setAllMembers((prev) =>
+                              prev.map((mm) =>
+                                mm.id === memberId || mm._id === memberId
+                                  ? { ...mm, _tempRemoved: false }
+                                  : mm
+                              )
+                            );
+                          }
+                        }}
                       >
                         <div className="flex items-center gap-2">
                           {isSelected ? (
@@ -509,7 +533,7 @@ export default function ParticipantsSelector({
                         e.stopPropagation();
                         toggleMember(m);
                       }}
-                      className="flex items-center justify-between h-[36px] px-3 py-1 cursor-pointer hover:bg-gray-50 transition-colors select-none"
+                      className="flex items-center justify-between h-[36px] px-3 py-1 cursor-pointer hover:bg-gray-50 transition-colors select-none custom-scrollbar"
                     >
                       <span
                         className={`flex-1 ${

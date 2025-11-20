@@ -29,8 +29,15 @@ export default function BookingsList({ bookings = [], loading, onChange }) {
     return <div className="text-center py-12 text-gray-500">لا توجد حجوزات حالياً</div>;
   }
 
-  // 🔹 تجميع الحجوزات حسب groupId
-  const groupedBookings = bookings.reduce((acc, booking) => {
+    // 🔹 أولاً: نرتّب الحجوزات تنازلي حسب createdAt (أحدث حجز بالأول)
+  const sortedBookings = [...bookings].sort((a, b) => {
+    const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA; // تنازلي: الأحدث → الأقدم
+  });
+
+  // 🔹 بعدين نجمّع الحجوزات حسب groupId
+  const groupedBookings = sortedBookings.reduce((acc, booking) => {
     const groupId = booking.groupId || booking._id; // fallback إذا ما في groupId
     if (!acc[groupId]) acc[groupId] = [];
     acc[groupId].push(booking);
@@ -39,7 +46,6 @@ export default function BookingsList({ bookings = [], loading, onChange }) {
 
   // 🔹 تحويلها لمصفوفة قابلة للعرض
   const groupedArray = Object.values(groupedBookings);
-console.log("📦 الحجوزات اللي داخل BookingList:", bookings);
 
   return (
   <div

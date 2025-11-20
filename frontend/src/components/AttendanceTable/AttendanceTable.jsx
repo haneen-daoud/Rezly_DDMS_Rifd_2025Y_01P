@@ -46,11 +46,11 @@ const AttendanceTable = () => {
               <td className="table-text">{row.name}</td>
               <td className="table-text">{row.inTime}</td>
               <td className="table-text">{row.outTime}</td>
-              <td>
-                <span className={`status-badge ${getStatusClass(row.status)}`}>
+              <div className="table-text p-2" >
+                <div className={`status-badge py-1 text-white text-[11px] font-semibold rounded-full  ${getStatusClass(row.status)}`}>
                   {row.status}
-                </span>
-              </td>
+</div>
+              </div>
             </tr>
           ))}
         </tbody>

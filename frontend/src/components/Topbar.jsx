@@ -7,9 +7,8 @@ import NotificationIcon from "../icons/notification.svg?react";
 import DownVectorIcon from "../icons/downVector.svg?react";
 
 export default function Topbar({ title, onMenuClick, user }) {
-
   const roleArabic = {
-    admin: "أدمن",
+    admin: "آدمن",
     coach: "مدرب",
     receptionist: "استقبال",
     accountant: "محاسب",
@@ -18,6 +17,9 @@ export default function Topbar({ title, onMenuClick, user }) {
 
   const userName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
   const userRole = roleArabic[user?.role?.toLowerCase()] || "مستخدم";
+
+  // 👇 لو عنده صورة من الداتا استعمليها، غير هيك استعملي الصورة الثابتة كباك أب
+  const avatarSrc = user?.image || AdminImg;
 
   return (
     <>
@@ -42,16 +44,20 @@ export default function Topbar({ title, onMenuClick, user }) {
 
             <div className="relative">
               <PromotionIcon className="w-6 h-6 text-[var(--color-purple)]" />
+              {/*
               <span className="absolute -top-1 -right-0 bg-[var(--color-danger)] text-white text-[10px] px-1 rounded-full">
                 2
               </span>
+              */}
             </div>
 
             <div className="relative">
               <NotificationIcon className="w-6 h-6 text-[var(--color-purple)]" />
+              {/*
               <span className="absolute -top-1 -right-0 bg-[var(--color-danger)] text-white text-[10px] px-1 rounded-full">
                 4
               </span>
+              */}
             </div>
           </div>
 
@@ -70,10 +76,10 @@ export default function Topbar({ title, onMenuClick, user }) {
             </div>
 
             <img
-              src={AdminImg}
+              src={avatarSrc}
               width="40"
               height="40"
-              className="rounded-full"
+              className="rounded-full object-cover"
               alt="user"
             />
           </div>
@@ -94,9 +100,9 @@ export default function Topbar({ title, onMenuClick, user }) {
         <img src={Logo} alt="logo" className="w-24 h-auto" />
 
         <img
-          src={AdminImg}
+          src={avatarSrc}
           alt="user"
-          className="w-10 h-10 rounded-full border border-[#eee]"
+          className="w-10 h-10 rounded-full border border-[#eee] object-cover"
         />
       </header>
     </>

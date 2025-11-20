@@ -89,11 +89,11 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
             <p className="text-red-500 text-[11px] mt-1">{localErrors.email}</p>
           )}
         </div>
-   
+
         {/* العنوان */}
         <div>
           <label className="block text-[14px] font-[700] mb-1.5 text-black">
-            العنوان 
+            العنوان
           </label>
           <input
             type="text"
@@ -103,7 +103,6 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
             className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
               focus:outline-none focus:ring-2 `}
           />
-          
         </div>
       </form>
     </div>

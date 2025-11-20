@@ -1,5 +1,7 @@
 import React from "react";
 import { toggleEmployeeStatus } from "../api";
+import api from "../api";
+
 
 export default function EmployeeCard({ emp, onDelete }) {
   if (!emp) return null;
@@ -10,16 +12,18 @@ export default function EmployeeCard({ emp, onDelete }) {
   const jobTitle = emp.jobTitle || "غير محدد";
   const phoneNumber = emp.phoneNumber || "غير متوفر";
   const email = emp.email || "غير متوفر";
-  const image =
-  emp.image ||
-  (emp.gender === "أنثى"
-    ? "https://res.cloudinary.com/dpv0cupet/image/upload/v1759785455/Ellipse_51_mlh4nx.svg"
-    : emp.gender === "ذكر"
-    ? "https://res.cloudinary.com/dkawkb4d8/image/upload/v1760180324/Ellipse_51_1_efh4lk.svg"
-    : "https://res.cloudinary.com/dpv0cupet/image/upload/v1759785455/Ellipse_51_mlh4nx.svg");
- 
+  const image = emp.image
+  ? emp.image
+  : emp.gender === "أنثى"
+  ? "https://res.cloudinary.com/dpv0cupet/image/upload/v1759785455/Ellipse_51_mlh4nx.svg"
+  : emp.gender === "ذكر"
+  ? "https://res.cloudinary.com/dkawkb4d8/image/upload/v1760180324/Ellipse_51_1_efh4lk.svg"
+  : "https://res.cloudinary.com/dpv0cupet/image/upload/v1759785455/Ellipse_51_mlh4nx.svg";
+
+    
   return (
-    <div className="relative bg-white rounded-xl border p-4 h-[162px] w-[370px] border-[var(--color-cardborder)]">
+    <div className="relative bg-white rounded-xl border p-4 h-[162px] w-full max-w-[370px] border-[var(--color-cardborder)]">
+
       
 
       {/* القسم */}

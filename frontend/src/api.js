@@ -285,3 +285,54 @@ export const getAllCoaches = async () => {
   }
 };
 export default api;
+
+
+/*
+// إضافة مشترك جديد باستخدام Axios
+export const addNewMember = async (memberData) => {
+  try {
+    const formData = new FormData();
+
+    // إزالة الحقول اللي ما بدنا نبعتها للباك مثل الأصل
+    const {
+      sendMethod,
+      healthForm,
+      userName,
+      password,
+      fullName,
+      nationalId,
+      image, // رح نضيفه يدوي تحت
+      ...cleanData
+    } = memberData;
+
+    // أولاً: نضيف الحقول الباقية (cleanData) إلى formData
+    Object.entries(cleanData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        formData.append(key, value);
+      }
+    });
+
+    // ثانياً: لو فيه صورة نضيفها بشكل صحيح
+    if (memberData.image instanceof File) {
+      formData.append("image", memberData.image);
+    }
+
+    // إرسال الطلب كـ FormData بدلاً من JSON
+    const res = await api.post("/auth/addNewMember", formData, {
+      headers: {
+        Authorization: `Bearer ${FIXED_TOKEN}`,
+        // مهم جداً: لا نضيف Content-Type يدوياً
+        // axios automatically sets multipart/form-data with boundary
+      },
+    });
+
+    return res.data;
+  } catch (err) {
+    console.error(
+      "❌ خطأ أثناء إضافة المشترك:",
+      err.response?.data || err.message
+    );
+    throw err;
+  }
+};
+*/

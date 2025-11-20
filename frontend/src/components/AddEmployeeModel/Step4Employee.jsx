@@ -9,17 +9,16 @@ const Step4Employee = forwardRef(({ data, onChange }, ref) => {
 
   const handleChange = (field, value) => {
     onChange(field, value);
-    // يمكن تحقق field real-time
     if (errors[field]) {
       validateField(field, value);
     }
   };
-const roleOptions = [
-  { value: "Admin", label: "مدير" },
-  { value: "Coach", label: "مدرب" },
-  { value: "Accountant", label: "محاسب" },
-  { value: "Receptionist", label: "موظف استقبال" },
-];
+  const roleOptions = [
+    { value: "Admin", label: "مدير" },
+    { value: "Coach", label: "مدرب" },
+    { value: "Accountant", label: "محاسب" },
+    { value: "Receptionist", label: "موظف استقبال" },
+  ];
 
   const validateField = async (field, value) => {
     try {
@@ -55,7 +54,6 @@ const roleOptions = [
   return (
     <div className="flex justify-center bg-white w-full">
       <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
-
         {/* اسم المستخدم */}
         <div className="flex flex-col gap-2">
           <label className="text-[14px] font-[700] text-black">
@@ -101,44 +99,37 @@ const roleOptions = [
         </div>
 
         {/* مستوى الصلاحية */}
-<div className="flex flex-col gap-2">
-  <label className="text-[14px] font-[700] text-black">
-    مستوى الصلاحية<span className="text-red-500">*</span>
-  </label>
+        <div className="flex flex-col gap-2">
+          <label className="text-[14px] font-[700] text-black">
+            مستوى الصلاحية<span className="text-red-500">*</span>
+          </label>
 
-  <Select
-    options={roleOptions}
-    value={roleOptions.find((o) => o.value === data.role)}
-    onChange={(opt) => handleChange("role", opt.value)}
-    placeholder="اختر مستوى الصلاحية"
-    styles={selectStyles}
-    isRtl={true}
-  />
+          <Select
+            options={roleOptions}
+            value={roleOptions.find((o) => o.value === data.role)}
+            onChange={(opt) => handleChange("role", opt.value)}
+            placeholder="اختر مستوى الصلاحية"
+            styles={selectStyles}
+            isRtl={true}
+          />
 
-  {showErrors && errors.role && (
-    <p className="text-red-500 text-[11px] mt-1">{errors.role}</p>
-  )}
-</div>
-
+          {showErrors && errors.role && (
+            <p className="text-red-500 text-[11px] mt-1">{errors.role}</p>
+          )}
+        </div>
 
         {/* ملاحظات */}
         <div className="flex flex-col gap-2">
-          <label className="text-[14px] font-[700] text-black">
-            ملاحظات
-          </label>
-      <input
-  type="text"
-  placeholder="أضف ملاحظات"
-  value={data.notes || ""}
-  onChange={(e) => handleChange("notes", e.target.value)}
-  className="w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+          <label className="text-[14px] font-[700] text-black">ملاحظات</label>
+          <input
+            type="text"
+            placeholder="أضف ملاحظات"
+            value={data.notes || ""}
+            onChange={(e) => handleChange("notes", e.target.value)}
+            className="w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
               focus:outline-none focus:ring-2 border-gray-300 focus:ring-purple-500"
-/>
-
-
-
+          />
         </div>
-
       </form>
     </div>
   );

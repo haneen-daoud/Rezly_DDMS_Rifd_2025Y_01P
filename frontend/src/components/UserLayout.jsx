@@ -11,7 +11,7 @@ export default function UserLayout() {
     <div className="w-full min-h-screen flex bg-[#F8F8F8]">
       {/* Sidebar (ديسكتوب) */}
       <div className="hidden lg:block w-[22%] max-w-[280px]">
-        <UserSidebar onClose={() => setOpenSidebar(false)} />
+        <UserSidebar user={currentUser} onClose={() => setOpenSidebar(false)} />
       </div>
 
       {/* Drawer للموبايل */}
@@ -23,7 +23,7 @@ export default function UserLayout() {
           ></div>
 
           <div className="absolute top-0 right-0 h-full bg-white w-[212px] shadow-xl animate-slideIn">
-            <UserSidebar onClose={() => setOpenSidebar(false)} />
+            <UserSidebar user={currentUser} onClose={() => setOpenSidebar(false)} />
           </div>
         </div>
       )}

@@ -135,7 +135,9 @@ export default function Chart() {
   <div className="w-full h-[160px] sm:h-[200px] md:h-[230px]">
     <ResponsiveContainer width="100%" height="100%">
       {chartType === "line" ? (
-        <LineChart data={data}>
+        <LineChart data={data} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
+
+>
           <XAxis
             dataKey="day"
             interval={0}
