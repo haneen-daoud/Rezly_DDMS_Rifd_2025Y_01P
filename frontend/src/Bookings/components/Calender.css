@@ -205,3 +205,36 @@
 }
 
 
+/* ✅ في وضع الفل سكرين: نفعل السكرول العمودي لعرض كل الساعات لتحت */
+.calendar-fullscreen .fc-theme-standard .fc-scroller,
+.calendar-fullscreen .fc .fc-scroller,
+.calendar-fullscreen .fc-timegrid-slots,
+.calendar-fullscreen .fc-timegrid-body {
+  overflow-y: auto !important;
+}
+
+/* نترك السكرول الأفقي كما هو لو محتاجينه */
+.calendar-fullscreen .fc-timegrid-body {
+  overflow-x: auto !important;
+}
+
+/* الحاوية الأساسية */
+.calendar-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* وضع التوسيع داخل اللي أوت */
+.calendar-expanded {
+  height: calc(100vh - 120px); /* بدون ما يغطي التوب بار */
+  overflow: hidden; 
+}
+
+/* تفعيل السكرول داخل الكاليندر */
+.calendar-expanded .fc-scroller,
+.calendar-expanded .fc-timegrid-body,
+.calendar-expanded .fc-timegrid-slots {
+  overflow-y: auto !important;
+  max-height: calc(100vh - 200px); /* يضبط حسب الهيدر */
+}

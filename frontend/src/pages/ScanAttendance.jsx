@@ -12,7 +12,7 @@ export default function ScanAttendance() {
   const [status, setStatus] = useState("loading"); // loading | success | error
   const [message, setMessage] = useState("جاري معالجة الطلب...");
 
-  // 🔁 دالة صغيرة تحدد وين نوجّه اليوزر بعد النجاح
+  //دالة صغيرة تحدد وين نوجّه اليوزر بعد النجاح
   const redirectByRole = () => {
     let role = null;
 
@@ -32,7 +32,7 @@ export default function ScanAttendance() {
       role = localStorage.getItem("role");
     }
 
-    // ⭐ نخلي المقارنة lowerCase عشان لو إجى Member أو member
+    //نخلي المقارنة lowerCase عشان لو إجى Member أو member
     const normalizedRole = role ? role.toLowerCase() : null;
 
     let redirectPath = "/dashboard";
@@ -59,18 +59,17 @@ export default function ScanAttendance() {
       }
 
       const token = localStorage.getItem("token");
-try {
-  const parts = token.split(".");
-  const payload = JSON.parse(atob(parts[1]));
-  console.log("📦 JWT PAYLOAD:", payload);
-} catch (e) {
-  console.log("❌ Failed to decode JWT", e);
-}
-      // 🟥 لو مش مسجل دخول، نوديه على صفحة اللوج إن ونحفظ مكان الرجوع
+      try {
+        const parts = token.split(".");
+        const payload = JSON.parse(atob(parts[1]));
+        console.log("JWT PAYLOAD:", payload);
+      } catch (e) {
+        console.log("Failed to decode JWT", e);
+      }
+      //لو مش مسجل دخول، نوديه على صفحة اللوج إن ونحفظ مكان الرجوع
       if (!token) {
         toast.error("يجب تسجيل الدخول أولاً.");
-        const redirectUrl =
-          location.pathname + location.search; // /scan?type=CHECK_IN
+        const redirectUrl = location.pathname + location.search; // /scan?type=CHECK_IN
 
         navigate(`/login?redirect=${encodeURIComponent(redirectUrl)}`, {
           replace: true,
@@ -78,7 +77,7 @@ try {
         return;
       }
 
-      // ⭐⭐⭐ نجيب الرول من اللوكال ستوريج ونبعتها مع الطلب
+      //نجيب الرول من اللوكال ستوريج ونبعتها مع الطلب
       let role = null;
       const savedUser = localStorage.getItem("currentUser");
       if (savedUser) {
@@ -94,7 +93,7 @@ try {
       }
 
       try {
-        // ⭐⭐ نضيف role في البودي لو موجود
+        //نضيف role في البودي لو موجود
         const payload = {
           qrType: type,
         };
@@ -103,22 +102,18 @@ try {
           payload.role = role;
         }
 
-        const res = await axios.post(
-          `${API_BASE}/attendance/scan`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await axios.post(`${API_BASE}/attendance/scan`, payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const msg = res.data?.message || "تم تسجيل العملية بنجاح ✅";
         setStatus("success");
         setMessage(msg);
         toast.success(msg);
 
-        // ⏱ نعطيه لحظات يشوف الرسالة، بعدين نودّيه على صفحته
+        //نعطيه لحظات يشوف الرسالة، بعدين نودّيه على صفحته
         setTimeout(() => {
           redirectByRole();
         }, 1500);

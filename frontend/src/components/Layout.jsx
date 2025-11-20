@@ -3,7 +3,8 @@ import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { BookingsProvider } from "../Bookings/BookingsContext";
-import { getUserFromToken } from "../api/bookingsApi";
+import { getUserFromToken, searchMembersAPI } from "../api/bookingsApi";
+import { getAllEmployees } from "../api.js";
 import SubTopbar from "../components/SubTopbar.jsx";
 import AddParticipantModel from "./AddParticipantModel/AddParticipantModel.jsx";
 import AddBookingModal from "../Bookings/components/AddBookingModal/AddBookingModal.jsx";
@@ -23,7 +24,7 @@ export default function Layout() {
 
   const [currentUser, setCurrentUser] = useState(null);
 
-  // 🔄 حالة كود الحضور
+  //حالة كود الحضور
   const [isQrPanelOpen, setIsQrPanelOpen] = useState(false);
   const [attendanceActiveTab, setAttendanceActiveTab] = useState("CHECK_IN"); // CHECK_IN | CHECK_OUT
   const [attendanceQrCodes, setAttendanceQrCodes] = useState({
@@ -32,11 +33,11 @@ export default function Layout() {
   });
   const [qrLoading, setQrLoading] = useState(false);
 
-  // ✅ استخراج التاب النشط من الـ URL تلقائياً
+  //استخراج التاب النشط من الـ URL تلقائياً
   useEffect(() => {
     const path = location.pathname;
 
-    // ✅ إدارة العملاء
+    //إدارة العملاء
     if (path.startsWith("/dashboard/clients")) {
       const subPath = path.split("/")[3];
       const mapping = {
@@ -57,7 +58,7 @@ export default function Layout() {
       }
     }
 
-    // ✅ طاقم العمل
+    //طاقم العمل
     else if (path.startsWith("/dashboard/employees")) {
       const subPath = path.split("/")[3];
       const mapping = {
@@ -77,26 +78,26 @@ export default function Layout() {
       }
     }
 
-    // ✅ الصفحة الرئيسية
+    //الصفحة الرئيسية
     else if (path === "/dashboard" || path === "/dashboard/") {
       setSelectedTab("الصفحة الرئيسية");
       setActiveSubTab("");
     }
 
-    // ✅ المالية
+    //المالية
     else if (path.startsWith("/dashboard/finance")) {
       setSelectedTab("المالية");
       setActiveSubTab("");
     }
 
-    // ✅ الإعدادات
+    //الإعدادات
     else if (path.startsWith("/dashboard/setting")) {
       setSelectedTab("الإعدادات");
       setActiveSubTab("");
     }
   }, [location.pathname, navigate]);
 
-  // 🔒 تأكد فيه توكن وإلا رجّعه للوج إن
+  //تأكد فيه توكن وإلا رجّعه للوج إن
   useEffect(() => {
     const token =
       localStorage.getItem("authToken") || localStorage.getItem("token");
@@ -106,7 +107,7 @@ export default function Layout() {
     }
   }, [navigate]);
 
-  // 👤 تحميل بيانات المستخدم
+  //تحميل بيانات المستخدم
   useEffect(() => {
     async function loadUser() {
       const saved = localStorage.getItem("currentUser");
@@ -114,19 +115,82 @@ export default function Layout() {
       if (saved) {
         const parsed = JSON.parse(saved);
         setCurrentUser(parsed);
-        console.log("👤 تم تحميل المستخدم من localStorage:", parsed);
+        console.log("تم تحميل المستخدم من localStorage:", parsed);
         return;
       }
 
       const u = await getUserFromToken();
       setCurrentUser(u);
-      console.log("👤 تم تحميل المستخدم من التوكن فقط:", u);
+      console.log("تم تحميل المستخدم من التوكن فقط:", u);
     }
 
     loadUser();
   }, []);
 
-  // 🟣 جلب أكواد الحضور فقط لو المستخدم Admin أو Receptionist
+  //جلب بروفايل كامل (اسم + صورة) من الداتابيس حسب الرول
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      // لو ما في يوزر أو الصورة أصلاً موجودة لا تعمل ولا إشي
+      if (!currentUser?.id || !currentUser?.role || currentUser?.image) return;
+
+      try {
+        const roleLower = currentUser.role.toLowerCase();
+        let updatedUser = { ...currentUser };
+        let imageUrl = null;
+        let firstName = currentUser.firstName;
+        let lastName = currentUser.lastName;
+
+        if (roleLower === "member") {
+          //مشترك: نجيب كل المشتركين بالتوكن الصح ونفلتر على الـ id
+          const members = await searchMembersAPI("");
+          const me = members.find((m) => m._id === currentUser.id);
+
+          if (me) {
+            imageUrl = me.image || null;
+            firstName = me.firstName || firstName;
+            lastName = me.lastName || lastName;
+          }
+        } else {
+          //موظف (آدمن، مدرب، استقبال، محاسب): نجيب كل الموظفين ونفلتر
+          const employeesRes = await getAllEmployees();
+          const employees =
+            employeesRes?.employees || employeesRes?.data?.employees || [];
+          const me = employees.find((emp) => emp._id === currentUser.id);
+
+          if (me) {
+            imageUrl = me.image || null;
+            firstName = me.firstName || firstName;
+            lastName = me.lastName || lastName;
+          }
+        }
+
+        updatedUser = {
+          ...updatedUser,
+          firstName,
+          lastName,
+          image: imageUrl,
+        };
+
+        setCurrentUser(updatedUser);
+
+        //نحدّث الكوبي اللي بالـ localStorage عشان يضل ثابت بعد الريفريش
+        const saved = localStorage.getItem("currentUser");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify({ ...parsed, firstName, lastName, image: imageUrl })
+          );
+        }
+      } catch (error) {
+        console.error("خطأ أثناء جلب بروفايل المستخدم:", error);
+      }
+    };
+
+    fetchUserProfile();
+  }, [currentUser?.id, currentUser?.role]);
+
+  //جلب أكواد الحضور فقط لو المستخدم Admin أو Receptionist
   useEffect(() => {
     if (!currentUser) return;
 
@@ -167,15 +231,19 @@ export default function Layout() {
 
   const descriptionText =
     attendanceActiveTab === "CHECK_IN"
-      ? "خلّي المشتركين يمسحوا هذا الكود لتسجيل الدخول 💪"
-      : "استخدم هذا الكود لتسجيل خروج المشتركين قبل المغادرة 👋";
+      ? "جاهز للإنجاز؟ 🚀 امسح الكود للدخول"
+      : "إلى اللقاء! 👋 لا تنسَ تمسح الكود قبل المغادرة";
+
+  const isDashboardHome =
+    location.pathname === "/dashboard" || location.pathname === "/dashboard/";
 
   const showQrForThisUser =
     currentUser &&
-    (currentUser.role === "Admin" || currentUser.role === "Receptionist");
+    (currentUser.role === "Admin" || currentUser.role === "Receptionist") &&
+    isDashboardHome;
 
   return (
-    // 👇 أهم تعديل: نخلي اللفة الأساسية على قد الشاشة وما تسمح للصفحة نفسها تسكرول
+    //أهم تعديل: نخلي اللفة الأساسية على قد الشاشة وما تسمح للصفحة نفسها تسكرول
     <div className="w-full h-screen flex bg-[#F8F8F8] overflow-hidden">
       {/* Sidebar ثابت على اليسار وبسكرول لحاله لو طول المحتوى */}
       <div className="hidden lg:block w-[22%] max-w-[280px] h-full">
@@ -187,7 +255,7 @@ export default function Layout() {
         />
       </div>
 
-{/* Drawer للموبايل */}
+      {/* Drawer للموبايل */}
       {openSidebar && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -198,6 +266,7 @@ export default function Layout() {
           {/* السايدبار */}
           <div className="absolute top-0 right-0 h-full bg-white w-[212px] shadow-xl animate-slideIn">
             <Sidebar
+              user={currentUser}
               onClose={() => setOpenSidebar(false)}
               onSelectTab={setSelectedTab}
               setActiveSubTab={setActiveSubTab}
@@ -208,7 +277,7 @@ export default function Layout() {
 
       {/* الجزء اليمين (التوب بار + المحتوى) */}
       <BookingsProvider>
-        {/* 👇 نخلي العمود اليمين كله على قد الشاشة برضه */}
+        {/*نخلي العمود اليمين كله على قد الشاشة برضه */}
         <div className="flex flex-col w-full h-full">
           {/* Topbar ثابت */}
           <Topbar
@@ -217,7 +286,7 @@ export default function Layout() {
             onMenuClick={() => setOpenSidebar((prev) => !prev)}
           />
 
-          {/* 👇 هذا الجزء هو اللي فيه كل شيء قابل للسكرول (بدون التوب بار) */}
+          {/*هذا الجزء هو اللي فيه كل شيء قابل للسكرول (بدون التوب بار) */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* SubTopbar لو استقبال في الهوم */}
             {location.pathname === "/dashboard" &&
@@ -283,7 +352,7 @@ export default function Layout() {
               ) : null}
             </div>
 
-            {/* 👇 هذا هو اللي بسكرول */}
+            {/*هذا هو اللي بسكرول */}
             <main
               className="
                 flex-1 w-full overflow-y-auto bg-[#F8F8F8]
@@ -299,11 +368,19 @@ export default function Layout() {
         </div>
       </BookingsProvider>
 
+      {/* Overlay يغطي الصفحة عند فتح QR */}
+      {isQrPanelOpen && (
+        <div
+          className="fixed inset-0 bg-black/10 backdrop-blur-sm z-[98]"
+          onClick={() => setIsQrPanelOpen(false)}
+        ></div>
+      )}
+
       {/* زر و بانل الـ QR زي ما هو */}
       {showQrForThisUser && (
         <>
           {isQrPanelOpen && (
-            <div className="fixed bottom-24 left-4 z-40" dir="rtl">
+            <div className="fixed bottom-24 left-18 z-99" dir="rtl">
               <div className="bg-gradient-to-l from-[#7C3AED] via-[#10B981] via-[#3B82F6] to-[#FBBF24] p-[1.5px] rounded-2xl shadow-lg">
                 <div className="bg-white rounded-2xl p-4 w-[320px] sm:w-[360px]">
                   {/* Tabs */}
@@ -333,7 +410,7 @@ export default function Layout() {
                   {/* نص المحتوى */}
                   <div className="mb-4 text-right">
                     <h2 className="text-[16px] font-[800] text-center text-[#111827] mb-1">
-                      إدارة الحضور بضغطة واحدة
+                      دخولك وخروجك بخطوة واحدة
                     </h2>
                     <p className="text-[13px] text-center text-[#6B7280] leading-relaxed">
                       {descriptionText}
@@ -377,7 +454,7 @@ export default function Layout() {
               shadow-[0_10px_25px_rgba(0,0,0,0.18)]
               hover:scale-105 active:scale-95
               transition-transform duration-150
-              z-40
+              z-100
             "
             aria-label="فتح كود الحضور"
           >

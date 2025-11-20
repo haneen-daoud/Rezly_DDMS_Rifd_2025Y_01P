@@ -28,17 +28,24 @@ export default function MaxParticipantsSelector({
 
   // لو كان المستخدم مختار قيمة مخصصة من قبل، نخليها ظاهرة
   useEffect(() => {
-    if (
-      selectedMax &&
-      ![1, 5, 10, 15, 9999].includes(selectedMax) &&
-      selectedMax !== Infinity
-    ) {
+    // افحص هل selectedMax من الخيارات الأساسية
+    const isPredefined = options.some(
+      (opt) =>
+        opt.value === selectedMax ||
+        (opt.value === Infinity && selectedMax === 9999)
+    );
+
+    if (selectedMax && !isPredefined) {
+      // القيمة مخصصة
       setCustomValue(selectedMax.toString());
+    } else {
+      // خيار جاهز → ما نكتب إشي بخانة المخصص
+      setCustomValue("");
     }
-  }, [selectedMax]);
+  }, [selectedMax, options]);
 
   const handleCustomSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const value = parseInt(customValue);
     if (!isNaN(value) && value > 0) {
       setSelectedMax(value);
@@ -55,8 +62,8 @@ export default function MaxParticipantsSelector({
       const rect = ref.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      // إذا المساحة تحت أقل من 220px نفتح لفوق
-      setOpenUp(spaceBelow < 220 && spaceAbove > spaceBelow);
+      // إذا المساحة تحت أقل من 230px نفتح لفوق
+      setOpenUp(spaceBelow < 230 && spaceAbove > spaceBelow);
     }
   }, [open]);
 
@@ -162,11 +169,14 @@ export default function MaxParticipantsSelector({
                 );
               }
 
-              // خيارأدخل عدداً مخصصاً
-              const isSelected =
-                selectedMax &&
-                ![1, 5, 10, 15, 9999].includes(selectedMax) &&
-                selectedMax !== Infinity;
+              // خيار أدخل عدداً مخصصاً
+              const isPredefined = options.some(
+                (opt) =>
+                  opt.value === selectedMax ||
+                  (opt.value === Infinity && selectedMax === 9999)
+              );
+
+              const isSelected = selectedMax && !isPredefined;
 
               return (
                 <div
@@ -178,19 +188,21 @@ export default function MaxParticipantsSelector({
                     <span className="text-[12px] font-semibold text-[#000] whitespace-nowrap">
                       أو أدخل عدداً مخصصاً:
                     </span>
-                    <form
-                      onSubmit={handleCustomSubmit}
-                      className="flex items-center gap-2 w-full"
-                    >
+                    <div className="flex items-center gap-2 w-full">
                       <input
                         type="number"
                         min="1"
                         placeholder="أدخل العدد"
                         value={customValue}
                         onChange={(e) => setCustomValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleCustomSubmit(e);
+                          }
+                        }}
                         className="w-[114px] h-[32px] border border-gray-300 rounded-md px-2 py-1 text-right focus:outline-none text-[12px] font-normal text-[#7E818C] placeholder-[#7E818C]"
                       />
-                    </form>
+                    </div>
                   </div>
 
                   <div

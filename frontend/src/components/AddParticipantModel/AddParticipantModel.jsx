@@ -5,8 +5,14 @@ import Step2Participant from "./Step2Participant.jsx";
 import Step3Participant from "./Step3Participant.jsx";
 import Step4Participant from "./Step4Participant.jsx";
 import { addNewMember, updateMember, getAllPackages } from "../../api";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {
+  step1Schema,
+  step2Schema,
+  step3Schema,
+  step4Schema,
+} from "../participantValidation.js";
 
 const AddParticipantModel = ({
   onClose,
@@ -18,6 +24,19 @@ const AddParticipantModel = ({
   const [packages, setPackages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const step1Ref = useRef();
+  const step2Ref = useRef();
+  const step3Ref = useRef();
+  const step4Ref = useRef();
+  const validationSchemas = [
+    step1Schema,
+    step2Schema,
+    step3Schema,
+    step4Schema,
+  ];
+  const stepRefs = [step1Ref, step2Ref, step3Ref, step4Ref];
+  const [errors, setErrors] = useState({});
 
   const [memberData, setMemberData] = useState({
     firstName: "",
@@ -42,11 +61,6 @@ const AddParticipantModel = ({
     "تفاصيل الاشتراك",
   ];
 
-  const step1Ref = useRef();
-  const step2Ref = useRef();
-  const step3Ref = useRef();
-  const step4Ref = useRef();
-
   // جلب الباقات
   useEffect(() => {
     const fetchPackages = async () => {
@@ -67,7 +81,7 @@ const AddParticipantModel = ({
     setMemberData((prev) => ({
       ...prev,
 
-      // ✅ المعلومات الشخصية
+      // المعلومات الشخصية
       firstName: editData.firstName || "",
       lastName: editData.lastName || "",
       gender: editData.gender || "",
@@ -76,13 +90,13 @@ const AddParticipantModel = ({
         ? editData.birthDate.slice(0, 10) // عشان input type="date"
         : "",
 
-      // ✅ بيانات الاتصال
+      //بيانات الاتصال
       phone: editData.phone || "",
       email: editData.email || "",
       city: editData.city || "",
       address: editData.address || "",
 
-      // ✅ تفاصيل الاشتراك
+      //تفاصيل الاشتراك
       packageId: editData.packageId?._id || editData.packageId || "",
       paymentMethod: editData.paymentMethod || "",
       coachId: editData.coachId?._id || editData.coachId || "",
@@ -90,14 +104,24 @@ const AddParticipantModel = ({
   }, [isEditMode, editData]);
 
   const handleNext = async () => {
-    let isValid = true;
+    try {
+      await validationSchemas[activeStep].validate(memberData, {
+        abortEarly: false,
+      });
 
-    if (isValid) {
+      // لو ما فيه أخطاء ➝ انتقل
       if (activeStep < steps.length - 1) {
         setActiveStep(activeStep + 1);
       } else {
         isEditMode ? handleSaveChanges() : handleAddMember();
       }
+    } catch (validationErrors) {
+      const formattedErrors = {};
+      validationErrors.inner.forEach((err) => {
+        formattedErrors[err.path] = err.message;
+      });
+
+      stepRefs[activeStep]?.current?.setErrors(formattedErrors);
     }
   };
 
@@ -114,7 +138,7 @@ const AddParticipantModel = ({
       setIsLoading(true);
       const result = await addNewMember(memberData);
 
-      // ✅ نحاول نطلع العضو من الريسبونس
+      //نحاول نطلع العضو من الريسبونس
       let returnedMember =
         result?.member || result?.data || result?.newMember || result;
 
@@ -161,7 +185,7 @@ const AddParticipantModel = ({
         // إذا paymentMethod فارغ، استخدم القيمة القديمة من editData
         paymentMethod: memberData.paymentMethod || editData.paymentMethod || "",
         coachId: memberData.coachId,
-        city: memberData.city || "رام الله",
+        city: memberData.city,
       };
 
       const res = await updateMember(editData._id, updatedMember);
@@ -169,14 +193,14 @@ const AddParticipantModel = ({
       // نحاول نطلع العضو من الريسبونس لو الباك برجع واحد
       let baseMember = res?.member || res?.data || res?.updatedMember || res;
 
-      // 🟣 نجيب الباقة الكاملة من الـ packages حسب الـ _id الجديد
+      // نجيب الباقة الكاملة من الـ packages حسب الـ _id الجديد
       const selectedPackage =
         (packages || []).find((p) => p._id === updatedMember.packageId) ||
         baseMember?.packageId ||
         editData?.packageId ||
         null;
 
-      // ✅ ندمج القديم + اللي رجع من السيرفر + الباقة الجديدة كـ OBJECT
+      //ندمج القديم + اللي رجع من السيرفر + الباقة الجديدة كـ OBJECT
       const finalMember = {
         ...(editData || {}),
         ...(baseMember || updatedMember),
@@ -186,10 +210,19 @@ const AddParticipantModel = ({
       toast.success("تم حفظ التعديلات بنجاح!");
       setIsSubmitted(true);
 
-      if (onSave) onSave(finalMember);
+      //نبعت كل شيء للأب، ومنه يتعامل مع التوست
+      if (onSave) {
+        onSave({
+          member: finalMember,
+          message: res?.message || "تم حفظ التعديلات بنجاح",
+          status: "success",
+        });
+      }
     } catch (error) {
       console.error("  خطأ أثناء التعديل:", error);
-      toast.error("حدث خطأ أثناء حفظ التعديلات!");
+      const msg =
+        error?.response?.data?.message || "حدث خطأ أثناء حفظ التعديلات!";
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -197,7 +230,6 @@ const AddParticipantModel = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/25 z-50">
-      <ToastContainer position="top-right" autoClose={3000} />
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-[849px] h-[712px] flex flex-col p-6 text-right overflow-hidden relative">
         <div className="flex justify-between items-start">
           <h2 className="text-[16px] font-bold text-black">
@@ -279,18 +311,20 @@ const AddParticipantModel = ({
             <div className="flex-grow flex flex-col justify-between pr-2 text-[14px]">
               {activeStep === 0 && (
                 <Step1Participant
+                  ref={step1Ref}
                   memberData={memberData}
                   setMemberData={setMemberData}
-                  ref={step1Ref}
                 />
               )}
+
               {activeStep === 1 && (
                 <Step2Participant
+                  ref={step2Ref}
                   memberData={memberData}
                   setMemberData={setMemberData}
-                  ref={step2Ref}
                 />
               )}
+
               {activeStep === 2 && (
                 <Step3Participant
                   memberData={memberData}

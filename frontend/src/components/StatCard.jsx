@@ -8,6 +8,7 @@ const StatCard = ({ title, value, icon }) => {
         bg-white sm:bg-white lg:bg-white 
         shadow-none sm:shadow-[0_2px_8px_rgba(0,0,0,0.08)] 
         transition-all
+        min-h-[125px]
       "
     >
       <div className="flex w-full justify-between items-center">

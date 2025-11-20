@@ -70,7 +70,7 @@ export default function CoachSelector({
       {/* القائمة */}
       {openCoach && (
         <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-500/40 mt-1 shadow-[0_4px_12px_rgba(0,0,0,0.25)] z-50 text-[#000000]">
-          <div className="w-full h-full p-4 box-border max-h-[250px] overflow-y-auto">
+          <div className="w-full h-full p-4 box-border max-h-[250px] overflow-y-auto custom-scrollbar">
             {/* البحث */}
             <div className="relative w-full h-[30px] mb-2">
               <input

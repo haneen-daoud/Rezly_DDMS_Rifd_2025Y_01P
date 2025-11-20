@@ -4,7 +4,12 @@ import EmployeeCardTab from "../components/Tabs/EmployeeCardTab.jsx";
 import AddEmployeeModel from "../components/AddEmployeeModel/AddEmployeeModel.jsx";
 import { getAllEmployees } from "../api.js";
 import EmployeesHeader from "../components/EmployeeHeader.jsx";
-import { useOutletContext, useNavigate, useLocation, Outlet } from "react-router-dom";
+import {
+  useOutletContext,
+  useNavigate,
+  useLocation,
+  Outlet,
+} from "react-router-dom";
 import { toast } from "react-toastify";
 
 export default function Employees() {
@@ -14,7 +19,7 @@ export default function Employees() {
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [activeIconIndex, setActiveIconIndex] = useState(0); // 0 = Card, 1 = Table
   const [loading, setLoading] = useState(true);
-const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
+  const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
 
   const { activeSubTab, setActiveSubTab } = useOutletContext();
   const navigate = useNavigate();
@@ -59,7 +64,7 @@ const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
   /* --------------------------------------------------------
       جلب الموظفين أول مرة
   -------------------------------------------------------- */
-    /* --------------------------------------------------------
+  /* --------------------------------------------------------
       جلب الموظفين أول مرة + كاش محلي
   -------------------------------------------------------- */
   useEffect(() => {
@@ -83,10 +88,7 @@ const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
       try {
         const data = await getAllEmployees();
 
-        const list =
-          data.data?.employees ||
-          data.employees ||
-          [];
+        const list = data.data?.employees || data.employees || [];
 
         const cleanedList = Array.isArray(list) ? list : [];
 
@@ -118,19 +120,14 @@ const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
     fetchData();
   }, []);
 
-
   /* --------------------------------------------------------
       Refresh بعد الإضافة / التعديل
   -------------------------------------------------------- */
-   const refreshEmployees = async () => {
+  const refreshEmployees = async () => {
     try {
       const data = await getAllEmployees();
 
-      const list =
-        data.data?.employees ||
-        data.employees ||
-        data.data ||
-        [];
+      const list = data.data?.employees || data.employees || data.data || [];
 
       const cleanedList = Array.isArray(list) ? list : [];
 
@@ -181,7 +178,6 @@ const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
         emp._id === employeeId ? { ...emp, ...updatedObj } : emp
       )
     );
-
   };
 
   /* --------------------------------------------------------
@@ -214,9 +210,7 @@ const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
 
     // باقي التابات
     return (
-      <div className="p-4 bg-white rounded-2xl shadow">
-        محتوى {activeTab}
-      </div>
+      <div className="p-4 bg-white rounded-2xl shadow">محتوى {activeTab}</div>
     );
   };
 
@@ -243,21 +237,13 @@ const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
         <AddEmployeeModel
           onClose={() => setIsModalOpen(false)}
           onSave={async () => {
-            let previousCount = employees.length;
+            // نحدّث قائمة الموظفين مرة واحدة بعد الحفظ
+            await refreshEmployees();
 
-            // إعادة المحاولة 5 مرات خلال 5 ثواني
-            for (let i = 0; i < 5; i++) {
-              const updatedList = await refreshEmployees();
+            // المودال نفسه هو اللي بطلع توست "تم إضافة الموظف بنجاح"
+            // فمش محتاجين نرجّع نعرض توست ثاني هون
 
-              if (updatedList.length > previousCount) {
-                toast.success("تم إضافة الموظف بنجاح");
-                break; // الموظف ظهر → خلص
-              }
-
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-
-            setIsModalOpen(false); // سكّر المودال بعد التحديث
+            
           }}
         />
       )}

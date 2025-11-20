@@ -42,7 +42,9 @@ export const step4Schema = Yup.object().shape({
   role: Yup.string().required("مستوى الصلاحية مطلوب"),
 
   notes: Yup.string()
-    .required("يرجى إضافة ملاحظات")
+    .nullable()
+    .notRequired()
+    .transform((value) => (value === "" ? null : value))
     .min(3, "يجب أن تحتوي الملاحظات على 3 أحرف على الأقل"),
 });
 

@@ -39,7 +39,9 @@ export default function Home() {
 
   const role = currentUser?.role?.toLowerCase() || "";
   const isReception =
-    role === "reception" || role === "receptionist" || role === "receptionist_employee";
+    role === "reception" ||
+    role === "receptionist" ||
+    role === "receptionist_employee";
   const isCoach = role === "coach";
 
   return (
@@ -56,7 +58,7 @@ export default function Home() {
               title="إشغال المكان"
             />
             <StatCard
-              value={<span className="text-[28px] font-bold">$440</span>}
+              value={<span className="text-[28px] font-bold">₪ 440</span>}
               icon={Icon2}
               title="إيرادات اليوم"
             />
@@ -71,6 +73,42 @@ export default function Home() {
               title="زوار الموقع الآن"
             />
           </div>
+
+          {/* ٦ كروت الريسبشنست تحت الأربع كروت في الموبايل فقط */}
+          {isReception && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:hidden">
+              <StatCard
+                title="حجوزات اليوم"
+                value={<span className="text-[24px] font-bold">34</span>}
+                icon={Icon1}
+              />
+              <StatCard
+                title="حجوزات الغد"
+                value={<span className="text-[24px] font-bold">18</span>}
+                icon={Icon2}
+              />
+              <StatCard
+                title="حجوزات قيد الانتظار"
+                value={<span className="text-[24px] font-bold">7</span>}
+                icon={Icon3}
+              />
+              <StatCard
+                title="إلغاءات اليوم"
+                value={<span className="text-[24px] font-bold">3</span>}
+                icon={Icon4}
+              />
+              <StatCard
+                title="مشتركين منتهية اشتراكاتهم"
+                value={<span className="text-[24px] font-bold">5</span>}
+                icon={Icon1}
+              />
+              <StatCard
+                title="استفسارات جديدة"
+                value={<span className="text-[24px] font-bold">9</span>}
+                icon={Icon2}
+              />
+            </div>
+          )}
 
           {/* المحتوى تحت الكروت بالعمود اليسار حسب الرول */}
           {isCoach ? (
@@ -103,10 +141,10 @@ export default function Home() {
         </div>
 
         {/* العمود اليمين */}
-        <div className="flex flex-col gap-4 w-full">
-          {/* ٦ كروت إضافية للريسبشنست - على نفس امتداد الأربع كروت */}
+        <div className="flex flex-col gap-6 w-full">
+          {/* ٦ كروت إضافية للريسبشنست - على نفس امتداد الأربع كروت (للديسكتوب فقط) */}
           {isReception && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4">
+            <div className="hidden lg:grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4">
               <StatCard
                 title="حجوزات اليوم"
                 value={<span className="text-[24px] font-bold">34</span>}

@@ -289,12 +289,13 @@ setTimeout(() => {
   return (
     <>
       <div
-        className={`${
-          fullScreenMode
-            ? "fixed inset-0 z-50 p-4 bg-white flex flex-col"
-            : "relative w-full h-full"
-        }`}
-      >
+  className={`${
+    fullScreenMode
+      ? "fixed inset-0 z-50 p-4 bg-white flex flex-col calendar-fullscreen"
+      : "relative w-full h-full"
+  }`}
+>
+
         <div
   className={`bg-white rounded-[16px] overflow-hidden flex-1 flex flex-col ${
     view === "timeGridWeek" ? "" : "hide-fc-header"
@@ -379,10 +380,14 @@ setTimeout(() => {
               {/* زر تكبير الشاشة */}
               <div>
                 
-                <ReSizeIcon className="cursor-pointer w-8 h-8 text-[var(--color-purple)]" onClick={() => {
-                    setFullScreenMode(!fullScreenMode);
-                    setTimeout(() => calendarRef.current?.getApi().render(), 0);
-                  }}/>
+                <ReSizeIcon
+  className="cursor-pointer w-8 h-8 text-[var(--color-purple)]"
+  onClick={() => {
+    setFullScreenMode(!fullScreenMode);
+    setTimeout(() => calendarRef.current?.getApi().render(), 0);
+  }}
+/>
+
               </div>
             </div>
           </div>

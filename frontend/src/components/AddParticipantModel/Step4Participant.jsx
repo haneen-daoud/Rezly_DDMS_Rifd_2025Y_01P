@@ -1,17 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import axios from "axios";
 import { getAllPackages } from "../../api";
 import Select from "react-select";
 import selectStyles from "../selectStyles.js";
 import { getAllCoaches } from "../../api";
 
-export default function Step4Participant({ memberData, setMemberData, packages = [] }) {
+const Step4Participant = forwardRef(({ memberData, setMemberData, packages = [] }, ref) => {
   const [selectedPackage, setSelectedPackage] = useState(null);
   // عند تحميل العضو، تحقق من القيمة
   const [paymentMethod, setPaymentMethod] = useState(memberData.paymentMethod || "");
 
   const [coaches, setCoaches] = useState([]);
+  const [errors, setErrors] = useState({});
 
+useImperativeHandle(ref, () => ({
+  setErrors: (newErrors) => setErrors(newErrors),
+}));
 
   const paymentOptions = [
     { value: "نقداً", label: "نقداً" },
@@ -77,6 +81,7 @@ export default function Step4Participant({ memberData, setMemberData, packages =
       coachId: trainer,
       paymentMethod,
     });
+setErrors(prev => ({ ...prev, packageId: "" }));
 
     // تحديث في الباك
     updateMemberField("packageId", packageId);
@@ -89,6 +94,7 @@ export default function Step4Participant({ memberData, setMemberData, packages =
       ...memberData,
       paymentMethod: newMethod,
     });
+setErrors(prev => ({ ...prev, paymentMethod: "" }));
 
     updateMemberField("paymentMethod", newMethod);
   };
@@ -104,6 +110,7 @@ export default function Step4Participant({ memberData, setMemberData, packages =
       ...memberData,
       coachId: newTrainer,
     });
+  setErrors(prev => ({ ...prev, coachId: "" }));
 
     // تحديث في الباك
     updateMemberField("coachId", newTrainer);
@@ -134,6 +141,8 @@ export default function Step4Participant({ memberData, setMemberData, packages =
               </option>
             ))}
           </select>
+          {errors.packageId && <span className="text-red-500 text-xs">{errors.packageId}</span>}
+
         </div>
 
         {/* مدة الاشتراك */}
@@ -183,6 +192,7 @@ export default function Step4Participant({ memberData, setMemberData, packages =
             styles={selectStyles}
             isRtl={true}
           />
+{errors.paymentMethod && <span className="text-red-500 text-xs">{errors.paymentMethod}</span>}
 
         </div>
 
@@ -207,11 +217,15 @@ export default function Step4Participant({ memberData, setMemberData, packages =
             styles={selectStyles}
             isRtl={true} // لدعم الكتابة العربية
           />
+          {errors.coachId && <span className="text-red-500 text-xs">{errors.coachId}</span>}
+
         </div>
 
 
 
       </form>
     </div>
-  );
-}
+   );
+});
+
+export default Step4Participant;

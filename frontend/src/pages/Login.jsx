@@ -27,14 +27,12 @@ const Login = () => {
   // فحص البيانات قبل الإرسال
   const validate = () => {
     if (!formData.identifier.trim()) {
-      toast.error("⚠ الرجاء إدخال اسم المستخدم أو البريد الإلكتروني", {
-      });
+      toast.error("⚠ الرجاء إدخال اسم المستخدم أو البريد الإلكتروني", {});
       return false;
     }
 
     if (!formData.password.trim()) {
-      toast.error("⚠ الرجاء إدخال كلمة المرور", {
-      });
+      toast.error("⚠ الرجاء إدخال كلمة المرور", {});
       return false;
     }
 
@@ -43,69 +41,59 @@ const Login = () => {
 
   // إرسال الطلب
   const handleSubmit = async (e) => {
-    console.log("🟣 SUBMITTED:", formData);
-  e.preventDefault();
+    console.log("SUBMITTED:", formData);
+    e.preventDefault();
 
-  if (!validate()) return;
+    if (!validate()) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    console.log("🟢 TRY STARTED");
-    const res = await signIn(formData);
+    try {
+      console.log("TRY STARTED");
+      const res = await signIn(formData);
 
-    console.log("🔵 LOGIN RESPONSE:", res);
+      console.log("LOGIN RESPONSE:", res);
 
-    if (res.status === 200) {
+      if (res.status === 200) {
+        const { token, firstName, lastName, role, id } = res.data || {};
 
-  const {
-    token,
-    firstName,
-    lastName,
-    role,
-    id,
-  } = res.data || {};
+        // تخزين التوكن
+        if (token) {
+          localStorage.setItem("token", token);
+          localStorage.setItem("authToken", token);
+        }
 
-  // تخزين التوكن
-if (token) {
-  localStorage.setItem("token", token);
-  localStorage.setItem("authToken", token);
-}
+        // تخزين اليوزر كامل
+        const currentUser = {
+          id: id,
+          firstName: firstName,
+          lastName: lastName,
+          role: role,
+        };
 
-// تخزين اليوزر كامل
-const currentUser = {
-  id: id,
-  firstName: firstName,
-  lastName: lastName,
-  role: role,
-};
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
+        console.log("CURRENT USER SAVED:", currentUser);
 
-localStorage.setItem("currentUser", JSON.stringify(currentUser));
-console.log("🔥 CURRENT USER SAVED:", currentUser);
+        //تحويل المستخدم حسب الرول
+        let targetPath = "/dashboard";
 
-// 🔀 تحويل المستخدم حسب الرول
-let targetPath = "/dashboard";
+        if (role && role.toLowerCase() === "member") {
+          targetPath = "/user";
+        }
 
-if (role && role.toLowerCase() === "member") {
-  targetPath = "/user";
-}
+        navigate(targetPath, { replace: true });
+      }
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "حدث خطأ أثناء تسجيل الدخول";
 
-navigate(targetPath, { replace: true });
-
-}
-
-
-  } catch (err) {
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "حدث خطأ أثناء تسجيل الدخول";
-
-    toast.error(`❌ ${message}`);
-  } finally {
-    setLoading(false);
-  }
-};
+      toast.error(`❌ ${message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -189,7 +177,11 @@ navigate(targetPath, { replace: true });
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
               >
-                {showPassword ? <EyeOnIcon className="text-[var(--color-purple)]" /> : <EyeOffIcon />}
+                {showPassword ? (
+                  <EyeOnIcon className="text-[var(--color-purple)]" />
+                ) : (
+                  <EyeOffIcon />
+                )}
               </button>
             </div>
           </div>
@@ -225,7 +217,6 @@ navigate(targetPath, { replace: true });
             style={{ backgroundColor: "var(--color-purple)" }}
           >
             تسجيل الدخول
-
             {loading && (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             )}
