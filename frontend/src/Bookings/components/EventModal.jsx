@@ -25,13 +25,13 @@ import ConfirmDeleteModal from "./ConfirmDeleteModal";
 
 import { toast } from "react-toastify";
 import { useBookings } from "../BookingsContext";
-import { getAllMembers } from "../../api"; // ✅ أضيفي هذا الاستيراد بالأعلى بعد axios
+import { getAllMembers } from "../../api";
 
 export default function EventModal({
-  booking, // ✅ استقبل الحجز مباشرة
-  setBooking, // لتحديث الحجز من هنا
-  handleSaveBooking, // دالة الحفظ
-  handleDeleteBooking, // دالة الحذف
+  booking,
+  setBooking,
+  handleSaveBooking,
+  handleDeleteBooking,
   closeModal,
 }) {
   const [showCalendar, setShowCalendar] = useState(false);
@@ -604,21 +604,23 @@ export default function EventModal({
 
   return (
     <div className="fixed inset-0 z-[4000] flex justify-center items-center">
-      <div className="w-[361px] h-full bg-white rounded-[16px] flex flex-col overflow-hidden shadow-lg text-right text-black font-cairo p-[24px]">
+  {/* الخلفية الغامقة */}
+  <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] z-[3990]"></div>
+       <div className="relative z-[4001] w-[361px] h-full bg-white rounded-[16px] flex flex-col overflow-hidden shadow-lg text-right text-black font-cairo p-[24px]">
         {/* Header */}
         <div className="w-[313px] h-[40px] flex items-center justify-between mb-[8px]">
           <h3 className="text-[16px] font-bold">تفاصيل الحجز</h3>
           <div className="flex items-center gap-2">
             {/* زر الحذف متاح لكل الأدوار */}
             <DeleteIcon
-              className="w-8 h-8 text-red-500 cursor-pointer"
+              className="w-8 h-8 text-red-500 cursor-pointer rounded-[8px] bg-gray-100"
               onClick={() => setShowConfirm(true)}
             />
 
             <img
               src={CloseIcon}
               alt="close"
-              className="w-8 h-8"
+              className="w-8 h-8 rounded-[8px] bg-gray-100"
               onClick={closeModal}
             />
           </div>
@@ -771,6 +773,7 @@ export default function EventModal({
                     setBooking({ ...booking, coach, coachId: coach.id })
                   }
                   coachesList={coaches}
+                  
                 />
               </div>
             </div>

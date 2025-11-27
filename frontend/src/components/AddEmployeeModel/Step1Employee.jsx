@@ -74,11 +74,11 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
               value={data.firstName}
               onChange={(e) => handleChange("firstName", e.target.value)}
               className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-                focus:outline-none focus:ring-2 ${
-                  combinedErrors.firstName
-                    ? "border-red-500 focus:ring-red-400"
-                    : "border-gray-300 focus:ring-purple-500"
-                }`}
+  focus:outline-none ${
+    combinedErrors.firstName
+      ? "border-red-500"
+      : "border-gray-300 focus:border-[var(--color-purple)]"
+  }`}
             />
             {combinedErrors.firstName && (
               <p className="text-red-500 text-[11px] mt-1">
@@ -97,11 +97,11 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
               value={data.lastName}
               onChange={(e) => handleChange("lastName", e.target.value)}
               className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-                focus:outline-none focus:ring-2 ${
-                  combinedErrors.lastName
-                    ? "border-red-500 focus:ring-red-400"
-                    : "border-gray-300 focus:ring-purple-500"
-                }`}
+  focus:outline-none ${
+    combinedErrors.lastName
+      ? "border-red-500"
+      : "border-gray-300 focus:border-[var(--color-purple)]"
+  }`}
             />
             {combinedErrors.lastName && (
               <p className="text-red-500 text-[11px] mt-1">
@@ -142,11 +142,11 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
             value={data.nationalId}
             onChange={(e) => handleChange("nationalId", e.target.value)}
             className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-              focus:outline-none focus:ring-2 ${
-                combinedErrors.nationalId
-                  ? "border-red-500 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-purple-500"
-              }`}
+  focus:outline-none ${
+    combinedErrors.nationalId
+      ? "border-red-500"
+      : "border-gray-300 focus:border-[var(--color-purple)]"
+  }`}
           />
           {combinedErrors.nationalId && (
             <p className="text-red-500 text-[11px] mt-1">
@@ -156,49 +156,53 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
         </div>
 
         {/* تاريخ الميلاد + MiniCalender */}
-        <div className="relative">
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
-            تاريخ الميلاد
-          </label>
+<div className="flex flex-col gap-2">
+  <label className="block text-[14px] font-[700] text-black mb-1.5">
+    تاريخ الميلاد
+  </label>
 
-          <div
-            onClick={() => setShowCalendar(!showCalendar)}
-            className={`w-full flex items-center gap-2 border rounded-xl px-3 py-2.5 cursor-pointer 
-              text-[12px] placeholder-[#7E818C] 
-              ${combinedErrors.birthDate ? "border-red-500" : "border-gray-300"}
-              focus-within:ring-2 ${
-                combinedErrors.birthDate
-                  ? "focus-within:ring-red-400"
-                  : "focus-within:ring-purple-500"
-              }
-            `}
-          >
-            <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
-            <span className={data.birthDate ? "text-black" : "text-[#7E818C]"}>
-              {data.birthDate || "اختر تاريخ الميلاد"}
-            </span>
-          </div>
+  <div className="relative">
+    <button
+      type="button"
+      onClick={() => setShowCalendar((prev) => !prev)}
+      className={`w-full flex items-center gap-2 border rounded-xl px-3 py-2.5 cursor-pointer 
+        text-[12px] placeholder-[#7E818C]
+        ${
+          combinedErrors.birthDate
+            ? "border-red-500"
+            : "border-gray-300 focus:border-[var(--color-purple)]"
+        }
+        focus:outline-none
+      `}
+    >
+      <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
+      <span className={data.birthDate ? "text-black" : "text-[#7E818C]"}>
+        {data.birthDate || "اختر تاريخ الميلاد"}
+      </span>
+    </button>
 
-          {combinedErrors.birthDate && (
-            <p className="text-red-500 text-[11px] mt-1">
-              {combinedErrors.birthDate}
-            </p>
-          )}
+    {showCalendar && (
+      <MiniCalender
+        currentDate={
+          data.birthDate ? new Date(data.birthDate) : new Date()
+        }
+        variant="employeeTop"
+        handleDateChange={(date) => {
+          const iso = date.toISOString().split("T")[0];
+          handleChange("birthDate", iso);
+          setShowCalendar(false);
+        }}
+      />
+    )}
+  </div>
 
-          {showCalendar && (
-            <MiniCalender
-              currentDate={
-                data.birthDate ? new Date(data.birthDate) : new Date()
-              }
-              variant="employee"
-              handleDateChange={(date) => {
-                const iso = date.toISOString().split("T")[0];
-                handleChange("birthDate", iso);
-                setShowCalendar(false);
-              }}
-            />
-          )}
-        </div>
+  {combinedErrors.birthDate && (
+    <p className="text-red-500 text-[11px] mt-1">
+      {combinedErrors.birthDate}
+    </p>
+  )}
+</div>
+
 
         {/* صورة الملف الشخصي */}
         <div>

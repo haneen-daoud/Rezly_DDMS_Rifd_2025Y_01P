@@ -148,7 +148,7 @@ export default function Step2Booking({
 
         <div className="relative flex flex-col w-full">
           <div
-            className={`relative flex items-center w-full border rounded-md h-10 ${
+            className={`relative flex items-center w-full p-3 border rounded-md h-10 ${
               errors?.dateOnly ? "border-red-500" : "border-gray-300"
             }`}
           >
@@ -161,8 +161,14 @@ export default function Step2Booking({
               value={dateDisplay}
               placeholder="اختر تاريخ البدء"
               readOnly
-              onClick={() => setShowCalendar(!showCalendar)}
-              className="h-10 w-full pr-8 pl-2 rounded-md focus:outline-none font-normal"
+              onClick={() => {
+  // افتحي/سكّري الكاليندر
+  setShowCalendar((prev) => !prev);
+  // وبنفس اللحظة سكّري مدة الاشتراك
+  setOpenDuration(false);
+}}
+
+              className="h-10 w-full pr-5 pl-2 rounded-md focus:outline-none font-normal"
             />
             {showCalendar && (
               <div className="absolute top-full left-0 mt-2 z-30 w-60">
@@ -194,7 +200,7 @@ export default function Step2Booking({
           {/* الحقل الرئيسي */}
           <div
             onClick={() => setOpenDuration(!openDuration)}
-            className={`w-full h-10 rounded-md flex items-center justify-between px-2 cursor-pointer border ${
+            className={`w-full h-10 rounded-md flex items-center justify-between p-3 cursor-pointer border ${
               errors?.subscriptionDuration
                 ? "border-red-500"
                 : "border-gray-300"
@@ -337,6 +343,7 @@ export default function Step2Booking({
                 }
               }}
               variant="booking"
+              showArrow={false} 
             />
           </div>
         ) : (
@@ -353,23 +360,31 @@ export default function Step2Booking({
                     className="flex items-center gap-2 text-[13px] font-normal"
                   >
                     {/* اليوم */}
-                    <select
-                      value={row.day}
-                      onChange={(e) =>
-                        handleChange(index, "day", e.target.value)
-                      }
-                      className="flex-1 h-9 rounded-md border border-gray-300 px-2 text-sm focus:outline-none"
-                    >
-                      <option value="">اختر اليوم</option>
-                      {allDays.map((d) => (
-                        <option key={d.short} value={d.short}>
-                          {d.full}
-                        </option>
-                      ))}
-                    </select>
+<div className="relative flex-1">
+  <select
+    value={row.day}
+    onChange={(e) => handleChange(index, "day", e.target.value)}
+    className="flex-1 h-9 w-full rounded-md border border-gray-300 pr-3 pl-3 text-sm focus:outline-none appearance-none"
+  >
+    <option value="">اختر اليوم</option>
+    {allDays.map((d) => (
+      <option key={d.short} value={d.short}>
+        {d.full}
+      </option>
+    ))}
+  </select>
+
+  {/* السهم مع padding يسار عن الحافة */}
+  <img
+    src={downarrowIcon}
+    alt="downarrow"
+    className="w-4 h-4 opacity-80 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+  />
+</div>
+
 
                     {/* الوقت */}
-                    <div className="flex-[1.5]">
+                    <div className="flex-[2]">
                       <TimeRangePicker
                         isAddMode={!isEditing}
                         startTime={row.start}
@@ -379,15 +394,17 @@ export default function Step2Booking({
                           handleChange(index, "end", end);
                         }}
                         variant="booking"
+                        showIcons={true}
+                        showArrow={false} 
                       />
                     </div>
 
                     {/* حذف اليوم */}
                     <button
                       onClick={() => handleDeleteDay(index)}
-                      className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-md"
+                      
                     >
-                      <DeleteIcon className="w-4 h-4 text-red-500" />
+                      <DeleteIcon className="w-7 h-7 text-red-500" />
                     </button>
                   </div>
                 ))}

@@ -28,20 +28,19 @@ export default function EmployeeCardTab({
 
   return (
     <div className="sm-p-6 p-0 bg-gray-50 min-h-screen" dir="rtl">
-  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-    {[...currentEmployees]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .map((emp) => (
-      <EmployeeCard
-        key={emp._id}
-        emp={emp}
-        onDelete={(id) => {
-          if (onDelete) onDelete(id);
-        }}
-      />
-    ))}
-  </div>
-</div>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-y-[24px] gap-x-[24px]">
+        {[...currentEmployees]
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .map((emp) => (
+            <EmployeeCard
+              key={emp._id}
+              emp={emp}
+              onDelete={(id) => {
+                if (onDelete) onDelete(id);
+              }}
+            />
+          ))}
+      </div>
+    </div>
   );
 }

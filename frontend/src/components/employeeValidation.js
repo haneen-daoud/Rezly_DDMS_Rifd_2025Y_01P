@@ -55,11 +55,10 @@ export const step2Schema = Yup.object().shape({
     .matches(/^05\d{8}$/, "رقم الهاتف يجب أن يبدأ بـ05 ويتكون من 10 أرقام"),
 
   email: Yup.string()
-    .required("البريد الإلكتروني مطلوب")
-    .matches(
-      /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
-      "يجب أن يكون البريد بصيغة @gmail.com فقط"
-    ),
+  .required("البريد الإلكتروني مطلوب")
+  .email("صيغة البريد الإلكتروني غير صحيحة")
+  .max(40, "البريد الإلكتروني طويل جدًا")
+,
 
   address: Yup.string()
     .required("العنوان مطلوب")

@@ -136,8 +136,26 @@ const ReminderSelector = ({
   })();
 
   //استخراج عدد الساعات قبل الموعد من أي تذكير
+    // استخراج عدد الساعات قبل الموعد من أي تذكير
+    //استخراج عدد الساعات قبل الموعد من أي تذكير
   const getHoursBeforeFromReminder = (r) => {
-    if (!r || typeof r !== "object") return null;
+    if (!r) return null;
+
+    // لو التذكير قيمة جاهزة (سترنغ) مثل 30min / 1hour / 1day
+    if (typeof r === "string") {
+      switch (r) {
+        case "30min":
+          return 0.5; // نص ساعة
+        case "1hour":
+          return 1; // ساعة
+        case "1day":
+          return 24; // 24 ساعة
+        default:
+          return null;
+      }
+    }
+
+    if (typeof r !== "object") return null;
 
     // لو مخزون مباشرة كـ hoursBefore
     if (typeof r.hoursBefore === "number") {
@@ -163,6 +181,8 @@ const ReminderSelector = ({
 
     return null;
   };
+
+
 
   const handleAddCustomReminder = () => {
     if (!customHours) return;
@@ -223,20 +243,40 @@ const ReminderSelector = ({
     }
   }, [openReminder, localReminders, baseDateTime]);
 
-  const toggleOption = (optionValue) => {
+    const toggleOption = (optionValue) => {
     setLocalReminders((prev) => {
       let updated = Array.isArray(prev) ? [...prev] : [];
 
+      // لو اخترنا "عدم التذكير"
       if (optionValue === "none") {
         return ["none"];
       }
 
       // شيل none
-      updated = updated.filter((r) => !(typeof r === "string" && r === "none"));
+      updated = updated.filter(
+        (r) => !(typeof r === "string" && r === "none")
+      );
 
+      // لو الخيار نفسه أصلاً موجود → شيله (تبديل تشغيل/إيقاف عادي)
       if (updated.includes(optionValue)) {
         updated = updated.filter((r) => r !== optionValue);
       } else {
+        // قبل ما نضيف الخيار، نتأكد إنه ما في تذكير بنفس عدد الساعات
+        const optionHours = getHoursBeforeFromReminder(optionValue);
+
+        if (optionHours != null) {
+          const hasSameHours = updated.some((r) => {
+            const h = getHoursBeforeFromReminder(r);
+            return h === optionHours;
+          });
+
+          // لو فيه تذكير بنفس الساعات (سواء كستوم أو جاهز) ما نضيفه
+          if (hasSameHours) {
+            return updated.length > 0 ? updated : ["none"];
+          }
+        }
+
+        // ما في تكرار → نضيفه عادي
         updated.push(optionValue);
       }
 
@@ -247,6 +287,7 @@ const ReminderSelector = ({
       return updated;
     });
   };
+
 
   const removeReminder = (remToRemove) => {
     setLocalReminders((prev) => {
@@ -306,7 +347,7 @@ const ReminderSelector = ({
       <div className="relative w-full">
         {/* الحقل الرئيسي */}
         <div
-          className="w-full h-10 flex items-center justify-between cursor-pointer px-3 rounded-md bg-white"
+          className="w-full h-10 flex items-center justify-between cursor-pointer p-3 rounded-md bg-white"
           style={{ border: `1px solid ${borderStyle}` }}
           onClick={() => setOpenReminder((prev) => !prev)}
         >

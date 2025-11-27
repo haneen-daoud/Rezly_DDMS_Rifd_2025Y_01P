@@ -55,11 +55,11 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
             value={data.phoneNumber || ""}
             onChange={(e) => handleChange("phoneNumber", e.target.value)}
             className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-              focus:outline-none focus:ring-2 ${
-                localErrors.phoneNumber
-                  ? "border-red-500 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-purple-500"
-              }`}
+  focus:outline-none ${
+    localErrors.phoneNumber
+      ? "border-red-500"
+      : "border-gray-300 focus:border-[var(--color-purple)]"
+  }`}
           />
           {localErrors.phoneNumber && (
             <p className="text-red-500 text-[11px] mt-1">
@@ -79,11 +79,12 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
             value={data.email || ""}
             onChange={(e) => handleChange("email", e.target.value)}
             className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-              focus:outline-none focus:ring-2 ${
-                localErrors.email
-                  ? "border-red-500 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-purple-500"
-              }`}
+  focus:outline-none ${
+    localErrors.email
+      ? "border-red-500"
+      : "border-gray-300 focus:border-[var(--color-purple)]"
+  }`}
+
           />
           {localErrors.email && (
             <p className="text-red-500 text-[11px] mt-1">{localErrors.email}</p>
@@ -100,8 +101,9 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
             placeholder="أدخل العنوان"
             value={data.address || ""}
             onChange={(e) => handleChange("address", e.target.value)}
-            className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-              focus:outline-none focus:ring-2 `}
+            className="w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+  border-gray-300 focus:outline-none focus:border-[var(--color-purple)]"
+
           />
         </div>
       </form>

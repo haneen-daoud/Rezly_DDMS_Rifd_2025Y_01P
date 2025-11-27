@@ -23,27 +23,11 @@ export default function Step1Booking({
   // ====== حالات محلية ======
   const [coaches, setCoaches] = useState([]);
   const [membersList, setMembersList] = useState([]); // ✅ اللستة المحلية الصحيحة للمشتركين
-  const [openClass, setOpenClass] = useState(false);
-  const [classSearch, setClassSearch] = useState("");
-  const [classes, setClasses] = useState(["يوغا", "كارديو", "ملاكمة"]);
   const [rooms] = useState(["قاعة 1", "قاعة 2", "قاعة 3"]);
 
   const isReadOnly = !!isIndividual; // حقول مقفلة بصريًا عند تعديل فردي
 
-  // لما يكون فيّ اسم حصة مسبقًا (تعديل)، ضيفيه لقائمة الحصص لو مش موجود
-  useEffect(() => {
-    if (!formData?.title || formData.title.trim() === "") return;
-
-    setClasses((prev) => {
-      const normalizedPrev = prev.map((c) => c.trim().toLowerCase());
-      const normalizedTitle = formData.title.trim().toLowerCase();
-      if (!normalizedPrev.includes(normalizedTitle)) {
-        return [...prev, formData.title.trim()];
-      }
-      return prev;
-    });
-  }, [formData?.title]);
-
+  
   // ====== جلب المدربين (فوري من الكاش، ثم تحديث بالخلفية) ======
 useEffect(() => {
   // لو لسه ما عرفنا الدور → ما نعمل ولا اشي
@@ -183,157 +167,76 @@ useEffect(() => {
   }, [membersList, formData?.members?.length]); // :contentReference[oaicite:5]{index=5}
 
   // ====== Handlers ======
-  const handleClassSelect = (cls) => {
-    if (isReadOnly) return;
-
-    setFormData((prev) => ({
-      ...prev,
-      title: cls,
-      service: cls, // backend expects "service"
-    }));
-
-    setOpenClass(false);
-    setClassSearch("");
-    if (errors?.title) setErrors((prev) => ({ ...prev, title: null }));
-  };
-
-  const handleAddNewClass = () => {
-    if (isReadOnly) return;
-    const newClass = classSearch.trim();
-    if (newClass && !classes.includes(newClass)) {
-      setClasses((prev) => [...prev, newClass]);
-      handleClassSelect(newClass);
-    }
-  };
-
-  // إغلاق قائمة أسماء الحصص عند الضغط خارجها
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".dropdown-step1")) {
-        setOpenClass(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  
 
   // ====== UI (نفس الشكل بالضبط) ======
   // نحدد إذا في أخطاء ظاهرة عشان نفعّل السكرول بس وقتها
   const hasErrors = errors && Object.values(errors).some(Boolean);
 
+  const handleTitleChange = (e) => {
+  if (isIndividual) return;
+
+  const value = e.target.value;
+  const trimmed = value.trim();
+
+  // نحدّث البيانات
+  setFormData((prev) => ({
+    ...prev,
+    title: value,
+    service: value, // عشان لسه الباك إند متوقع service
+  }));
+
+  // نحدّث الأخطاء
+  let error = null;
+
+  if (!trimmed) {
+    error = "اسم الحصة مطلوب";
+  } else if (trimmed.length < 3) {
+    error = "اسم الحصة يجب أن يحتوي على 3 أحرف على الأقل";
+  } else if (trimmed.length > 50) {
+    error = "اسم الحصة يجب ألا يزيد عن 50 حرفًا";
+  }
+
+  setErrors((prev) => ({
+    ...prev,
+    title: error,
+  }));
+};
+
   return (
     <div className="flex justify-center bg-white w-full text-black text-[14px]">
       {/* 🟣 سكرول حول الفورم بس لما يكون في أخطاء عشان زر "التالي" يضل مبين */}
       <div
-        className={
-          "w-[343px]" +
-          (hasErrors
-            ? " max-h-[500px] overflow-y-auto overflow-x-hidden custom-scrollbar"
-            : "")
-        }
-      >
-        <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
+  className={
+    "w-[343px]" +
+    (hasErrors
+      ? " max-h-[500px] overflow-y-auto overflow-x-hidden custom-scrollbar pl-[2px]"
+      : "")
+  }
+>
+  <form className="w-full flex flex-col gap-3 font-[Cairo]">
 
         {/* اسم الحصة */}
-        <div className="relative dropdown-step1">
-          <label className="block font-bold text-sm mb-1">
-            اسم الحصة <span className="text-red-500">*</span>
-          </label>
-          <div
-            className={`w-full h-10 rounded-[8px] flex items-center justify-between relative border ${
-              errors?.title ? "border-red-500" : "border-gray-300"
-            } ${isReadOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "cursor-pointer"}`}
-            onClick={() => {
-              if (!isIndividual) setOpenClass(!openClass);
-            }}
-          >
-            <span
-              className={`h-10 pr-3 pl-2 w-full flex items-center ${
-                formData.title ? "text-black" : "text-gray-400"
-              }`}
-            >
-              {formData.title || "اختر اسم الحصة"}
-            </span>
-            <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
-          </div>
-          {errors?.title && (
-            <p className="text-red-500 text-xs mt-1">{errors.title}</p>
-          )}
+<div className="relative">
+  <label className="block font-bold text-sm mb-1">
+    اسم الحصة <span className="text-red-500">*</span>
+  </label>
+  <input
+    type="text"
+    placeholder="أدخل اسم الحصة"
+    value={formData.title || ""}
+    onChange={handleTitleChange}
+    readOnly={isIndividual}
+    disabled={isIndividual}
+    className={`w-full h-10 rounded-[8px] border px-3 py-2 focus:outline-none placeholder-gray-400 ${
+      errors?.title ? "border-red-500" : "border-gray-300"
+    } ${isIndividual ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"}`}
+  />
+  {errors?.title && (
+    <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+  )}
+</div>
 
-          {openClass && !isReadOnly && (
-            <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-300 mt-1 shadow-lg z-50">
-              <div className="p-3 max-h-[240px] overflow-y-auto">
-                <div className="relative mb-2">
-                  <input
-                    type="text"
-                    placeholder="ابحث عن حصة."
-                    value={classSearch}
-                    onChange={(e) => setClassSearch(e.target.value)}
-                    className="w-full h-8 rounded-md pr-8 pl-8 border border-gray-200 focus:outline-none text-gray-800 placeholder-gray-400"
-                  />
-                  <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-4 h-4 text-[var(--color-purple)]" />
-                  {classSearch && (
-                    <XIcon
-                      alt="clear"
-                      className="absolute top-1/2 left-2 -translate-y-1/2 w-3.5 h-3.5 cursor-pointer opacity-80 hover:opacity-100 text-[var(--color-purple)]"
-                      onClick={() => setClassSearch("")}
-                    />
-                  )}
-                </div>
-
-                {classSearch && !classes.includes(classSearch) && (
-                  <div
-                    onClick={handleAddNewClass}
-                    className="flex items-center gap-2 mb-2 cursor-pointer px-2 py-1 hover:bg-gray-100 rounded-md"
-                  >
-                    <AddcircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
-                    <span className="text-gray-800 font-normal">
-                      إضافة "{classSearch}"
-                    </span>
-                  </div>
-                )}
-
-                {classes
-                  .filter((c) =>
-                    c.toLowerCase().includes(classSearch.toLowerCase())
-                  )
-                  .map((cls, idx) => {
-                    const isSelected = formData.title === cls;
-                    return (
-                      <div
-                        key={idx}
-                        onClick={() => handleClassSelect(cls)}
-                        className={`flex items-center justify-between h-[32px] px-3 py-1 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 ${
-                          isSelected ? "font-semibold text-black" : "text-gray-700"
-                        }`}
-                      >
-                        {cls}
-                        <div
-                          className={`w-4 h-4 flex items-center justify-center rounded-full border-2 ${
-                            isSelected
-                              ? "border-[var(--color-purple)]"
-                              : "border-[var(--color-purple)]"
-                          }`}
-                        >
-                          {isSelected && (
-                            <div className="w-2 h-2 rounded-full bg-[var(--color-purple)]"></div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                {classes.filter((c) =>
-                  c.toLowerCase().includes(classSearch.toLowerCase())
-                ).length === 0 && (
-                  <div className="text-gray-400 text-center py-2">
-                    لا يوجد حصص مطابقة
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* الوصف */}
         <div>
@@ -482,9 +385,9 @@ useEffect(() => {
 </div>
 
         {/* المشتركين */}
-        <div className="h-[66px] w-[313px] flex flex-col justify-between gap-[8px]">
+        <div className="h-[66px] w-full flex flex-col justify-between">
           <label className="text-[12px] font-bold leading-[18px]">المشتركين</label>
-          <div className="relative w-[343px]">
+          <div className="relative w-full">
             <ParticipantsSelector
               variant="booking"
               showLabel={false}
@@ -502,3 +405,107 @@ useEffect(() => {
     </div>
   );
 }
+
+{/*
+  اسم الحصة السابق خيارات، وبحث وإضافة
+  <div className="relative dropdown-step1">
+          <label className="block font-bold text-sm mb-1">
+            اسم الحصة <span className="text-red-500">*</span>
+          </label>
+          <div
+            className={`w-full h-10 rounded-[8px] flex items-center justify-between relative border ${
+              errors?.title ? "border-red-500" : "border-gray-300"
+            } ${isReadOnly ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "cursor-pointer"}`}
+            onClick={() => {
+              if (!isIndividual) setOpenClass(!openClass);
+            }}
+          >
+            <span
+              className={`h-10 pr-3 pl-2 w-full flex items-center ${
+                formData.title ? "text-black" : "text-gray-400"
+              }`}
+            >
+              {formData.title || "اختر اسم الحصة"}
+            </span>
+            <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
+          </div>
+          {errors?.title && (
+            <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+          )}
+
+          {openClass && !isReadOnly && (
+            <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-300 mt-1 shadow-lg z-50">
+              <div className="p-3 max-h-[240px] overflow-y-auto">
+                <div className="relative mb-2">
+                  <input
+                    type="text"
+                    placeholder="ابحث عن حصة."
+                    value={classSearch}
+                    onChange={(e) => setClassSearch(e.target.value)}
+                    className="w-full h-8 rounded-md pr-8 pl-8 border border-gray-200 focus:outline-none text-gray-800 placeholder-gray-400"
+                  />
+                  <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-4 h-4 text-[var(--color-purple)]" />
+                  {classSearch && (
+                    <XIcon
+                      alt="clear"
+                      className="absolute top-1/2 left-2 -translate-y-1/2 w-3.5 h-3.5 cursor-pointer opacity-80 hover:opacity-100 text-[var(--color-purple)]"
+                      onClick={() => setClassSearch("")}
+                    />
+                  )}
+                </div>
+
+                {classSearch && !classes.includes(classSearch) && (
+                  <div
+                    onClick={handleAddNewClass}
+                    className="flex items-center gap-2 mb-2 cursor-pointer px-2 py-1 hover:bg-gray-100 rounded-md"
+                  >
+                    <AddcircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
+                    <span className="text-gray-800 font-normal">
+                      إضافة "{classSearch}"
+                    </span>
+                  </div>
+                )}
+
+                {classes
+                  .filter((c) =>
+                    c.toLowerCase().includes(classSearch.toLowerCase())
+                  )
+                  .map((cls, idx) => {
+                    const isSelected = formData.title === cls;
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => handleClassSelect(cls)}
+                        className={`flex items-center justify-between h-[32px] px-3 py-1 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0 ${
+                          isSelected ? "font-semibold text-black" : "text-gray-700"
+                        }`}
+                      >
+                        {cls}
+                        <div
+                          className={`w-4 h-4 flex items-center justify-center rounded-full border-2 ${
+                            isSelected
+                              ? "border-[var(--color-purple)]"
+                              : "border-[var(--color-purple)]"
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="w-2 h-2 rounded-full bg-[var(--color-purple)]"></div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                {classes.filter((c) =>
+                  c.toLowerCase().includes(classSearch.toLowerCase())
+                ).length === 0 && (
+                  <div className="text-gray-400 text-center py-2">
+                    لا يوجد حصص مطابقة
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+  
+*/}

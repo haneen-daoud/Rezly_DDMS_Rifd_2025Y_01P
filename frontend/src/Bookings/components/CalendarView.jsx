@@ -35,7 +35,7 @@ export default function CalendarView() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [fullScreenMode, setFullScreenMode] = useState(false);
 
-    // 🎨 ألوان الحجز الأربعة
+  // 🎨 ألوان الحجز الأربعة
   const bookingColors = [
     { bg: "#DCFCE7", border: "#22C55E", text: "#14532D" }, // أخضر
     { bg: "#EDE9FE", border: "#8B5CF6", text: "#4C1D95" }, // بنفسجي
@@ -43,32 +43,35 @@ export default function CalendarView() {
     { bg: "#FEF3C7", border: "#F59E0B", text: "#92400E" }, // أصفر
   ];
 
-    // 🎨 توزيع الألوان الأربعة بشكل دائري وثابت بالكاش
-const getBookingColor = (bookingId) => {
-  const storedColors = JSON.parse(localStorage.getItem("bookingColors") || "{}");
-  const colorList = bookingColors;
-  
-  // لو الحجز له لون مسبق، رجّعه مباشرة
-  if (storedColors[bookingId]) return storedColors[bookingId];
+  // 🎨 توزيع الألوان الأربعة بشكل دائري وثابت بالكاش
+  const getBookingColor = (bookingId) => {
+    const storedColors = JSON.parse(
+      localStorage.getItem("bookingColors") || "{}"
+    );
+    const colorList = bookingColors;
 
-  // نقرأ العدّاد الحالي من الكاش
-  let colorCounter = parseInt(localStorage.getItem("colorCounter") || "0", 10);
+    // لو الحجز له لون مسبق، رجّعه مباشرة
+    if (storedColors[bookingId]) return storedColors[bookingId];
 
-  // نحدد اللون بناءً على العداد (0 → أول لون، 1 → ثاني...)
-  const color = colorList[colorCounter % colorList.length];
+    // نقرأ العدّاد الحالي من الكاش
+    let colorCounter = parseInt(
+      localStorage.getItem("colorCounter") || "0",
+      10
+    );
 
-  // نحدّث العدّاد ونسجّله بالكاش
-  colorCounter = (colorCounter + 1) % colorList.length;
-  localStorage.setItem("colorCounter", colorCounter.toString());
+    // نحدد اللون بناءً على العداد (0 → أول لون، 1 → ثاني...)
+    const color = colorList[colorCounter % colorList.length];
 
-  // نخزّن اللون لهذا الحجز
-  storedColors[bookingId] = color;
-  localStorage.setItem("bookingColors", JSON.stringify(storedColors));
+    // نحدّث العدّاد ونسجّله بالكاش
+    colorCounter = (colorCounter + 1) % colorList.length;
+    localStorage.setItem("colorCounter", colorCounter.toString());
 
-  return color;
-};
+    // نخزّن اللون لهذا الحجز
+    storedColors[bookingId] = color;
+    localStorage.setItem("bookingColors", JSON.stringify(storedColors));
 
-
+    return color;
+  };
 
   // ---- تحويل الحجوزات إلى أحداث FullCalendar ----
   // دالة مساعدة لتحويل الوقت العربي "9:30 ص" -> "09:30"
@@ -118,60 +121,49 @@ const getBookingColor = (bookingId) => {
 
   // 🟣 الآن كل schedule داخل booking يتحول إلى Event مستقل
   const events = (bookings || []).flatMap((booking, index) => {
-  if (!booking.schedules || booking.schedules.length === 0) return [];
+    if (!booking.schedules || booking.schedules.length === 0) return [];
 
-  return booking.schedules.map((s, sIndex) => {
-    // 🎨 كل schedule له لون خاص حسب الـ _id
-    const colorData = getBookingColor(s._id);
+    return booking.schedules.map((s, sIndex) => {
+      // 🎨 كل schedule له لون خاص حسب الـ _id
+      const colorData = getBookingColor(s._id);
 
-    const parseArabicTime = (timeStr) => {
-      if (!timeStr) return "00:00";
-      const hasPM = /م/.test(timeStr);
-      const hasAM = /ص/.test(timeStr);
-      const clean = timeStr.replace(/[^\d:]/g, "");
-      const [hStr, mStr] = clean.split(":");
-      let h = parseInt(hStr || "0", 10);
-      const m = parseInt(mStr || "0", 10);
-      if (hasPM && h < 12) h += 12;
-      if (hasAM && h === 12) h = 0;
-      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-    };
+      const parseArabicTime = (timeStr) => {
+        if (!timeStr) return "00:00";
+        const hasPM = /م/.test(timeStr);
+        const hasAM = /ص/.test(timeStr);
+        const clean = timeStr.replace(/[^\d:]/g, "");
+        const [hStr, mStr] = clean.split(":");
+        let h = parseInt(hStr || "0", 10);
+        const m = parseInt(mStr || "0", 10);
+        if (hasPM && h < 12) h += 12;
+        if (hasAM && h === 12) h = 0;
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      };
 
-    const safeDate = new Date(s.date);
-    const dateStr = safeDate.toISOString().split("T")[0];
-    const start = `${dateStr}T${parseArabicTime(s.timeStart)}`;
-    const end = `${dateStr}T${parseArabicTime(s.timeEnd)}`;
+      const safeDate = new Date(s.date);
+      const dateStr = safeDate.toISOString().split("T")[0];
+      const start = `${dateStr}T${parseArabicTime(s.timeStart)}`;
+      const end = `${dateStr}T${parseArabicTime(s.timeEnd)}`;
 
-    return {
-      id: s._id,
-      title: booking.service || "حجز",
-      start,
-      end,
-      extendedProps: {
-        coach: booking.coach?.name || "لا يوجد مدرب",
-        participants: booking.membersCount ?? 0,
-        room: s.location || booking.location || "",
-        rawBooking: booking,
-        color: colorData, // 🎨 كل schedule الآن له لون خاص
-      },
-    };
+      return {
+        id: s._id,
+        title: booking.service || "حجز",
+        start,
+        end,
+        extendedProps: {
+          coach: booking.coach?.name || "لا يوجد مدرب",
+          participants: booking.membersCount ?? 0,
+          room: s.location || booking.location || "",
+          rawBooking: booking,
+          color: colorData, // 🎨 كل schedule الآن له لون خاص
+        },
+      };
+    });
   });
-});
-
-
 
   // ---- دوال التحكم ----
-  const handleChangeView = (newView) => {
-    setView(newView);
-    setShowViewMenu(false);
-    calendarRef.current?.getApi().changeView(newView);
-  };
+  
 
-  const handleDateChange = (date) => {
-    setCurrentDate(date);
-    setShowDatePicker(false);
-    calendarRef.current?.getApi().gotoDate(date);
-  };
 
   // حفظ تعديل الحجز (يستدعى من EventModal عبر prop)
   const handleSaveBooking = async (updatedBooking) => {
@@ -212,73 +204,71 @@ const getBookingColor = (bookingId) => {
   };
 
   // 🟣 حذف الحجز الفردي من الكاليندر (schedule واحد فقط)
-// 🟣 حذف الحجز الفردي من الكاليندر (schedule واحد فقط)
-const handleDeleteBooking = async (bookingToDelete) => {
-  try {
-    const token =
-    localStorage.getItem("authToken") ||
-    (localStorage.getItem("token")
-      ? `Bearer ${localStorage.getItem("token")}`
-      : `Bearer ${import.meta.env.VITE_API_TOKEN}`) ||
-    "";
+  // 🟣 حذف الحجز الفردي من الكاليندر (schedule واحد فقط)
+  const handleDeleteBooking = async (bookingToDelete) => {
+    try {
+      const token =
+        localStorage.getItem("authToken") ||
+        (localStorage.getItem("token")
+          ? `Bearer ${localStorage.getItem("token")}`
+          : `Bearer ${import.meta.env.VITE_API_TOKEN}`) ||
+        "";
 
-    const scheduleId = bookingToDelete?.selectedScheduleId;
-    const bookingId = bookingToDelete?._id;
+      const scheduleId = bookingToDelete?.selectedScheduleId;
+      const bookingId = bookingToDelete?._id;
 
-    if (!bookingId || !scheduleId) {
-      toast.error("لم يتم تحديد الحجز الفردي بشكل صحيح ❌");
-      return;
+      if (!bookingId || !scheduleId) {
+        toast.error("لم يتم تحديد الحجز الفردي بشكل صحيح ❌");
+        return;
+      }
+
+      // 🚀 طلب حذف فردي فعلي من الباك
+      const url = `https://rezly-ddms-rifd-2025y-01p.onrender.com/booking/${bookingId}?scheduleId=${scheduleId}`;
+      const res = await axios.delete(url, {
+        headers: {
+          Authorization: token.startsWith("Bearer") ? token : `Bearer ${token}`,
+        },
+      });
+
+      console.log("🟢 تم حذف الحجز الفردي بنجاح:", res.data);
+
+      // 🧹 حذف الجدول من الواجهة مباشرة
+      setBookings((prev) => {
+        const updated = prev
+          .map((b) =>
+            b._id === bookingId
+              ? {
+                  ...b,
+                  schedules: b.schedules?.filter((s) => s._id !== scheduleId),
+                }
+              : b
+          )
+          .filter((b) => b.schedules?.length > 0);
+
+        // ✅ نحفظ نسخة مباشرة بالكاش المحلي
+        localStorage.setItem("cachedBookings", JSON.stringify(updated));
+        return updated;
+      });
+
+      // ❌ ما منعمل fetchBookings مباشرة بعد الحذف
+      // 🕐 نعطي السيرفر وقت يسجل التغيير
+      setTimeout(() => {
+        // تحديث خفيف بعد 2 ثانية
+        fetchBookings();
+      }, 2000);
+
+      toast.success("تم حذف الحجز لليوم المحدد ✅");
+      setSelectedBooking(null);
+    } catch (err) {
+      console.error(
+        "❌ خطأ أثناء حذف الحجز الفردي:",
+        err.response?.data || err.message
+      );
+      toast.error(
+        err.response?.data?.message || "حدث خطأ أثناء حذف الحجز الفردي ❌"
+      );
     }
-
-    // 🚀 طلب حذف فردي فعلي من الباك
-    const url = `https://rezly-ddms-rifd-2025y-01p.onrender.com/booking/${bookingId}?scheduleId=${scheduleId}`;
-    const res = await axios.delete(url, {
-      headers: {
-        Authorization: token.startsWith("Bearer")
-          ? token
-          : `Bearer ${token}`,
-      },
-    });
-
-    console.log("🟢 تم حذف الحجز الفردي بنجاح:", res.data);
-
-    // 🧹 حذف الجدول من الواجهة مباشرة
-    setBookings((prev) => {
-  const updated = prev
-    .map((b) =>
-      b._id === bookingId
-        ? {
-            ...b,
-            schedules: b.schedules?.filter((s) => s._id !== scheduleId),
-          }
-        : b
-    )
-    .filter((b) => b.schedules?.length > 0);
-
-  // ✅ نحفظ نسخة مباشرة بالكاش المحلي
-  localStorage.setItem("cachedBookings", JSON.stringify(updated));
-  return updated;
-});
-
-// ❌ ما منعمل fetchBookings مباشرة بعد الحذف
-// 🕐 نعطي السيرفر وقت يسجل التغيير
-setTimeout(() => {
-  // تحديث خفيف بعد 2 ثانية
-  fetchBookings();
-}, 2000);
-
-    toast.success("تم حذف الحجز لليوم المحدد ✅");
-    setSelectedBooking(null);
-  } catch (err) {
-    console.error("❌ خطأ أثناء حذف الحجز الفردي:", err.response?.data || err.message);
-    toast.error(
-      err.response?.data?.message || "حدث خطأ أثناء حذف الحجز الفردي ❌"
-    );
-  }
-};
-
-
-
+  };
 
   // عرض الحدث عند النقر عليه
   const onEventClick = (info) => {
@@ -286,23 +276,53 @@ setTimeout(() => {
     if (clicked) setSelectedBooking(clicked);
   };
 
+  const handleChangeView = (newView) => {
+    setView(newView);
+    setShowViewMenu(false);
+    const api = calendarRef.current?.getApi();
+    if (api) {
+      api.changeView(newView);
+      // نحدّث التاريخ المعروض حسب موقع الكاليندر بعد تغيير الفيو
+      setCurrentDate(api.getDate());
+    }
+  };
+
+  const handleDateChange = (date) => {
+    setCurrentDate(date);
+    setShowDatePicker(false);
+    calendarRef.current?.getApi().gotoDate(date);
+  };
+
+  // 👇 جديد: التنقّل بالسهم اليمين (اليوم/الأسبوع/الشهر التالي)
+  const handleNext = () => {
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    api.next();
+    setCurrentDate(api.getDate());
+  };
+
+  // 👈 جديد: التنقّل بالسهم اليسار (اليوم/الأسبوع/الشهر السابق)
+  const handlePrev = () => {
+    const api = calendarRef.current?.getApi();
+    if (!api) return;
+    api.prev();
+    setCurrentDate(api.getDate());
+  };
+
+
   return (
     <>
       <div
-  className={`${
-    fullScreenMode
-      ? "fixed inset-0 z-50 p-4 bg-white flex flex-col calendar-fullscreen"
-      : "relative w-full h-full"
-  }`}
->
-
+        className={`${
+          fullScreenMode ? "calendar-fullscreen" : "relative w-full h-full"
+        }`}
+      >
         <div
-  className={`bg-white rounded-[16px] overflow-hidden flex-1 flex flex-col ${
-    view === "timeGridWeek" ? "" : "hide-fc-header"
-  }`}
-  dir="rtl"
->
-
+          className={`bg-white rounded-[16px] overflow-hidden flex-1 flex flex-col ${
+            view === "timeGridWeek" ? "" : "hide-fc-header"
+          }`}
+          dir="rtl"
+        >
           {/* الهيدر */}
           <div className="grid grid-cols-[50px_1fr]">
             <div className="border-l border-[#eee] w-[46px] pt-[12px]"></div>
@@ -328,63 +348,98 @@ setTimeout(() => {
                       <MiniCalender
                         currentDate={currentDate}
                         handleDateChange={handleDateChange}
-                        variant = "calender"
+                        variant="calender"
                         hideTodayHighlight={false}
                       />
                     </div>
                   )}
                 </div>
 
-                {/* زر تبديل العرض */}
-                <div className="relative">
+                                {/* أزرار التنقّل + اختيار نوع العرض */}
+                <div className="flex items-center gap-[8px]">
+                  {/* زر السهم اليسار → اليوم/الأسبوع/الشهر السابق */}
                   <button
-                    onClick={() => setShowViewMenu(!showViewMenu)}
-                    className="bg-[#F8F9FA] w-[111px] h-[32px] px-[8px] py-2 rounded-[8px] font-semibold flex items-center justify-between gap-x-[12px]"
+                    onClick={handlePrev}
+                    className="bg-[#F8F9FA] w-[32px] h-[32px] flex items-center justify-center rounded-[8px]"
                   >
-                    <img src={RightArrowIcon} alt="rightarrow" />
-                    <span className="font-cairo text-[14px] font-[700] text-black">
-                      {view === "timeGridDay"
-                        ? "اليوم"
-                        : view === "timeGridWeek"
-                        ? "أسبوع"
-                        : "شهر"}
-                    </span>
-                    <img src={LeftArrowIcon} alt="leftarrow" />
+                    <img src={RightArrowIcon} alt="السابق" />
                   </button>
 
-                  {showViewMenu && (
-                    <div className="absolute z-30 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg w-24">
-                      <div
-                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
-                        onClick={() => handleChangeView("timeGridDay")}
-                      >
-                        يوم
+                  {/* زر اختيار (يوم / أسبوع / شهر) */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowViewMenu(!showViewMenu)}
+                      className="bg-[#F8F9FA] min-w-[100px] h-[32px] px-[8px] rounded-[8px] font-semibold flex items-center justify-center gap-x-[6px]"
+                    >
+                      <span className="font-cairo text-[14px] font-[700] text-black">
+                        {view === "timeGridDay"
+                          ? "اليوم"
+                          : view === "timeGridWeek"
+                          ? "أسبوع"
+                          : "شهر"}
+                      </span>
+                      <img src={DownArrowIcon} alt="اختر العرض" />
+                    </button>
+
+                    {showViewMenu && (
+                      <div className="absolute z-30 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg w-24">
+                        <div
+                          className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
+                          onClick={() => handleChangeView("timeGridDay")}
+                        >
+                          يوم
+                        </div>
+                        <div
+                          className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
+                          onClick={() => handleChangeView("timeGridWeek")}
+                        >
+                          أسبوع
+                        </div>
+                        <div
+                          className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
+                          onClick={() => handleChangeView("dayGridMonth")}
+                        >
+                          شهر
+                        </div>
                       </div>
-                      <div
-                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
-                        onClick={() => handleChangeView("timeGridWeek")}
-                      >
-                        أسبوع
-                      </div>
-                      <div
-                        className="px-3 py-2 cursor-pointer hover:bg-gray-100 text-black"
-                        onClick={() => handleChangeView("dayGridMonth")}
-                      >
-                        شهر
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+
+                  {/* زر السهم اليمين → اليوم/الأسبوع/الشهر التالي */}
+                  <button
+                    onClick={handleNext}
+                    className="bg-[#F8F9FA] w-[32px] h-[32px] flex items-center justify-center rounded-[8px]"
+                  >
+                    <img src={LeftArrowIcon} alt="التالي" />
+                  </button>
                 </div>
+
               </div>
 
               {/* زر تكبير الشاشة */}
               <div>
-                
                 <ReSizeIcon
   className="cursor-pointer w-8 h-8 text-[var(--color-purple)]"
   onClick={() => {
-    setFullScreenMode(!fullScreenMode);
-    setTimeout(() => calendarRef.current?.getApi().render(), 0);
+    const api = calendarRef.current?.getApi();
+
+    // 🟣 نحفظ التاريخ الحالي من الكاليندر نفسه
+    const current = api?.getDate();
+    if (current) {
+      setCurrentDate(current);
+    }
+
+    // نبدّل وضع الفل سكرين فقط
+    setFullScreenMode((prev) => !prev);
+
+    // بعد ما يعيد رندر، نرجّعه على نفس التاريخ ونحدّث الحجم
+    setTimeout(() => {
+      const apiAfter = calendarRef.current?.getApi();
+      if (apiAfter && current) {
+        apiAfter.gotoDate(current);
+        apiAfter.updateSize();
+      }
+    }, 0);
   }}
 />
 
@@ -394,7 +449,6 @@ setTimeout(() => {
 
           {/* الكاليندر */}
           <FullCalendar
-            key={fullScreenMode ? "fullscreen" : "dashboard"}
             height={fullScreenMode ? "100%" : "auto"}
             contentHeight={fullScreenMode ? "100%" : "auto"}
             ref={calendarRef}
@@ -407,8 +461,14 @@ setTimeout(() => {
             slotMaxTime="24:00:00"
             slotDuration="00:30:00"
             events={events}
-            dayMaxEvents={3}
-            eventMaxStack={4}
+            dayMaxEvents={view === "dayGridMonth" ? 3 : false}
+  eventMaxStack={
+    view === "timeGridDay"
+      ? fullScreenMode
+        ? 6   // 👈 في عرض اليوم + فل سكرين → 6
+        : 4   // 👈 في عرض اليوم العادي → 4
+      : 4     // باقي العروض نخليها 4 زي ما هي
+  }
             eventClick={(info) => {
               const scheduleId = info.event.id;
               const foundBooking = bookings.find((b) =>
@@ -416,10 +476,12 @@ setTimeout(() => {
               );
 
               console.log("🟣 [CalendarView] تم الضغط على الإيفنت:", {
-  scheduleId,
-  foundBooking,
-  selectedSchedule: foundBooking?.schedules.find((s) => s._id === scheduleId)
-});
+                scheduleId,
+                foundBooking,
+                selectedSchedule: foundBooking?.schedules.find(
+                  (s) => s._id === scheduleId
+                ),
+              });
 
               if (foundBooking) {
                 setSelectedBooking({
@@ -440,24 +502,33 @@ setTimeout(() => {
               const color = eventInfo.event.extendedProps.color || {};
               return (
                 <div
-                  className="p-2 rounded border-r-4 w-full h-full truncate"
+                  className="
+    w-full h-full rounded border-r-4 
+    flex flex-col items-center justify-center text-center 
+    px-1 py-0.5
+    leading-tight
+  "
                   style={{
-        background: color.bg || "#DBEAFE",
-        borderColor: color.border || "#3B82F6",
-        color: color.text || "#1E3A8A",
-        fontFamily: "Cairo",
-        fontSize: "12px",
-        fontWeight: "600",
-      }}
+                    background: color.bg || "#DBEAFE",
+                    borderColor: color.border || "#3B82F6",
+                    color: color.text || "#1E3A8A",
+                    fontFamily: "Cairo",
+                    fontSize: "11px",
+                    fontWeight: "600",
+                  }}
                 >
-                  <div className="opacity-90">{eventInfo.timeText}</div>
-                  <div className="truncate">{eventInfo.event.title}</div>
+                  <div className="opacity-90 leading-tight">
+                    {eventInfo.timeText}
+                  </div>
+                  <div className="leading-tight whitespace-normal break-words">
+                    {eventInfo.event.title}
+                  </div>
                 </div>
               );
             }}
             allDaySlot={false}
-            eventOverlap={true}
-            slotEventOverlap={true}
+            eventOverlap={view !== "timeGridWeek"}
+            slotEventOverlap={view !== "timeGridWeek"}
             slotLabelContent={(arg) =>
               arg.date
                 .toLocaleTimeString("en-US", {

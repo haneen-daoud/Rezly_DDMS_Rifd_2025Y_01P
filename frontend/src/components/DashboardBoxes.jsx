@@ -4,7 +4,7 @@ export default function DashboardBoxes({ needsFollowUp, mostActive }) {
 
 
   return (
-    <div className="w-full flex flex-col md:flex-row gap-6 justify-center items-start p-4 font-Cairo">
+    <div className="w-full flex flex-col md:flex-row gap-6 justify-center items-start font-Cairo">
 
       {/* صندوق يحتاجون متابعة */}
       <div className="bg-white shadow-md rounded-xl p-4 w-full md:w-1/2">

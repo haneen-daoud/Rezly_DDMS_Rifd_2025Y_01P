@@ -91,6 +91,11 @@ export default function MiniCalender({
       "absolute top-[calc(100%+8px)] right-0 z-50 w-full max-w-[343px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
     inner: "flex flex-col w-full items-center py-3 px-4",
   },
+  employeeTop: {
+    container:
+      "absolute bottom-full left-0 z-50 w-[340px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
+    inner: "flex flex-col w-full items-center py-3 px-4",
+  },
     default: {
       container:
         "absolute left-0 top-full mt-2 w-[500px] rounded-[12px] bg-white shadow-lg",

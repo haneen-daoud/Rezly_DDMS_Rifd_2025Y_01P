@@ -1,3 +1,4 @@
+// TimeRangePicker.jsx
 import React, { useState, useEffect } from "react";
 import HourIcon from "../../icons/hour.svg?react";
 
@@ -8,14 +9,13 @@ const TimeRangePicker = ({
   variant = "event",
   showIcons = false,
   isAddMode = false,
+  showArrow = true, // ✅ جديد
 }) => {
   const [startTime, setStartTime] = useState(initialStart || "08:00");
   const [endTime, setEndTime] = useState(initialEnd || "09:00");
 
-  // لتحديد إذا المستخدم غيّر النهاية يدويًا
   const [userChangedEnd, setUserChangedEnd] = useState(false);
 
-  // تحديث النهاية تلقائيًا ساعة بعد البداية (فقط عند الإنشاء الجديد)
   useEffect(() => {
     const isNewBooking =
       (!initialStart || initialStart === "08:00") &&
@@ -34,7 +34,6 @@ const TimeRangePicker = ({
     }
   }, [startTime]);
 
-  // منع النهاية أن تكون قبل البداية
   useEffect(() => {
     const [sh, sm] = startTime.split(":").map(Number);
     const [eh, em] = endTime.split(":").map(Number);
@@ -42,7 +41,7 @@ const TimeRangePicker = ({
     const endMins = eh * 60 + em;
 
     if (endMins <= startMins) {
-      const newEndMins = startMins + 60; // زيدي ساعة
+      const newEndMins = startMins + 60;
       const newEndHour = Math.floor(newEndMins / 60);
       const newEndMin = newEndMins % 60;
       const newEnd = `${String(newEndHour).padStart(2, "0")}:${String(
@@ -57,7 +56,6 @@ const TimeRangePicker = ({
     onChange({ start: startTime, end: endTime });
   }, [startTime, endTime]);
 
-  // خيارات الوقت
   const generateOptions = () => {
     const arr = [];
     for (let i = 8; i <= 22; i++) {
@@ -77,8 +75,6 @@ const TimeRangePicker = ({
   const borderColor =
     variant === "booking" ? "border-black/10" : "border-[#7E818C]";
 
-  const hasInitialValues = Boolean(initialStart || initialEnd);
-
   const isDefault =
     isAddMode &&
     startTime === "08:00" &&
@@ -86,20 +82,24 @@ const TimeRangePicker = ({
     !userChangedEnd;
 
   return (
-    <div className="flex items-center gap-1 h-10">
+    <div
+      className={`flex items-center h-10 ${
+        !showArrow ? "gap-2" : "" // ✅ مسافة 8px لما ما يكون في سهم
+      }`}
+    >
       {/* وقت البداية */}
       <div className="relative w-full">
         {showIcons && (
           <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--color-purple)]">
-            <HourIcon className="w-5 h-5 text-[var(--color-purple)]" />
+            <HourIcon className="w-4 h-4 text-[var(--color-purple)]" />
           </span>
         )}
         <select
           value={startTime}
           onChange={(e) => setStartTime(e.target.value)}
-          className={`h-10 w-full rounded-md border ${borderColor} pr-${
+          className={`h-10 w-full items-center rounded-md border ${borderColor} pr-${
             showIcons ? 8 : 2
-          } pl-2 focus:outline-none appearance-none ${
+          } focus:outline-none appearance-none max-h-56 overflow-y-auto custom-scrollbar ${
             isDefault
               ? "text-gray-400 font-normal text-[14px]"
               : variant === "event"
@@ -115,24 +115,27 @@ const TimeRangePicker = ({
         </select>
       </div>
 
-      <svg
-        width="70"
-        height="70"
-        viewBox="0 0 30 30"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <path
-          d="M8.79297 6.29297C9.18349 5.90247 9.81651 5.90246 10.207 6.29297C10.5975 6.68349 10.5975 7.31651 10.207 7.70703L6.91406 11H20.5C21.0523 11 21.5 11.4477 21.5 12C21.5 12.5523 21.0523 13 20.5 13H6.91406L10.207 16.293C10.5976 16.6835 10.5976 17.3165 10.207 17.707C9.81651 18.0976 9.18349 18.0976 8.79297 17.707L3.79297 12.707C3.69263 12.6067 3.61811 12.4904 3.56934 12.3662C3.52584 12.2556 3.50114 12.1346 3.5 12.0088V11.9971C3.50041 11.8551 3.53022 11.7199 3.58398 11.5977C3.6236 11.5074 3.67756 11.4214 3.74512 11.3438C3.7619 11.3245 3.77965 11.306 3.79785 11.2881L8.79297 6.29297Z"
-          fill=" var(--color-purple) "
-        />
-      </svg>
+      {/* السهم بين البداية والنهاية – بس لو showArrow=true */}
+      {showArrow && (
+        <svg
+          width="60"
+          height="60"
+          viewBox="0 0 30 30"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M8.79297 6.29297C9.18349 5.90247 9.81651 5.90246 10.207 6.29297C10.5975 6.68349 10.5975 7.31651 10.207 7.70703L6.91406 11H20.5C21.0523 11 21.5 11.4477 21.5 12C21.5 12.5523 21.0523 13 20.5 13H6.91406L10.207 16.293C10.5976 16.6835 10.5976 17.3165 10.207 17.707C9.81651 18.0976 9.18349 18.0976 8.79297 17.707L3.79297 12.707C3.69263 12.6067 3.61811 12.4904 3.56934 12.3662C3.52584 12.2556 3.50114 12.1346 3.5 12.0088V11.9971C3.50041 11.8551 3.53022 11.7199 3.58398 11.5977C3.6236 11.5074 3.67756 11.4214 3.74512 11.3438C3.7619 11.3245 3.77965 11.306 3.79785 11.2881L8.79297 6.29297Z"
+            fill=" var(--color-purple) "
+          />
+        </svg>
+      )}
 
       {/* وقت النهاية */}
       <div className="relative w-full">
         {showIcons && (
           <span className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[var(--color-purple)]">
-            <HourIcon className="w-5 h-5 text-[var(--color-purple)]" />
+            <HourIcon className="w-4 h-4 text-[var(--color-purple)]" />
           </span>
         )}
         <select
@@ -143,7 +146,7 @@ const TimeRangePicker = ({
           }}
           className={`h-10 w-full rounded-md border ${borderColor} pr-${
             showIcons ? 8 : 2
-          } pl-2 focus:outline-none appearance-none ${
+          } focus:outline-none appearance-none max-h-56 overflow-y-auto custom-scrollbar ${
             isDefault
               ? "text-gray-400 font-normal text-[14px]"
               : variant === "event"

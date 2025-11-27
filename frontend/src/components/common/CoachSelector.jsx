@@ -7,7 +7,7 @@ export default function CoachSelector({
   selectedCoach,
   setSelectedCoach,
   coachesList,
-  showIcon = true,
+  showIcon = false,
   placeholderColor = "text-black",
   borderStyle = "#7E818C",
   variant = "add",
@@ -52,8 +52,8 @@ export default function CoachSelector({
 
         <span
           className={`h-10 w-full flex items-center ${
-            showIcon ? "pr-8" : "pr-2"
-          } pl-2 ${
+            showIcon ? "pr-8" : "p-3"
+          } pl-3 ${
             selectedCoach
               ? variant === "event"
                 ? "font-bold text-[14px] text-[#000]"

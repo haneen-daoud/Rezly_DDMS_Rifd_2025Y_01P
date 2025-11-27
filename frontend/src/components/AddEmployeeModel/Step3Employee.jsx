@@ -7,10 +7,13 @@ import React, {
 import { step3Schema } from "../employeeValidation.js";
 import Select from "react-select";
 import selectStyles from "../selectStyles.js";
+import CalenderIcon from "../../icons/calender.svg?react";
+import MiniCalender from "../MiniCalender/MiniCalender.jsx";
 
 const Step3Employee = forwardRef(({ data, onChange }, ref) => {
   const [localErrors, setLocalErrors] = useState({});
   const [showErrors, setShowErrors] = useState(false);
+  const [showStartCalendar, setShowStartCalendar] = useState(false);
 
   // تغيير البيانات
   const handleChange = (field, value) => {
@@ -126,17 +129,52 @@ const Step3Employee = forwardRef(({ data, onChange }, ref) => {
         </div>
 
         {/* تاريخ بدء العمل */}
-        <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
-            تاريخ بدء العمل<span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={data.startDate || ""}
-            onChange={(e) => handleChange("startDate", e.target.value)}
-            className="w-full p-2.5 border border-gray-300 rounded-xl text-[12px] focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-        </div>
+<div className="flex flex-col gap-2">
+  <label className="block text-[14px] font-[700] text-black mb-1.5">
+    تاريخ بدء العمل<span className="text-red-500">*</span>
+  </label>
+
+  <div className="relative">
+    <input
+  type="text"
+  readOnly
+  value={data.startDate || ""}
+  onClick={() => setShowStartCalendar((prev) => !prev)}
+  placeholder="اختر تاريخ بدء العمل"
+  className="w-full p-2.5 border border-gray-300 rounded-xl text-[12px] placeholder-[#7E818C]
+    focus:outline-none focus:border-[var(--color-purple)] cursor-pointer pr-9"
+/>
+
+
+    {/* أيقونة الكاليندر بدون زر، فقط للعرض */}
+    <CalenderIcon
+      className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-purple)] pointer-events-none"
+    />
+
+    {showErrors && localErrors.startDate && (
+      <p className="text-red-500 text-[11px] mt-1">
+        {localErrors.startDate}
+      </p>
+    )}
+
+    {showStartCalendar && (
+      <MiniCalender
+        currentDate={
+          data.startDate ? new Date(data.startDate) : new Date()
+        }
+        variant="employeeTop"
+        handleDateChange={(date) => {
+          const iso = date.toISOString().split("T")[0];
+          handleChange("startDate", iso);
+          setShowStartCalendar(false);
+        }}
+      />
+    )}
+  </div>
+</div>
+
+
+
       </form>
     </div>
   );

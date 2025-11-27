@@ -7,7 +7,11 @@ const timeRegex = /^([0-9]{1,2}):([0-9]{2})(\s?[صم]?)$/;
 // 🟣 step 1 — الحقول الأساسية
 export const step1Schema = Yup.object().shape({
   // service أو title في الواجهة
-  title: Yup.string().trim().required("اسم الحصة مطلوب"),
+title: Yup.string()
+  .trim()
+  .required("اسم الحصة مطلوب")
+  .min(3, "اسم الحصة يجب أن يحتوي على 3 أحرف على الأقل")
+  .max(50, "اسم الحصة يجب ألا يزيد عن 50 حرفًا"),
 
   description: Yup.string()
   .required("الوصف مطلوب")
@@ -26,7 +30,11 @@ export const step1Schema = Yup.object().shape({
   .required("اختيار المدرب مطلوب"),
 
 
-  room: Yup.string().required("اختيار القاعة مطلوب"),
+  room: Yup.string()
+  .trim()
+  .required("اختيار القاعة مطلوب")
+  .max(10, "اسم القاعة يجب ألا يزيد عن 10 حروف"),
+
 
   maxMembers: Yup.number()
     .typeError("عدد المشتركين يجب أن يكون رقمًا")

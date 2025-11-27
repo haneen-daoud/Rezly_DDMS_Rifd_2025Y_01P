@@ -14,6 +14,11 @@ import Icon1 from "../assets/icon/card-icon1.svg";
 import Icon2 from "../assets/icon/card-icon2.svg";
 import Icon3 from "../assets/icon/card-icon3.svg";
 import Icon4 from "../assets/icon/card-icon4.svg";
+import Icon5 from "../assets/icon/card-icon5.svg";
+import Icon6 from "../assets/icon/card-icon6.svg";
+import Icon7 from "../assets/icon/card-icon7.svg";
+import Icon8 from "../assets/icon/card-icon8.svg";
+import Icon9 from "../assets/icon/card-icon9.svg";
 import User1 from "../img/User1.svg";
 import User2 from "../img/User2.svg";
 import User3 from "../img/User3.svg";
@@ -43,6 +48,118 @@ export default function Home() {
     role === "receptionist" ||
     role === "receptionist_employee";
   const isCoach = role === "coach";
+  const isAdmin = role === "admin";
+
+  // ٤ كروت الأساسية حسب الرول
+  const primaryCards = (() => {
+    if (isCoach) {
+      return [
+        {
+          title: "جلسات اليوم",
+          value: <span className="text-[28px] font-bold">15</span>,
+          icon: Icon1,
+        },
+        {
+          title: "نسبة الحضور اليوم",
+          value: <span className="text-[28px] font-bold">85%</span>,
+          icon: Icon2,
+        },
+        {
+          title: "نسبة الالتزام",
+          value: <span className="text-[28px] font-bold">92%</span>,
+          icon: Icon3,
+        },
+        {
+          title: "تقييماتك",
+          value: <span className="text-[28px] font-bold">4.8</span>,
+          icon: Icon4,
+        },
+      ];
+    }
+
+    if (isReception) {
+      return [
+        {
+          title: "جلسات اليوم",
+          value: <span className="text-[28px] font-bold">15</span>,
+          icon: Icon4,
+        },
+        {
+          title: "إشغال المكان",
+          value: <span className="text-[28px] font-bold">60%</span>,
+          icon: Icon1,
+        },
+        {
+          title: "عدد الاشتراكات",
+          value: <span className="text-[28px] font-bold">120</span>,
+          icon: Icon1,
+        },
+        {
+          title: "عدد الحجوزات",
+          value: <span className="text-[28px] font-bold">34</span>,
+          icon: Icon3,
+        },
+      ];
+    }
+
+    // Admin / باقي المستخدمين الافتراضي
+    return [
+      {
+        title: "إشغال المكان",
+        value: <span className="text-[28px] font-bold">60%</span>,
+        icon: Icon1,
+      },
+      {
+        title: "إيرادات اليوم",
+        value: <span className="text-[28px] font-bold">₪440</span>,
+        icon: Icon2,
+      },
+      {
+        title: "اشتراكات اليوم",
+        value: <span className="text-[28px] font-bold">23</span>,
+        icon: Icon3,
+      },
+      {
+        title: "جلسات اليوم",
+        value: <span className="text-[28px] font-bold">15</span>,
+        icon: Icon4,
+      },
+    ];
+  })();
+
+  // ٦ كروت الريسبشنست الثانوية
+  const receptionSecondaryCards = [
+    {
+      title: "إيرادات اليوم",
+      value: <span className="text-[24px] font-bold">₪440</span>,
+      icon: Icon2,
+    },
+    {
+      title: "اشتراكات قيد الانتهاء",
+      value: <span className="text-[24px] font-bold">12</span>,
+      icon: Icon6,
+    },
+    {
+      title: "المدفوعات المعلقة",
+      value: <span className="text-[24px] font-bold">8</span>,
+      icon: Icon8,
+    },
+    {
+      title: "عدد الحضور",
+      value: <span className="text-[24px] font-bold">57</span>,
+      icon: Icon5,
+    },
+    {
+      title: "نسبة التسرّب",
+      value: <span className="text-[24px] font-bold">12%</span>,
+      icon: Icon7,
+    },
+    {
+      title: "الجلسات الملغاة اليوم",
+      value: <span className="text-[24px] font-bold">3</span>,
+      icon: Icon9,
+    },
+  ];
 
   return (
     <div className="min-h-screen w-full font-cairo">
@@ -50,63 +167,29 @@ export default function Home() {
       <div className="grid grid-cols-1 lg:grid-cols-[39%_61%] gap-6 w-full">
         {/* العمود اليسار */}
         <div className="flex flex-col gap-6 w-full">
-          {/* ٤ كروت الأساسية - للجميع */}
+          {/* ٤ كروت الأساسية - ديناميكية حسب الرول */}
           <div className="grid grid-cols-2 gap-3 lg:gap-4">
-            <StatCard
-              value={<span className="text-[28px] font-bold">60%</span>}
-              icon={Icon1}
-              title="إشغال المكان"
-            />
-            <StatCard
-              value={<span className="text-[28px] font-bold">₪ 440</span>}
-              icon={Icon2}
-              title="إيرادات اليوم"
-            />
-            <StatCard
-              value={<span className="text-[28px] font-bold">23</span>}
-              icon={Icon3}
-              title="اشتراكات اليوم"
-            />
-            <StatCard
-              value={<span className="text-[28px] font-bold">15</span>}
-              icon={Icon4}
-              title="زوار الموقع الآن"
-            />
+            {primaryCards.map((card, index) => (
+              <StatCard
+                key={index}
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+              />
+            ))}
           </div>
 
           {/* ٦ كروت الريسبشنست تحت الأربع كروت في الموبايل فقط */}
           {isReception && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 lg:hidden">
-              <StatCard
-                title="حجوزات اليوم"
-                value={<span className="text-[24px] font-bold">34</span>}
-                icon={Icon1}
-              />
-              <StatCard
-                title="حجوزات الغد"
-                value={<span className="text-[24px] font-bold">18</span>}
-                icon={Icon2}
-              />
-              <StatCard
-                title="حجوزات قيد الانتظار"
-                value={<span className="text-[24px] font-bold">7</span>}
-                icon={Icon3}
-              />
-              <StatCard
-                title="إلغاءات اليوم"
-                value={<span className="text-[24px] font-bold">3</span>}
-                icon={Icon4}
-              />
-              <StatCard
-                title="مشتركين منتهية اشتراكاتهم"
-                value={<span className="text-[24px] font-bold">5</span>}
-                icon={Icon1}
-              />
-              <StatCard
-                title="استفسارات جديدة"
-                value={<span className="text-[24px] font-bold">9</span>}
-                icon={Icon2}
-              />
+              {receptionSecondaryCards.map((card, index) => (
+                <StatCard
+                  key={index}
+                  title={card.title}
+                  value={card.value}
+                  icon={card.icon}
+                />
+              ))}
             </div>
           )}
 
@@ -145,36 +228,14 @@ export default function Home() {
           {/* ٦ كروت إضافية للريسبشنست - على نفس امتداد الأربع كروت (للديسكتوب فقط) */}
           {isReception && (
             <div className="hidden lg:grid grid-cols-2 md:grid-cols-3 gap-3 lg:gap-4">
-              <StatCard
-                title="حجوزات اليوم"
-                value={<span className="text-[24px] font-bold">34</span>}
-                icon={Icon1}
-              />
-              <StatCard
-                title="حجوزات الغد"
-                value={<span className="text-[24px] font-bold">18</span>}
-                icon={Icon2}
-              />
-              <StatCard
-                title="حجوزات قيد الانتظار"
-                value={<span className="text-[24px] font-bold">7</span>}
-                icon={Icon3}
-              />
-              <StatCard
-                title="إلغاءات اليوم"
-                value={<span className="text-[24px] font-bold">3</span>}
-                icon={Icon4}
-              />
-              <StatCard
-                title="مشتركين منتهية اشتراكاتهم"
-                value={<span className="text-[24px] font-bold">5</span>}
-                icon={Icon1}
-              />
-              <StatCard
-                title="استفسارات جديدة"
-                value={<span className="text-[24px] font-bold">9</span>}
-                icon={Icon2}
-              />
+              {receptionSecondaryCards.map((card, index) => (
+                <StatCard
+                  key={index}
+                  title={card.title}
+                  value={card.value}
+                  icon={card.icon}
+                />
+              ))}
             </div>
           )}
 
