@@ -288,10 +288,10 @@ export default function SubscribersTab() {
   setSelectAll((prev) => {
     const newValue = !prev;
     if (newValue) {
-      // ✅ اختار كل المشتركين
+      // اختار كل المشتركين
       setSelectedClients(clients.map((c) => c._id));
     } else {
-      // ✅ ألغِ اختيار الكل
+      // ألغِ اختيار الكل
       setSelectedClients([]);
     }
     return newValue;
@@ -303,14 +303,14 @@ export default function SubscribersTab() {
   setSelectedClients((prevSelected) => {
     let updated;
     if (prevSelected.includes(id)) {
-      // ✅ إزالة مشترك من الاختيار
+      // إزالة مشترك من الاختيار
       updated = prevSelected.filter((c) => c !== id);
     } else {
-      // ✅ إضافة مشترك للاختيار
+      // إضافة مشترك للاختيار
       updated = [...prevSelected, id];
     }
 
-    // ✅ لو شلنا الصح عن واحد → نشيل "اختيار الكل"
+    // لو شلنا الصح عن واحد → نشيل "اختيار الكل"
     // ولو صارت كلهم مختارين يدويّاً → نحط صح على "اختيار الكل"
     if (updated.length === clients.length && clients.length > 0) {
       setSelectAll(true);
@@ -340,7 +340,7 @@ export default function SubscribersTab() {
       <table className="attendance-table SubscribersTab-table">
        <thead>
   <tr>
-    {/* ✅ إخفاء عمود التحديد بالكامل لو المستخدم مدرب */}
+    {/* إخفاء عمود التحديد بالكامل لو المستخدم مدرب */}
     {!isCoach && (
       <th>
         <input
@@ -357,7 +357,7 @@ export default function SubscribersTab() {
     <th>تاريخ بدء الاشتراك</th>
     <th>تاريخ انتهاء الاشتراك</th>
     <th>الملف الشخصي</th>
-    {/* ✅ إخفاء عمود الإجراءات لو المستخدم مدرب (من التعديل السابق) */}
+    {/* إخفاء عمود الإجراءات لو المستخدم مدرب (من التعديل السابق) */}
     {!isCoach && <th>الإجراءات</th>}
   </tr>
 </thead>
@@ -366,7 +366,7 @@ export default function SubscribersTab() {
         <tbody>
   {clients.map((client) => (
     <tr key={client._id}>
-      {/* ✅ إخفاء تشيك بوكس الصف لو المستخدم مدرب */}
+      {/* إخفاء تشيك بوكس الصف لو المستخدم مدرب */}
       {!isCoach && (
         <td>
           <input

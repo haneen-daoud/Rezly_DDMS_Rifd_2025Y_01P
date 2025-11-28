@@ -61,15 +61,15 @@ const Step4Employee = forwardRef(({ data, onChange }, ref) => {
           </label>
           <input
             type="text"
-            placeholder="اسم المستخدم"
+            placeholder=" أدخل اسم المستخدم"
             value={data.username || ""}
             onChange={(e) => handleChange("username", e.target.value)}
             className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-              focus:outline-none focus:ring-2 ${
-                showErrors && errors.username
-                  ? "border-red-500 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-purple-500"
-              }`}
+  focus:outline-none ${
+    showErrors && errors.username
+      ? "border-red-500"
+      : "border-gray-300 focus:border-[var(--color-purple)]"
+  }`}
           />
           {showErrors && errors.username && (
             <p className="text-red-500 text-[11px]">{errors.username}</p>
@@ -87,11 +87,11 @@ const Step4Employee = forwardRef(({ data, onChange }, ref) => {
             value={data.password || ""}
             onChange={(e) => handleChange("password", e.target.value)}
             className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-              focus:outline-none focus:ring-2 ${
-                showErrors && errors.password
-                  ? "border-red-500 focus:ring-red-400"
-                  : "border-gray-300 focus:ring-purple-500"
-              }`}
+  focus:outline-none ${
+    showErrors && errors.password
+      ? "border-red-500"
+      : "border-gray-300 focus:border-[var(--color-purple)]"
+  }`}
           />
           {showErrors && errors.password && (
             <p className="text-red-500 text-[11px]">{errors.password}</p>
@@ -127,7 +127,7 @@ const Step4Employee = forwardRef(({ data, onChange }, ref) => {
             value={data.notes || ""}
             onChange={(e) => handleChange("notes", e.target.value)}
             className="w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-              focus:outline-none focus:ring-2 border-gray-300 focus:ring-purple-500"
+  border-gray-300 focus:outline-none focus:border-[var(--color-purple)]"
           />
         </div>
       </form>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import downarrowIcon from "../../icons/downarrow.svg";
 import MembersIcon from "../../icons/members.svg?react";
+import { toast } from "react-toastify";
 
 export default function MaxParticipantsSelector({
   selectedMax,
@@ -46,13 +47,21 @@ export default function MaxParticipantsSelector({
 
   const handleCustomSubmit = (e) => {
     if (e) e.preventDefault();
-    const value = parseInt(customValue);
-    if (!isNaN(value) && value > 0) {
-      setSelectedMax(value);
-      setOpen(false);
-    } else {
-      alert("يرجى إدخال رقم صحيح");
+
+    const value = Number(customValue);
+
+    if (!customValue || Number.isNaN(value)) {
+      toast.error("يرجى إدخال رقم صحيح");
+      return;
     }
+
+    if (value <= 0) {
+      toast.error("يرجى إدخال رقم صحيح");
+      return;
+    }
+
+    setSelectedMax(value);
+    setOpen(false);
   };
 
   const [openUp, setOpenUp] = useState(false);
@@ -77,7 +86,7 @@ export default function MaxParticipantsSelector({
 
       {/* الزر الرئيسي */}
       <div
-        className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer px-2 relative"
+        className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer p-3 relative"
         onClick={() => setOpen(!open)}
         style={{ border: `1px solid ${borderColor}` }}
       >
@@ -147,8 +156,8 @@ export default function MaxParticipantsSelector({
                     <span
                       className={`text-[12px] ${
                         isSelected
-                          ? "font-semibold text-[#000]"
-                          : "font-semibold text-[#000]"
+                          ? "font-bold text-[#000]"
+                          : "font-normal text-[#000]"
                       }`}
                     >
                       {option.label}
@@ -206,12 +215,9 @@ export default function MaxParticipantsSelector({
                   </div>
 
                   <div
-                    onClick={() => {
-                      const value = parseInt(customValue);
-                      if (!isNaN(value) && value > 0) {
-                        setSelectedMax(value);
-                        setOpen(false);
-                      }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCustomSubmit(e);
                     }}
                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer ${
                       isSelected

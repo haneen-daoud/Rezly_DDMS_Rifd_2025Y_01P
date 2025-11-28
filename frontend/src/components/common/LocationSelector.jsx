@@ -60,6 +60,9 @@ export default function LocationSelector({
   const handleAddNew = () => {
     const newRoom = searchText.trim();
     if (!newRoom) return;
+    if (newRoom.length > 10) {
+      return;
+    }
 
     // نضيفها آخر القائمة
     setLocalList((prev) => [...prev, newRoom]);
@@ -90,7 +93,7 @@ export default function LocationSelector({
 
       {/* الحقل الرئيسي */}
       <div
-        className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer px-2 relative"
+        className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer p-3 relative"
         onClick={() => setOpenLocation(!openLocation)}
         style={{ border: `1px solid ${borderColor}` }}
       >
@@ -128,6 +131,7 @@ export default function LocationSelector({
                 placeholder="ابحث عن قاعة..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
+                maxLength={10}
                 className="w-full h-8 rounded-md pr-8 pl-8 border border-gray-200 focus:outline-none text-gray-800 placeholder-gray-400 text-[12px]"
               />
               <SearchIcon className="absolute top-1/2 right-2 -translate-y-1/2 w-4 h-4 text-[var(--color-purple)]" />
@@ -169,9 +173,14 @@ export default function LocationSelector({
                   >
                     <div className="flex items-center gap-2">
                       <LocationIcon className="w-4 h-4 text-[var(--color-purple)]" />
-                      <span className="text-[12px] font-semibold text-[#000]">
-                        {location}
-                      </span>
+                      <span
+  className={`text-[12px] text-[#000] ${
+    selected ? "font-bold" : "font-normal"
+  }`}
+>
+  {location}
+</span>
+
                     </div>
                     <div
                       className={`w-4 h-4 flex items-center justify-center rounded-full border-2 border-[var(--color-purple)]`}

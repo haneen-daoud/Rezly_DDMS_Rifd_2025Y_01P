@@ -1,7 +1,9 @@
 import React, { forwardRef, useImperativeHandle, useState } from "react";
-
 import Select from "react-select";
 import selectStyles from "../selectStyles.js";
+import MiniCalender from "../MiniCalender/MiniCalender.jsx";
+import CalenderIcon from "../../icons/calender.svg?react";
+
 const Step1Participant = forwardRef(({ memberData, setMemberData }, ref) => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -10,6 +12,7 @@ const Step1Participant = forwardRef(({ memberData, setMemberData }, ref) => {
     }
   };
   const [errors, setErrors] = useState({});
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useImperativeHandle(ref, () => ({
     setErrors,
@@ -20,6 +23,32 @@ const Step1Participant = forwardRef(({ memberData, setMemberData }, ref) => {
     if (file) {
       setMemberData({ ...memberData, image: file });
     }
+  };
+
+  // تحويل تاريخ الميلاد من سترنغ لـ Date للميني كاليندر
+  const birthDateObj = memberData.birthDate
+    ? new Date(memberData.birthDate)
+    : null;
+
+  // تنسيق بسيط لعرض التاريخ داخل الحقل
+  const formatBirthDateLabel = () => {
+    if (!memberData.birthDate) return "";
+    const [year, month, day] = memberData.birthDate.split("-");
+    return `${day}/${month}/${year}`;
+  };
+
+  // لما نختار تاريخ من الميني كاليندر
+  const handleBirthDateSelect = (date) => {
+    if (!date) return;
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const iso = `${year}-${month}-${day}`;
+
+    setMemberData({ ...memberData, birthDate: iso });
+    setErrors({ ...errors, birthDate: "" });
+    setShowCalendar(false);
   };
 
   return (
@@ -117,24 +146,56 @@ const Step1Participant = forwardRef(({ memberData, setMemberData }, ref) => {
           )}
         </div>
 
-        {/* تاريخ الميلاد */}
-        <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5 ">
-            تاريخ الميلاد <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            value={memberData.birthDate}
-            onChange={(e) => {
-              setMemberData({ ...memberData, birthDate: e.target.value });
-              setErrors({ ...errors, birthDate: "" });
-            }}
-            className="w-full p-2.5 border border-gray-300 rounded-xl text-[12px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-          />
-          {errors.birthDate && (
-            <p className="text-red-500 text-xs mt-1">{errors.birthDate}</p>
-          )}
-        </div>
+         {/* تاريخ الميلاد + MiniCalender */}
+<div>
+  <label className="block text-[14px] font-[700] text-black mb-1.5 ">
+    تاريخ الميلاد <span className="text-red-500">*</span>
+  </label>
+
+  {/* هذا الكونتينر هو اللي رح يكون relative عشان الميني كاليندر يطلع فوق الحقل مباشرة */}
+  <div className="relative">
+    {/* الحقل نفسه (div clickable) مع أيقونة الكاليندر وبجانبه التاريخ */}
+    <button
+      type="button"
+      onClick={() => setShowCalendar((prev) => !prev)}
+      className={`w-full flex items-center gap-2 border rounded-xl px-3 py-2.5 text-[12px] text-right
+        ${
+          errors.birthDate ? "border-red-500" : "border-gray-300"
+        } bg-white cursor-pointer
+        ${
+          showCalendar
+            ? "ring-2 ring-[var(--color-purple)] border-[var(--color-purple)]"
+            : "focus:outline-none focus:ring-2 focus:ring-[var(--color-purple)]"
+        }
+      `}
+    >
+      <CalenderIcon className="w-4 h-4 shrink-0" />
+
+      <span
+        className={
+          memberData.birthDate ? "text-gray-900" : "text-[#7E818C]"
+        }
+      >
+        {memberData.birthDate
+          ? formatBirthDateLabel()
+          : "اختر تاريخ الميلاد"}
+      </span>
+    </button>
+
+    {/* الميني كاليندر يطلع فوق الحقل مباشرة بفضل variant=employeeTop و parent relative */}
+    {showCalendar && (
+      <MiniCalender
+        currentDate={birthDateObj || new Date()}
+        handleDateChange={handleBirthDateSelect}
+        variant="employeeTop"
+      />
+    )}
+  </div>
+
+  {errors.birthDate && (
+    <p className="text-red-500 text-xs mt-1">{errors.birthDate}</p>
+  )}
+</div>
 
         {/* رفع الصورة */}
         <div>

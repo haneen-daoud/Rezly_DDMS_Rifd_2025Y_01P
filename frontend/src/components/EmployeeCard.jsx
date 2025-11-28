@@ -22,7 +22,7 @@ export default function EmployeeCard({ emp, onDelete }) {
 
     
   return (
-    <div className="relative bg-white rounded-xl border p-4 h-[162px] w-full max-w-[370px] border-[var(--color-cardborder)]">
+    <div className="relative bg-white rounded-xl border p-4 h-[162px] w-full border-[var(--color-cardborder)]">
 
       
 

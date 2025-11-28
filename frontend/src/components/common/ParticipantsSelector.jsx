@@ -256,7 +256,7 @@ export default function ParticipantsSelector({
           e.stopPropagation();
           toggleMember(member);
         }}
-        className="flex items-center justify-between h-[36px] px-3 py-1 cursor-pointer hover:bg-gray-50 transition-colors select-none"
+        className="flex items-center justify-between h-[36px] p-3 cursor-pointer hover:bg-gray-50 transition-colors select-none"
       >
         {/* الاسم */}
         <span
@@ -324,7 +324,7 @@ export default function ParticipantsSelector({
       const rect = rootRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      setOpenUp(spaceBelow < 200 && spaceAbove > spaceBelow);
+      setOpenUp(spaceBelow < 250 && spaceAbove > spaceBelow);
     }
   }, [open]);
 
@@ -336,10 +336,10 @@ export default function ParticipantsSelector({
 
       {/* الحقل الرئيسي */}
       <div
-        className={`h-10 border rounded-[8px] flex items-center justify-between cursor-pointer px-3 relative transition-colors
+        className={`h-10 border rounded-[8px] flex items-center justify-between cursor-pointer p-3 relative transition-colors
     ${
       variant === "booking"
-        ? "w-[343px] border-[#D9D9D9]"
+        ? "w-full border-[#D9D9D9]"
         : "w-[313px] border-[#7E818C]"
     }`}
         onClick={() => setOpen(!open)}
@@ -366,7 +366,7 @@ export default function ParticipantsSelector({
           >
             {currentIds.length > 0
               ? `${currentIds.length} مشترك${currentIds.length > 1 ? "ين" : ""}`
-              : "لا يوجد مشتركين مضافين لهذا الحجز"}
+              : "لا يوجد مشتركين "}
           </span>
 
           <AddCircleIcon className="w-4 h-4 text-[var(--color-purple)]" />
@@ -381,7 +381,7 @@ export default function ParticipantsSelector({
           }
       ${
         variant === "booking"
-          ? "w-[343px] border-gray-300"
+          ? "w-full border-gray-300"
           : "w-[313px] border-gray-300"
       }`}
         >
@@ -413,7 +413,7 @@ export default function ParticipantsSelector({
 
             {/* القائمة */}
             <div
-              className="overflow-y-auto max-h-[200px]"
+              className="overflow-y-auto max-h-[200px] custom-scrollbar"
               style={{ maxHeight: "200px", height: "200px" }}
             >
               {loading ? (
@@ -575,7 +575,7 @@ export default function ParticipantsSelector({
                 })
               ) : (
                 <p className="text-center text-gray-400 text-sm py-2">
-                  لا يوجد مشتركين مضافين
+                  لا يوجد مشتركين مضافين لهذا الحجز
                 </p>
               )}
             </div>

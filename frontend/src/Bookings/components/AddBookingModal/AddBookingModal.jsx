@@ -640,7 +640,10 @@ export default function AddBookingModal({
         // ✅ السيرفر عادة يرجّع الحجز الجديد داخل data.data أو data مباشرة
         const newBooking = response?.data?.data || response?.data || response;
 
-        // ✅ نغني البيانات المحلية لتنعرض فوريًا بالكروت
+                const activeMembers = Array.isArray(formData.members)
+          ? formData.members.filter((m) => !m._tempRemoved)
+          : [];
+
         const enrichedBooking = {
           ...newBooking,
           coach: {
@@ -648,14 +651,14 @@ export default function AddBookingModal({
             name:
               formData.coach?.name || formData.coachName || "مدرب غير معروف",
           },
-          members: Array.isArray(formData.members)
-            ? formData.members.map((m) =>
-                typeof m === "object"
-                  ? { _id: m._id || m.id, name: m.name || "مشترك غير معروف" }
-                  : { _id: m, name: "مشترك غير معروف" }
-              )
-            : [],
+          // 👇 نخزّن فقط المشتركين الفعّالين (نفس اللي بعتناهم للباك)
+          members: activeMembers.map((m) =>
+            typeof m === "object"
+              ? { _id: m._id || m.id, name: m.name || "مشترك غير معروف" }
+              : { _id: m, name: "مشترك غير معروف" }
+          ),
         };
+
 
         setBookings((prev) => [...prev, enrichedBooking]);
 
@@ -1221,7 +1224,7 @@ export default function AddBookingModal({
                 onClick={handleClose}
                 className="w-8 h-8 flex items-center justify-center"
               >
-                <img src={CloseIcon} alt="إغلاق" />
+                <img src={CloseIcon} className="rounded-[8px] bg-gray-100" alt="إغلاق" />
               </button>
             </div>
 

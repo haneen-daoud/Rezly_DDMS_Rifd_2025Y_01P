@@ -236,7 +236,7 @@ const AddParticipantModel = ({
             {isEditMode ? "تعديل بيانات المشترك" : "إضافة مشترك جديد"}
           </h2>
           <img
-            className="w-8 h-8 cursor-pointer"
+            className="w-8 h-8 cursor-pointer rounded-[8px] bg-gray-100"
             src={CloseIcon}
             alt="close"
             onClick={onClose}
