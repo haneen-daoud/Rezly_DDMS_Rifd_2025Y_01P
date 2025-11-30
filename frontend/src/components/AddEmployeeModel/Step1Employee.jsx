@@ -15,14 +15,31 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
   ];
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file && file.size <= 2 * 1024 * 1024) {
-      onChange("image", file);
-      validateField("image", file);
-    } else {
-      alert("الملف أكبر من 2MB");
-    }
-  };
+  const file = e.target.files[0];
+
+  if (!file) {
+    // لو شال الملف بعد ما اختاره
+    onChange("image", null);
+    setLocalErrors((prev) => ({ ...prev, image: "" }));
+    return;
+  }
+
+  // التحقق من حجم الملف
+  if (file.size > 2 * 1024 * 1024) {
+    // أكبر من 2MB → خطأ تحت الحقل
+    onChange("image", null); // نتأكد إنه مش محفوظ
+    setLocalErrors((prev) => ({
+      ...prev,
+      image: "حجم الصورة يجب ألا يتجاوز 2MB",
+    }));
+  } else {
+    // حجم مناسب → نخزّنه ونمسح الخطأ
+    onChange("image", file);
+    setLocalErrors((prev) => ({ ...prev, image: "" }));
+    validateField("image", file);
+  }
+};
+
 
   const validateField = async (field, value) => {
     try {
@@ -242,6 +259,12 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
                 <p className="text-green-600 mt-2">✔ تم اختيار الملف</p>
               )}
             </label>
+            {combinedErrors.image && (
+  <p className="text-red-500 text-[11px] mt-1">
+    {combinedErrors.image}
+  </p>
+)}
+
           </div>
         </div>
       </form>

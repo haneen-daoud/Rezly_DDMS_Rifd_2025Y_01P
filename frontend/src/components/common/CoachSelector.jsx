@@ -12,12 +12,12 @@ export default function CoachSelector({
   borderStyle = "#7E818C",
   variant = "add",
   showLabel = true,
+  height = "40px", // ارتفاع افتراضي، بالفلترة بعطيناه 32px
 }) {
   const [openCoach, setOpenCoach] = useState(false);
   const [coachSearch, setCoachSearch] = useState("");
   const ref = useRef(null);
 
-  // إغلاق الدروب داون عند الضغط خارجه
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (ref.current && !ref.current.contains(e.target)) {
@@ -35,36 +35,43 @@ export default function CoachSelector({
     : [];
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative w-full">
       {showLabel && (
         <label className="block font-bold text-sm mb-2">اسم المدرب</label>
       )}
 
       {/* الحقل الرئيسي */}
       <div
-        className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer relative"
+        className="w-full flex items-center justify-between cursor-pointer"
         onClick={() => setOpenCoach(!openCoach)}
-        style={{ border: `1px solid ${borderStyle}` }}
+        style={{
+          border: `1px solid ${borderStyle}`,
+          height,
+          borderRadius: "8px",
+          paddingInline: "12px", // نفس حقول الفلترة
+        }}
       >
-        {showIcon && (
-          <img src={trainerIcon} alt="trainer" className="absolute right-2" />
-        )}
+        {/* الأيقونة + النص */}
+        <div className="flex items-center gap-2 w-full">
+          {showIcon && (
+            <img src={trainerIcon} alt="trainer" className="w-4 h-4" />
+          )}
 
-        <span
-          className={`h-10 w-full flex items-center ${
-            showIcon ? "pr-8" : "p-3"
-          } pl-3 ${
-            selectedCoach
-              ? variant === "event"
-                ? "font-bold text-[14px] text-[#000]"
-                : "font-normal text-[14px] text-[#000]"
-              : `${placeholderColor} font-normal text-[14px]`
-          }`}
-        >
-          {selectedCoach?.name || "اختر المدرب"}
-        </span>
+          <span
+            className={`flex-1 flex items-center text-[14px] ${
+              selectedCoach
+                ? variant === "event"
+                  ? "font-bold text-[#000]"
+                  : "font-normal text-[#000]"
+                : `${placeholderColor} font-normal`
+            }`}
+          >
+            {selectedCoach?.name || "اختر المدرب"}
+          </span>
+        </div>
 
-        <img src={downarrowIcon} alt="downarrow" className="absolute left-2" />
+        {/* سهم الدروب داون */}
+        <img src={downarrowIcon} alt="downarrow" className="w-4 h-4" />
       </div>
 
       {/* القائمة */}

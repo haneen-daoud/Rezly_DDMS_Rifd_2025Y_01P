@@ -167,20 +167,30 @@ export const addNewMember = async (memberData) => {
 };
 
 
-// جلب جميع الأعضاء (المشتركين)
-export const getAllMembers = async (page = 1) => {
+// جلب جميع الأعضاء (المشتركين) مع دعم السيرتش من الباك
+export const getAllMembers = async (page = 1, search = "") => {
   try {
-    const res = await api.get(`/auth/getAllMembers?page=${page}`, {
+    const params = new URLSearchParams();
+    params.append("page", page);
+
+    if (search && search.trim() !== "") {
+      params.append("search", search.trim());
+    }
+
+    const res = await api.get(`/auth/getAllMembers?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${FIXED_TOKEN}`,
       },
     });
+
     return res.data;
   } catch (err) {
     console.error("❌ خطأ أثناء جلب الأعضاء:", err);
     throw err;
   }
 };
+
+
 export const getmemb =async()=>{
   try{
      const res= await axios.get("/auth/getAllMembers",{
@@ -283,6 +293,29 @@ export const getAllCoaches = async () => {
     console.error("خطأ أثناء جلب المدربين:", err.response?.data || err.message);
     return [];
   }
+};
+
+/////////////////
+
+// 🆕 دالة خاصة للداشبورد: إحصائيات الأعضاء
+export const getMembersStats = async () => {
+  try {
+    const res = await api.get(
+      "/auth/getAllMembers?page=1&limit=1000",
+      {
+        headers: {
+          Authorization: `Bearer ${FIXED_TOKEN}`,
+        },
+      }
+    );
+    return res.data; // { message, page, totalPages, totalMembers, members: [...] }
+  } catch (err) {
+    console.error(
+      "❌ خطأ أثناء جلب إحصائيات الأعضاء:",
+      err.response?.data || err.message
+    );
+    throw err;
+  }
 };
 export default api;
 

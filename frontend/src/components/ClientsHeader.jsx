@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // ✅ استخدمناهم للتنقل والتعرّف على الصفحة الحالية
+import { useNavigate, useLocation } from "react-router-dom";
 import BookingIcon from "../icons/booking.svg?react";
 import MembersIcon from "../icons/addpeople.svg?react";
 import FilterIcon from "../icons/filter.svg?react";
@@ -7,7 +7,7 @@ import BookingNumberIcon from "../icons/bookingNumber.svg?react";
 import MembersNumberIcon from "../icons/people.svg?react";
 import SearchIcon from "../icons/search.svg?react";
 
-// ✅ التابات الرئيسية لإدارة العملاء
+//  التابات الرئيسية لإدارة العملاء
 const tabs = [
   { name: "الحجوزات", path: "bookings" },
   { name: "المشتركين", path: "members" },
@@ -22,40 +22,44 @@ export default function ClientsHeader({
   totalMembers,
   totalBookings,
   handleAddBookingClick,
+  onOpenFilter,
+  onSearchChange,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [userRole, setUserRole] = React.useState(null);
 
-React.useEffect(() => {
-  try {
-    const savedUser = localStorage.getItem("currentUser");
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      const role = (parsed.role || "").toLowerCase();
-      setUserRole(role);
+  React.useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem("currentUser");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        const role = (parsed.role || "").toLowerCase();
+        setUserRole(role);
+      }
+    } catch (err) {
+      console.error(
+        "[ClientsHeader] فشل قراءة currentUser من localStorage:",
+        err
+      );
     }
-  } catch (err) {
-    console.error("[ClientsHeader] فشل قراءة currentUser من localStorage:", err);
-  }
-}, []);
+  }, []);
 
-const isCoach = userRole === "coach";
+  const isCoach = userRole === "coach";
 
-
-  // ✅ عند الضغط على تب → يغير التاب والرابط
+  //  عند الضغط على تب → يغير التاب والرابط
   const handleTabClick = (tab) => {
     setActiveTab(tab.name);
     navigate(`/dashboard/clients/${tab.path}`);
   };
 
-  // ✅ استخراج المسار الحالي لمعرفة التاب النشط
+  // استخراج المسار الحالي لمعرفة التاب النشط
   const currentPath = location.pathname.split("/")[3];
 
   return (
     <div className="w-full">
-      {/* ✅ التابات (ديسكتوب) */}
+      {/*  التابات (ديسكتوب) */}
       <div
         className="hidden md:flex bg-white items-center px-4 h-[40px] border-b border-[#E5E7EB]"
         style={{ gap: "12px" }}
@@ -81,7 +85,7 @@ const isCoach = userRole === "coach";
 
       <div className="hidden md:block h-[20px]"></div>
 
-      {/* ✅ الأدوات (بحث + إضافة + فلترة + عدادات) */}
+      {/* الأدوات (بحث + إضافة + فلترة + عدادات) */}
       <div
         className="
           flex flex-col md:flex-row md:justify-between md:items-center 
@@ -100,6 +104,11 @@ const isCoach = userRole === "coach";
                 activeTab === "الحجوزات" ? "ابحث عن حجز" : "ابحث عن مشترك"
               }
               className="w-full outline-none bg-transparent text-[12px] font-semibold font-Cairo text-[#7E818C] placeholder-[#7E818C]"
+              onChange={(e) => {
+                if (onSearchChange && activeTab === "المشتركين") {
+                  onSearchChange(e.target.value);
+                }
+              }}
             />
           </div>
 
@@ -107,12 +116,16 @@ const isCoach = userRole === "coach";
           {(activeTab === "الحجوزات" || activeTab === "المشتركين") && (
             <div
               className="w-[40px] h-[40px] flex items-center justify-center bg-white rounded-md cursor-pointer hover:bg-gray-50 border border-[#7E818C]"
-              onClick={() => {
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+
                 if (activeTab === "الحجوزات") {
-                  window.dispatchEvent(new CustomEvent("openBookingsFilter"));
+                  onOpenFilter && onOpenFilter(rect); //  نمرر مكان الزر
                 } else if (activeTab === "المشتركين") {
                   window.dispatchEvent(
-                    new CustomEvent("openSubscribersFilter")
+                    new CustomEvent("openSubscribersFilter", {
+                      detail: { rect },
+                    })
                   );
                 }
               }}
@@ -125,48 +138,50 @@ const isCoach = userRole === "coach";
         {/* زر الإضافة + العدادات */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
           {/* زر الإضافة */}
-          {(
-  // في تبويب الحجوزات: الكل يقدر يضيف (أدمن + استقبال + مدرب)
-  activeTab === "الحجوزات" ||
-  // في تبويب المشتركين: بس لو مش مدرب
-  (activeTab === "المشتركين" && !isCoach)
-) && (
-  <button
-    onClick={handleAddBookingClick}
-    className="
+          {// في تبويب الحجوزات: الكل يقدر يضيف (أدمن + استقبال + مدرب)
+          (activeTab === "الحجوزات" ||
+            // في تبويب المشتركين: بس لو مش مدرب
+            (activeTab === "المشتركين" && !isCoach)) && (
+            <button
+              onClick={handleAddBookingClick}
+              className="
       flex items-center justify-center gap-[8px]
       bg-[var(--color-purple)] text-white 
       w-full lg:w-[144px] h-[40px] sm:h-[32px]
       rounded-lg transition
       text-sm font-semibold font-Cairo
     "
-  >
-    {activeTab === "المشتركين" ? (
-      <MembersIcon className="w-4 h-4" />
-    ) : (
-      <BookingIcon className="w-4 h-4" />
-    )}
-    <span>
-      {activeTab === "المشتركين" ? "إضافة مشترك" : "إضافة حجز"}
-    </span>
-  </button>
-)}
+            >
+              {activeTab === "المشتركين" ? (
+                <MembersIcon className="w-4 h-4" />
+              ) : (
+                <BookingIcon className="w-4 h-4" />
+              )}
+              <span>
+                {activeTab === "المشتركين" ? "إضافة مشترك" : "إضافة حجز"}
+              </span>
+            </button>
+          )}
 
           {/* زر الفلتر والعدادات (ديسكتوب) */}
           <div className="hidden md:flex items-center gap-3 w-full sm:w-auto">
             {(activeTab === "الحجوزات" || activeTab === "المشتركين") && (
               <div
                 className="
-                  w-8 h-8 
-                  flex items-center justify-center 
-                  bg-white rounded-md cursor-pointer hover:bg-gray-50
-                "
-                onClick={() => {
+      w-8 h-8 
+      flex items-center justify-center 
+      bg-white rounded-md cursor-pointer hover:bg-gray-50
+    "
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+
                   if (activeTab === "الحجوزات") {
-                    window.dispatchEvent(new CustomEvent("openBookingsFilter"));
+                    onOpenFilter && onOpenFilter(rect); //  نمرر مكان الزر
                   } else if (activeTab === "المشتركين") {
                     window.dispatchEvent(
-                      new CustomEvent("openSubscribersFilter")
+                      new CustomEvent("openSubscribersFilter", {
+                        detail: { rect },
+                      })
                     );
                   }
                 }}
@@ -175,7 +190,7 @@ const isCoach = userRole === "coach";
               </div>
             )}
 
-            {/* ✅ العدادات */}
+            {/*  العدادات */}
             <div className="flex items-center gap-[4px] ml-[8px]">
               {activeTab === "المشتركين" ? (
                 <>
@@ -201,6 +216,11 @@ const isCoach = userRole === "coach";
               activeTab === "الحجوزات" ? "ابحث عن حجز" : "ابحث عن مشترك"
             }
             className="w-full outline-none bg-transparent text-[12px] font-semibold font-Cairo text-[#7E818C] placeholder-[#7E818C]"
+            onChange={(e) => {
+              if (onSearchChange && activeTab === "المشتركين") {
+                onSearchChange(e.target.value);
+              }
+            }}
           />
         </div>
       </div>

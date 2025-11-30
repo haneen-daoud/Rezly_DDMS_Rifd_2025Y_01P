@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Chart from "../components/Chart";
 import AttendanceTable from "../components/AttendanceTable/AttendanceTable";
 import StatCard from "../components/StatCard";
@@ -9,6 +9,7 @@ import { useOutletContext } from "react-router-dom";
 import DashboardBoxes from "../components/DashboardBoxes";
 import WaitingList from "../components/waitingList.jsx";
 import MembersNotes from "../components/MembersNotes.jsx";
+import { getMembersStats } from "../api.js";
 
 import Icon1 from "../assets/icon/card-icon1.svg";
 import Icon2 from "../assets/icon/card-icon2.svg";
@@ -42,6 +43,17 @@ export default function Home() {
   const { currentUser } = useOutletContext();
   const [showAddMemberForm, setShowAddMemberForm] = useState(false);
 
+  const [stats, setStats] = useState({
+    sessionsToday: 0,
+    totalBookings: 0,
+    cancelledSessionsToday: 0,
+    totalSubscriptions: 0,
+    todaySubscriptions: 0,
+    subscriptionsEndingSoon: 0,
+    pendingPayments: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
+
   const role = currentUser?.role?.toLowerCase() || "";
   const isReception =
     role === "reception" ||
@@ -50,78 +62,201 @@ export default function Home() {
   const isCoach = role === "coach";
   const isAdmin = role === "admin";
 
+  const getDateKey = (value) => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  };
+
+  useEffect(() => {
+    const computeStats = async () => {
+      const today = new Date();
+      const todayKey = getDateKey(today);
+
+      // --------- 1) من الحجوزات (bookings) ----------
+      const allBookings = Array.isArray(bookings) ? bookings : [];
+
+      let sessionsToday = 0;
+      let cancelledSessionsToday = 0;
+
+      allBookings.forEach((booking) => {
+        const schedules = Array.isArray(booking.schedules)
+          ? booking.schedules
+          : [];
+
+        schedules.forEach((s) => {
+          const scheduleDateKey = getDateKey(s.date);
+          if (scheduleDateKey === todayKey) {
+            sessionsToday += 1;
+            if (booking.status === "cancelled") {
+              cancelledSessionsToday += 1;
+            }
+          }
+        });
+      });
+
+      const baseStats = {
+        sessionsToday,
+        totalBookings: allBookings.length,
+        cancelledSessionsToday,
+        totalSubscriptions: 0,
+        todaySubscriptions: 0,
+        subscriptionsEndingSoon: 0,
+        pendingPayments: 0,
+      };
+
+      // --------- 2) من الأعضاء (Admin / Reception فقط) ----------
+      if (isAdmin || isReception) {
+        try {
+          setStatsLoading(true);
+
+          const data = await getMembersStats();
+          const members = Array.isArray(data.members) ? data.members : [];
+          const totalSubscriptions = data.totalMembers || members.length;
+
+          // اشتراكات اليوم (أعضاء مضافة اليوم)
+          const todaySubscriptions = members.filter((m) => {
+            const createdKey = getDateKey(m.createdAt);
+            return createdKey === todayKey;
+          }).length;
+
+          // اشتراكات تنتهي خلال 7 أيام
+          const startOfToday = new Date();
+          startOfToday.setHours(0, 0, 0, 0);
+          const after7Days = new Date(startOfToday);
+          after7Days.setDate(startOfToday.getDate() + 7);
+
+          const subscriptionsEndingSoon = members.filter((m) => {
+            if (!m.endDate) return false;
+            const end = new Date(m.endDate);
+            if (Number.isNaN(end.getTime())) return false;
+            return end >= startOfToday && end <= after7Days;
+          }).length;
+
+          // المدفوعات المعلقة / غير مدفوعة
+          const pendingPayments = members.filter((m) => {
+            return (
+              m.paymentStatus === "قيد المعالجة" ||
+              m.paymentStatus === "غير مدفوع"
+            );
+          }).length;
+
+          baseStats.totalSubscriptions = totalSubscriptions;
+          baseStats.todaySubscriptions = todaySubscriptions;
+          baseStats.subscriptionsEndingSoon = subscriptionsEndingSoon;
+          baseStats.pendingPayments = pendingPayments;
+        } catch (err) {
+          console.error("خطأ أثناء تحميل إحصائيات الأعضاء للداشبورد:", err);
+        } finally {
+          setStatsLoading(false);
+        }
+      }
+
+      setStats((prev) => ({ ...prev, ...baseStats }));
+    };
+
+    computeStats();
+  }, [bookings, isAdmin, isReception]);
+
   // ٤ كروت الأساسية حسب الرول
   const primaryCards = (() => {
+    // مدرب
     if (isCoach) {
       return [
         {
           title: "جلسات اليوم",
-          value: <span className="text-[28px] font-bold">15</span>,
+          value: (
+            <span className="text-[28px] font-bold">
+              {statsLoading ? "..." : stats.sessionsToday}
+            </span>
+          ),
           icon: Icon1,
         },
         {
           title: "نسبة الحضور اليوم",
-          value: <span className="text-[28px] font-bold">85%</span>,
+          value: <span className="text-[28px] font-bold">85%</span>, // مؤقت
           icon: Icon2,
         },
         {
           title: "نسبة الالتزام",
-          value: <span className="text-[28px] font-bold">92%</span>,
+          value: <span className="text-[28px] font-bold">92%</span>, // مؤقت
           icon: Icon3,
         },
         {
           title: "تقييماتك",
-          value: <span className="text-[28px] font-bold">4.8</span>,
+          value: <span className="text-[28px] font-bold">4.8</span>, // مؤقت
           icon: Icon4,
         },
       ];
     }
 
+    // موظف استقبال
     if (isReception) {
       return [
         {
           title: "جلسات اليوم",
-          value: <span className="text-[28px] font-bold">15</span>,
+          value: (
+            <span className="text-[28px] font-bold">
+              {statsLoading ? "..." : stats.sessionsToday}
+            </span>
+          ),
           icon: Icon4,
         },
         {
           title: "إشغال المكان",
-          value: <span className="text-[28px] font-bold">60%</span>,
+          value: <span className="text-[28px] font-bold">60%</span>, // مؤقت
           icon: Icon1,
         },
         {
           title: "عدد الاشتراكات",
-          value: <span className="text-[28px] font-bold">120</span>,
+          value: (
+            <span className="text-[28px] font-bold">
+              {statsLoading ? "..." : stats.totalSubscriptions}
+            </span>
+          ),
           icon: Icon1,
         },
         {
           title: "عدد الحجوزات",
-          value: <span className="text-[28px] font-bold">34</span>,
+          value: (
+            <span className="text-[28px] font-bold">
+              {statsLoading ? "..." : stats.totalBookings}
+            </span>
+          ),
           icon: Icon3,
         },
       ];
     }
 
-    // Admin / باقي المستخدمين الافتراضي
+    // Admin / باقي المستخدمين
     return [
       {
         title: "إشغال المكان",
-        value: <span className="text-[28px] font-bold">60%</span>,
+        value: <span className="text-[28px] font-bold">60%</span>, // مؤقت
         icon: Icon1,
       },
       {
         title: "إيرادات اليوم",
-        value: <span className="text-[28px] font-bold">₪440</span>,
+        value: <span className="text-[28px] font-bold">₪440</span>, // مؤقت
         icon: Icon2,
       },
       {
         title: "اشتراكات اليوم",
-        value: <span className="text-[28px] font-bold">23</span>,
+        value: (
+          <span className="text-[28px] font-bold">
+            {statsLoading ? "..." : stats.todaySubscriptions}
+          </span>
+        ),
         icon: Icon3,
       },
       {
         title: "جلسات اليوم",
-        value: <span className="text-[28px] font-bold">15</span>,
+        value: (
+          <span className="text-[28px] font-bold">
+            {statsLoading ? "..." : stats.sessionsToday}
+          </span>
+        ),
         icon: Icon4,
       },
     ];
@@ -131,32 +266,44 @@ export default function Home() {
   const receptionSecondaryCards = [
     {
       title: "إيرادات اليوم",
-      value: <span className="text-[24px] font-bold">₪440</span>,
+      value: <span className="text-[24px] font-bold">₪440</span>, // مؤقت
       icon: Icon2,
     },
     {
       title: "اشتراكات قيد الانتهاء",
-      value: <span className="text-[24px] font-bold">12</span>,
+      value: (
+        <span className="text-[24px] font-bold">
+          {statsLoading ? "..." : stats.subscriptionsEndingSoon}
+        </span>
+      ),
       icon: Icon6,
     },
     {
       title: "المدفوعات المعلقة",
-      value: <span className="text-[24px] font-bold">8</span>,
+      value: (
+        <span className="text-[24px] font-bold">
+          {statsLoading ? "..." : stats.pendingPayments}
+        </span>
+      ),
       icon: Icon8,
     },
     {
       title: "عدد الحضور",
-      value: <span className="text-[24px] font-bold">57</span>,
+      value: <span className="text-[24px] font-bold">57</span>, // مؤقت (بدها Attendance)
       icon: Icon5,
     },
     {
       title: "نسبة التسرّب",
-      value: <span className="text-[24px] font-bold">12%</span>,
+      value: <span className="text-[24px] font-bold">12%</span>, // مؤقت
       icon: Icon7,
     },
     {
       title: "الجلسات الملغاة اليوم",
-      value: <span className="text-[24px] font-bold">3</span>,
+      value: (
+        <span className="text-[24px] font-bold">
+          {statsLoading ? "..." : stats.cancelledSessionsToday}
+        </span>
+      ),
       icon: Icon9,
     },
   ];

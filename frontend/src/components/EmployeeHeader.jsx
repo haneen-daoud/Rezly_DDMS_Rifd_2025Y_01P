@@ -1,10 +1,10 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom"; // ✅ للتحكم بالتنقل والصفحة الحالية
 import SearchIcon from "../icons/search.svg?react";
 import FilterIcon from "../icons/filter.svg?react";
 import MembersIcon from "../icons/addpeople.svg?react";
 import MembersNumberIcon from "../icons/people.svg?react";
-
+import EmployeeFilter from "../components/Filter/EmployeesFilter";
 // ✅ التابات الفرعية لطاقم العمل
 const tabs = [
   { name: "الموظفين", path: "staff" },
@@ -29,6 +29,7 @@ export default function EmployeesHeader({
     setActiveTab(tab.name);
     navigate(`/dashboard/employees/${tab.path}`);
   };
+const [showFilter, setShowFilter] = useState(false);
 
   // ✅ تحديد التاب الحالي من URL
   const currentPath = location.pathname.split("/")[3];
@@ -75,7 +76,21 @@ export default function EmployeesHeader({
               window.dispatchEvent(new CustomEvent("openEmployeesFilter"))
             }
           >
+            <button onClick={() => setShowFilter(!showFilter)}>
             <FilterIcon className="w-5 h-5 text-[var(--color-purple)]" />
+</button>
+<div className="relative">
+  <button onClick={() => setShowFilter(!showFilter)}>
+    <i className="fa-solid fa-filter text-purple-600 text-xl"></i>
+  </button>
+
+  <EmployeeFilter
+    isOpen={showFilter}
+    onClose={() => setShowFilter(false)}
+  />
+</div>
+
+
           </div>
 
           <div className="flex items-center gap-[4px] px-3 rounded-lg">

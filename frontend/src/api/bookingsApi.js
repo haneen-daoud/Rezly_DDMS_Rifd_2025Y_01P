@@ -184,15 +184,23 @@ export async function deleteBookingAPI(id, options = {}) {
 /* ----------------------------------------------------------
    🔍 فلترة الحجوزات
 ---------------------------------------------------------- */
-export async function filterBookingsAPI(query = {}) {
-  try {
-    const res = await api.get("/filter", { params: query });
-    return res.data;
-  } catch (err) {
-    console.error("فشل فلترة الحجوزات:", err.response?.data || err.message);
-    throw err;
-  }
-}
+// ✅ دالة فلترة الحجوزات
+export const filterBookingsApi = async ({ date, location, coachId }, token) => {
+  const params = {};
+
+  if (date) params.date = date;            // لازم "YYYY-MM-DD"
+  if (location) params.location = location;
+  if (coachId) params.coachId = coachId;
+
+  const res = await api.get("/filter", {
+    params,
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.data; // { status, data, ... }
+};
 
 /* ----------------------------------------------------------
    🚫 إلغاء حجز
@@ -253,7 +261,7 @@ export default {
   updateSingleScheduleAPI,
   updateGeneralBookingAPI,
   deleteBookingAPI,
-  filterBookingsAPI,
+filterBookingsApi,
   cancelBookingAPI,
   getBookingsCountAPI,
   searchMembersAPI,

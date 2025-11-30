@@ -138,7 +138,7 @@ export default function UserAttendance() {
 
   const handleError = useCallback((error) => {
     console.error("QR Scanner error:", error);
-    toast.error("تعذّر الوصول للكاميرا. تأكدي من إعطاء الصلاحيات للمتصفح.");
+    toast.error("تعذّر الوصول للكاميرا. تأكد من إعطاء الصلاحيات للمتصفح.");
   }, []);
 
   return (
