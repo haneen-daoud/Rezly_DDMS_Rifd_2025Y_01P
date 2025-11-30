@@ -72,7 +72,7 @@ const sortMembersDescending = (members = []) =>
     (a, b) => new Date(getSortDate(b)) - new Date(getSortDate(a))
   );
 
-export default function SubscribersTab() {
+export default function SubscribersTab({ searchValue = "" }) {
   const [clients, setClients] = useState([]);
   const [selectedClients, setSelectedClients] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -107,22 +107,23 @@ export default function SubscribersTab() {
     return value && value !== "" ? value : "—";
   };
 
-  // جلب جميع المشتركين
+    // جلب جميع المشتركين (مع دعم السيرتش من الباك)
   useEffect(() => {
-    // 👇 نقرأ البيانات اللي في localStorage أولاً
+    // 👇 نقرأ البيانات اللي في localStorage أولاً (بس لما ما يكون في سيرتش)
     let localMembers = [];
-    const localData = localStorage.getItem("membersData");
+    if (!searchValue) {
+      const localData = localStorage.getItem("membersData");
+      if (localData) {
+        try {
+          localMembers = sanitizeMembers(JSON.parse(localData) || []);
 
-    if (localData) {
-      try {
-        localMembers = sanitizeMembers(JSON.parse(localData) || []);
+          // نرتبهم تنازلي قبل العرض
+          const sortedLocal = sortMembersDescending(localMembers);
 
-        // نرتبهم تنازلي قبل العرض
-        const sortedLocal = sortMembersDescending(localMembers);
-
-        setClients(sortedLocal); // نعرضهم فوراً بعد التنضيف
-      } catch (e) {
-        console.error("خطأ في قراءة membersData من localStorage", e);
+          setClients(sortedLocal); // نعرضهم فوراً بعد التنضيف
+        } catch (e) {
+          console.error("خطأ في قراءة membersData من localStorage", e);
+        }
       }
     }
 
@@ -133,7 +134,7 @@ export default function SubscribersTab() {
         let hasMore = true;
 
         while (hasMore) {
-          const data = await getAllMembers(currentPage);
+          const data = await getAllMembers(currentPage, searchValue);
           const members = data.members || data.data || [];
           console.log("📦 API DATA PAGE:", currentPage, data);
           console.log("📦 MEMBERS FROM API:", members);
@@ -168,7 +169,11 @@ export default function SubscribersTab() {
         const sortedMembers = sortMembersDescending(mergedMembers);
 
         setClients(sortedMembers);
-        localStorage.setItem("membersData", JSON.stringify(sortedMembers));
+
+        // نخزن في localStorage فقط لو مش سيرتش
+        if (!searchValue) {
+          localStorage.setItem("membersData", JSON.stringify(sortedMembers));
+        }
 
         console.log("تم جلب جميع المشتركين:", sortedMembers.length);
       } catch (error) {
@@ -177,7 +182,8 @@ export default function SubscribersTab() {
     };
 
     fetchAllMembers();
-  }, []);
+  }, [searchValue]);
+
 
   // تحديث جدول المشتركين لما أي جزء من السيستم يغيّر البيانات (إضافة/تعديل/حذف)
   useEffect(() => {

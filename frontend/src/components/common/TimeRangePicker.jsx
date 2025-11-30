@@ -73,7 +73,12 @@ const TimeRangePicker = ({
 
   const options = generateOptions();
   const borderColor =
-    variant === "booking" ? "border-black/10" : "border-[#7E818C]";
+  variant === "filter"
+    ? "border-[#E5E7EB]"          // مثل باقي الحقول
+    : variant === "booking"
+    ? "border-black/10"
+    : "border-[#7E818C]";
+
 
   const isDefault =
     isAddMode &&
@@ -83,10 +88,12 @@ const TimeRangePicker = ({
 
   return (
     <div
-      className={`flex items-center h-10 ${
-        !showArrow ? "gap-2" : "" // ✅ مسافة 8px لما ما يكون في سهم
-      }`}
-    >
+  className={`flex items-center 
+    ${variant === "filter" ? "h-[32px] w-full" : "h-10"}
+    ${!showArrow ? "gap-2" : ""}
+  `}
+>
+
       {/* وقت البداية */}
       <div className="relative w-full">
         {showIcons && (
@@ -97,15 +104,21 @@ const TimeRangePicker = ({
         <select
           value={startTime}
           onChange={(e) => setStartTime(e.target.value)}
-          className={`h-10 w-full items-center rounded-md border ${borderColor} pr-${
-            showIcons ? 8 : 2
-          } focus:outline-none appearance-none max-h-56 overflow-y-auto custom-scrollbar ${
-            isDefault
-              ? "text-gray-400 font-normal text-[14px]"
-              : variant === "event"
-              ? "font-bold text-[14px] text-[#000]"
-              : "font-normal text-[14px] text-[#000]"
-          }`}
+          className={`w-full rounded-md border ${borderColor}
+    ${variant === "filter" ? "h-[32px]" : "h-10"}
+  pr-${showIcons ? 8 : 2} focus:outline-none appearance-none max-h-56 
+  overflow-y-auto custom-scrollbar
+  ${
+    variant === "filter"
+      ? "font-normal text-[12px] text-[#1D1E20]"
+      : isDefault
+      ? "text-gray-400 font-normal text-[14px]"
+      : variant === 'event'
+      ? "font-bold text-[14px] text-[#000]"
+      : "font-normal text-[14px] text-[#000]"
+  }
+`}
+
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -144,15 +157,21 @@ const TimeRangePicker = ({
             setEndTime(e.target.value);
             setUserChangedEnd(true);
           }}
-          className={`h-10 w-full rounded-md border ${borderColor} pr-${
-            showIcons ? 8 : 2
-          } focus:outline-none appearance-none max-h-56 overflow-y-auto custom-scrollbar ${
-            isDefault
-              ? "text-gray-400 font-normal text-[14px]"
-              : variant === "event"
-              ? "font-bold text-[13px] text-[#000]"
-              : "font-normal text-[14px] text-[#000]"
-          }`}
+           className={`w-full rounded-md border ${borderColor}
+    ${variant === "filter" ? "h-[32px]" : "h-10"}
+  pr-${showIcons ? 8 : 2} focus:outline-none appearance-none max-h-56 
+  overflow-y-auto custom-scrollbar
+  ${
+    variant === "filter"
+      ? "font-normal text-[12px] text-[#1D1E20]"
+      : isDefault
+      ? "text-gray-400 font-normal text-[14px]"
+      : variant === 'event'
+      ? "font-bold text-[14px] text-[#000]"
+      : "font-normal text-[14px] text-[#000]"
+  }
+`}
+
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>

@@ -41,7 +41,7 @@ export default function MiniCalender({
   highlightedDates = [],
   hideTodayHighlight = false,
 }) {
-  const [tempDate, setTempDate] = useState(currentDate);
+  const [tempDate, setTempDate] = useState(currentDate || new Date());
 
   const formatWeekDay = (nameOfDay) => {
     const map = {
@@ -94,6 +94,11 @@ export default function MiniCalender({
   employeeTop: {
     container:
       "absolute bottom-full left-0 z-50 w-[340px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
+    inner: "flex flex-col w-full items-center py-3 px-4",
+  },
+   filter: {
+    container:
+      "absolute top-[calc(100%+4px)] right-0 z-50 w-full rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
     inner: "flex flex-col w-full items-center py-3 px-4",
   },
     default: {

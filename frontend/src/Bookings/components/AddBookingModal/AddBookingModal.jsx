@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-
 import MiniCalender from "../../../components/MiniCalender/MiniCalender";
 import { toast } from "react-toastify";
 import Step1Booking from "./Step1Booking";
@@ -8,7 +7,6 @@ import Step2Booking from "./Step2Booking";
 import CloseIcon from "../../../icons/close.svg";
 import CalenderIcon from "../../../icons/calender.svg?react";
 import { useBookings } from "../../BookingsContext.jsx";
-
 import { formatBookingData } from "../helpers/formatBookingData";
 import { step1Schema, step2Schema } from "../helpers/bookingValidation";
 import {
@@ -56,7 +54,7 @@ export default function AddBookingModal({
   onChange = () => {},
   openEventName = "openAddBooking",
   editEventName = "openBookingEdit",
-})  {
+}) {
   const { setBookings } = useBookings();
 
   const [open, setOpen] = useState(false);
@@ -135,7 +133,7 @@ export default function AddBookingModal({
     }
   }, [isEditing, formData.schedules]);
 
-  // 🟣 جلب جميع المشتركين من السيرفر (كل الصفحات)
+  // جلب جميع المشتركين من السيرفر (كل الصفحات)
   useEffect(() => {
     const fetchMembers = async () => {
       try {
@@ -145,7 +143,7 @@ export default function AddBookingModal({
           "";
         const headers = { Authorization: `Bearer ${token}` };
 
-        // 🕐 أول صفحة
+        // أول صفحة
         const first = await axios.get(
           `${import.meta.env.VITE_API_BASE_URL2}/auth/getAllMembers?page=1`,
           { headers }
@@ -155,7 +153,7 @@ export default function AddBookingModal({
         let all = [...firstList];
         let page = 2;
 
-        // 🌀 باقي الصفحات
+        // باقي الصفحات
         while (true) {
           const res = await axios.get(
             `${
@@ -169,7 +167,7 @@ export default function AddBookingModal({
           page++;
         }
 
-        // 🧩 تنسيق قائمة المشتركين للـ dropdown
+        //  تنسيق قائمة المشتركين للـ dropdown
         const formatted = all.map((m) => ({
           id: m._id,
           name:
@@ -180,7 +178,7 @@ export default function AddBookingModal({
 
         setAllMembers(formatted);
 
-        // 🟣 في وضع التعديل (تعديل الكل)
+        // في وضع التعديل (تعديل الكل)
         if (isEditing && fullBookingData?.members?.length) {
           const enrichedMembers = fullBookingData.members.map((m) => {
             const id = typeof m === "object" ? m.id || m._id : m;
@@ -195,7 +193,7 @@ export default function AddBookingModal({
             };
           });
 
-          // ✅ تنظيف التكرارات (لو الباك رجع العضو مكرر من كل جدول)
+          //  تنظيف التكرارات (لو الباك رجع العضو مكرر من كل جدول)
           const uniqueMap = new Map();
           enrichedMembers.forEach((m) => {
             if (!uniqueMap.has(m.id)) {
@@ -203,7 +201,7 @@ export default function AddBookingModal({
             }
           });
 
-          // ✅ تحديث الـ formData بأعضاء فريدين فقط وبأسمائهم
+          // تحديث الـ formData بأعضاء فريدين فقط وبأسمائهم
           setFormData((prev) => ({
             ...prev,
             members: Array.from(uniqueMap.values()),
@@ -266,7 +264,7 @@ export default function AddBookingModal({
     setScheduleOptions([]);
     setOpen(true);
 
-    console.log("🟣 فتح المودال — المستخدم الحالي:", currentUser);
+    console.log("فتح المودال — المستخدم الحالي:", currentUser);
   };
 
   const handleClose = () => {
@@ -288,13 +286,13 @@ export default function AddBookingModal({
 
   // تحديث البيانات عند اختيار حجز فردي من القائمة
   const handleSelectBooking = (selectedSchedule) => {
-    console.log("🟣 handleSelectBooking استُدعيت مع:", selectedSchedule);
+    console.log("handleSelectBooking استُدعيت مع:", selectedSchedule);
 
     // لو ما في حجز (اختار تعديل الكل)
     if (!selectedSchedule) {
       setSelectedBooking(null);
       setIsGroupEdit(true);
-      setSelectedOption(null); // 🟣 تصفير آخر يوم مختار من المربع
+      setSelectedOption(null); // تصفير آخر يوم مختار من المربع
 
       setFormData((prev) => ({
         ...prev,
@@ -305,10 +303,10 @@ export default function AddBookingModal({
       return;
     }
 
-    // 🔹 الحجز الكامل (من state أو من النسخة الأصلية)
+    // الحجز الكامل (من state أو من النسخة الأصلية)
     const fullBooking = fullBookingData || formData;
 
-    // 🔸 تنسيق الوقت العربي → 24 ساعة
+    // تنسيق الوقت العربي → 24 ساعة
     const normalizeArabicTime = (timeStr) => {
       if (!timeStr) return "";
       let clean = String(timeStr).trim();
@@ -324,7 +322,7 @@ export default function AddBookingModal({
         .padStart(2, "0")}`;
     };
 
-    // 🔹 نستخدم بيانات الـ schedule للفردي مع العامة
+    // نستخدم بيانات الـ schedule للفردي مع العامة
     const dateStr = selectedSchedule.date
       ? selectedSchedule.date.split("T")[0]
       : fullBooking.startDate?.split("T")[0] || "";
@@ -333,13 +331,13 @@ export default function AddBookingModal({
       normalizeArabicTime(selectedSchedule.timeStart) || "09:00";
     const endTime = normalizeArabicTime(selectedSchedule.timeEnd) || "10:00";
 
-    // 🔹 نجيب بيانات المدرب الصحيحة
-    // 🔹 تحديد الكوتش الصحيح من قائمة الموظفين
+    //  نجيب بيانات المدرب الصحيحة
+    // تحديد الكوتش الصحيح من قائمة الموظفين
     const allEmployees = JSON.parse(
       localStorage.getItem("allEmployees") || "[]"
     );
 
-    // 🟣 تجهيز بيانات المدرب للفردي بشكل مضمون
+    // تجهيز بيانات المدرب للفردي بشكل مضمون
     let coachObj = {};
     let coachIdFinal = "";
 
@@ -350,10 +348,10 @@ export default function AddBookingModal({
           ? selectedSchedule.coach._id
           : selectedSchedule.coach;
 
-      console.log("🟣 [DEBUG] allEmployees:", allEmployees);
-      console.log("🟣 [DEBUG] coachIdFinal we're searching for:", coachIdFinal);
+      console.log("[DEBUG] allEmployees:", allEmployees);
+      console.log("[DEBUG] coachIdFinal we're searching for:", coachIdFinal);
       console.log(
-        "🟣 [DEBUG] matches found:",
+        "[DEBUG] matches found:",
         allEmployees.filter(
           (c) => String(c._id || c.id).trim() === String(coachIdFinal).trim()
         )
@@ -394,8 +392,8 @@ export default function AddBookingModal({
         : { id: coachIdFinal, name: "مدرب غير معروف" };
     }
 
-    console.log("🟣 [LOG] selectedSchedule:", selectedSchedule);
-    console.log("🟣 [LOG] selectedSchedule.coach:", selectedSchedule?.coach);
+    console.log("[LOG] selectedSchedule:", selectedSchedule);
+    console.log("[LOG] selectedSchedule.coach:", selectedSchedule?.coach);
 
     // الآن نخزّن الشكل الموحد بالـ formData
     const updatedForm = {
@@ -416,7 +414,7 @@ export default function AddBookingModal({
       end: `${dateStr}T${endTime}`,
     };
 
-    // ✅ تعبئة المشتركين من الـ schedule المحدد
+    //  تعبئة المشتركين من الـ schedule المحدد
     if (Array.isArray(selectedSchedule.members)) {
       updatedForm.members = selectedSchedule.members.map((m) => {
         const id = typeof m === "object" ? m._id || m.id : m;
@@ -437,14 +435,14 @@ export default function AddBookingModal({
       );
     }
 
-    // 🔸 تحديث الحالة
+    //  تحديث الحالة
     setSelectedBooking(selectedSchedule);
     setIsGroupEdit(false);
     setFormData(updatedForm);
 
     console.log("🟣 [LOG] updatedForm.coach:", updatedForm.coach);
 
-    // 🔁 إعادة رسم فورية بعد تحديث بيانات الكوتش
+    // إعادة رسم فورية بعد تحديث بيانات الكوتش
     setTimeout(() => {
       setFormData((prev) => ({ ...prev }));
     }, 0);
@@ -452,20 +450,20 @@ export default function AddBookingModal({
     setStep1Errors({});
     setStep2Errors({});
 
-    // 🟣 ما نغيّر الخطوة الحالية، نخلي المستخدم بمكانه فقط
+    //  ما نغيّر الخطوة الحالية، نخلي المستخدم بمكانه فقط
     setActiveStep((prev) => prev);
 
-    console.log("✅ تم تحديث formData للفردي:", updatedForm);
+    console.log(" تم تحديث formData للفردي:", updatedForm);
   };
 
-  // ✅ دوال مساعدة للتنسيق المحلي للتاريخ والوقت
+  // دوال مساعدة للتنسيق المحلي للتاريخ والوقت
   const pad2 = (n) => String(n).padStart(2, "0");
   const formatLocalDate = (d) =>
     `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   const formatLocalTime = (d) =>
     `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
-  // ✅ Helper: يبني Date من "YYYY-MM-DD" + "HH:mm" (محلي، مش UTC)
+  // Helper: يبني Date من "YYYY-MM-DD" + "HH:mm" (محلي، مش UTC)
   const buildBaseDateTime = (baseDateStr, hhmm) => {
     if (!baseDateStr) return new Date();
     const [y, mo, d] = baseDateStr.split("-").map(Number); // YYYY-MM-DD
@@ -473,7 +471,7 @@ export default function AddBookingModal({
     return new Date(y || 1970, (mo || 1) - 1, d || 1, h || 0, m || 0, 0, 0);
   };
 
-  // ✅ تحويل reminders لصيغة الباك إند:
+  // تحويل reminders لصيغة الباك إند:
   //  - السترنغز: "30min" / "1hour" / "1day" / "none" تضل زي ما هي
   //  - الكستمايز: { hoursBefore: 5 } → { date: "...", time: "..." } حسب أول موعد
   //  - لو أصلاً جاي {date,time} من الباك إند (تعديل) منرجّعه زي ما هو
@@ -575,7 +573,7 @@ export default function AddBookingModal({
           }))
       : [];
 
-    // 🔔 reminders: نستخدم الفنكشن اللي فوق
+    //  reminders: نستخدم الفنكشن اللي فوق
     const reminders = transformRemindersForCreateOrGroup(formData);
 
     // coachId:
@@ -614,11 +612,11 @@ export default function AddBookingModal({
 
   // الحفظ
   const handleSubmit = async (e) => {
-    if (e && e.preventDefault) e.preventDefault(); // ✅ يمنع الخطأ لو ما في event
+    if (e && e.preventDefault) e.preventDefault(); // يمنع الخطأ لو ما في event
     setLoading(true);
 
     try {
-      // 🟣 إنشاء حجز جديد
+      // إنشاء حجز جديد
       if (!isEditing) {
         const bodyForCreate = buildRequestBodyForBackend();
         bodyForCreate.members = Array.isArray(formData.members)
@@ -634,13 +632,13 @@ export default function AddBookingModal({
 
         console.log("🚀 إرسال بيانات الإضافة:", bodyForCreate);
 
-        // 🟣 نرسل الطلب ونستقبل الرد الحقيقي من السيرفر
+        // نرسل الطلب ونستقبل الرد الحقيقي من السيرفر
         const response = await createBookingAPI(bodyForCreate);
 
-        // ✅ السيرفر عادة يرجّع الحجز الجديد داخل data.data أو data مباشرة
+        // السيرفر عادة يرجّع الحجز الجديد داخل data.data أو data مباشرة
         const newBooking = response?.data?.data || response?.data || response;
 
-                const activeMembers = Array.isArray(formData.members)
+        const activeMembers = Array.isArray(formData.members)
           ? formData.members.filter((m) => !m._tempRemoved)
           : [];
 
@@ -651,7 +649,7 @@ export default function AddBookingModal({
             name:
               formData.coach?.name || formData.coachName || "مدرب غير معروف",
           },
-          // 👇 نخزّن فقط المشتركين الفعّالين (نفس اللي بعتناهم للباك)
+          // نخزّن فقط المشتركين الفعّالين (نفس اللي بعتناهم للباك)
           members: activeMembers.map((m) =>
             typeof m === "object"
               ? { _id: m._id || m.id, name: m.name || "مشترك غير معروف" }
@@ -659,17 +657,16 @@ export default function AddBookingModal({
           ),
         };
 
-
         setBookings((prev) => [...prev, enrichedBooking]);
 
-        toast.success("تم إنشاء الحجز بنجاح ✅");
+        toast.success("تم إنشاء الحجز بنجاح  ");
         handleClose();
         onChange(); // لإعادة تحميل القائمة (لو لازمة لعرض التفاصيل الجديدة)
         setLoading(false);
         return;
       }
 
-      // 🟣 تعديل حجز موجود
+      //  تعديل حجز موجود
       // تعديل الكل
       // ---------------------------------
       // حالة تعديل الكل
@@ -691,7 +688,7 @@ export default function AddBookingModal({
           coachIdFinal = formData.coach.id;
         }
 
-        // 🟣 خريطة اليوم العربي → رقم
+        //  خريطة اليوم العربي → رقم
         const dayToIndex = {
           أحد: 0,
           إثنين: 1,
@@ -702,7 +699,7 @@ export default function AddBookingModal({
           سبت: 6,
         };
 
-        // 🕐 تحويل الوقت إلى صيغة الباك
+        //  تحويل الوقت إلى صيغة الباك
         const toArabic12h = (time24) => {
           if (!time24) return "";
           let [h, m] = time24.split(":").map(Number);
@@ -714,9 +711,9 @@ export default function AddBookingModal({
           return `${displayH}:${String(m).padStart(2, "0")} ${suffix}`;
         };
 
-        // 🗓️ تحويل الأيام لحسب الباك
+        //  تحويل الأيام لحسب الباك
         const schedules = (formData.daysSchedule || []).map((d, i) => ({
-          _id: `${Date.now()}_${i}`, // 👈 ID مؤقت عشوائي لتجاوز Joi
+          _id: `${Date.now()}_${i}`, //  ID مؤقت عشوائي لتجاوز Joi
           dayOfWeek: dayToIndex[d.day] ?? 0,
           timeStart: toArabic12h(d.start),
           timeEnd: toArabic12h(d.end),
@@ -757,11 +754,16 @@ export default function AddBookingModal({
           body
         );
 
-        // ✅ السيرفر بيرجع النسخة المعدّلة، ناخدها ونحدث الـ context
+        // السيرفر بيرجع النسخة المعدّلة، ناخدها ونحدث الـ context
         const updatedBooking =
           updatedResponse?.data?.data ||
           updatedResponse?.data ||
           updatedResponse;
+
+        // قبل setBookings مباشرة
+        const activeMembersForGroup = Array.isArray(formData.members)
+          ? formData.members.filter((m) => !m._tempRemoved)
+          : [];
 
         setBookings((prev) =>
           prev.map((b) => {
@@ -770,7 +772,7 @@ export default function AddBookingModal({
                 ...b,
                 ...updatedBooking,
 
-                // ✅ تحديث بيانات المدرب محلياً
+                // تحديث بيانات المدرب محلياً
                 coach: {
                   _id:
                     formData.coach?.id ||
@@ -785,24 +787,22 @@ export default function AddBookingModal({
                     "مدرب غير معروف",
                 },
 
-                // ✅ تحديث بيانات المشتركين محلياً بالأسماء الصحيحة
-                members: Array.isArray(formData.members)
-                  ? formData.members.map((m) =>
-                      typeof m === "object"
-                        ? {
-                            _id: m._id || m.id,
-                            name: m.name || "مشترك غير معروف",
-                          }
-                        : { _id: m, name: "مشترك غير معروف" }
-                    )
-                  : [],
+                //  نخزن فقط المشتركين الفعّالين (بدون _tempRemoved)
+                members: activeMembersForGroup.map((m) =>
+                  typeof m === "object"
+                    ? {
+                        _id: m._id || m.id,
+                        name: m.name || "مشترك غير معروف",
+                      }
+                    : { _id: m, name: "مشترك غير معروف" }
+                ),
               };
             }
             return b;
           })
         );
 
-        toast.success("تم تعديل الحجز بالكامل ✅");
+        toast.success("تم تعديل الحجز بالكامل  ");
         handleClose();
         setLoading(false);
         return;
@@ -833,7 +833,7 @@ export default function AddBookingModal({
           return `${displayH}:${String(m).padStart(2, "0")} ${suffix}`;
         };
 
-        // ✅ تحويل أي hoursBefore → {date,time} بناءً على وقت هذا اليوم (formData.start)
+        //   تحويل أي hoursBefore → {date,time} بناءً على وقت هذا اليوم (formData.start)
         const remindersSingle = Array.isArray(formData.reminders)
           ? formData.reminders.map((r) => {
               if (typeof r === "string") return r;
@@ -870,7 +870,7 @@ export default function AddBookingModal({
           timeStart: toArabic12h(formData.start?.split("T")[1]?.slice(0, 5)),
           timeEnd: toArabic12h(formData.end?.split("T")[1]?.slice(0, 5)),
 
-          // 🟣 نرسل التاريخ الجديد كمان
+          //  نرسل التاريخ الجديد كمان
           date: formData.dateOnly || formData.start?.split("T")[0],
           dayOfWeek: new Date(formData.dateOnly || formData.start).getDay(),
           members: Array.isArray(formData.members)
@@ -894,16 +894,33 @@ export default function AddBookingModal({
           updatedResponse?.data ||
           updatedResponse;
 
-        // ✅ تحديث الحجز داخل الـ context بدون refresh
+        //   نأخذ فقط المشتركين الفعّالين (بدون _tempRemoved)
+        const activeMembersForSingle = Array.isArray(formData.members)
+          ? formData.members.filter((m) => !m._tempRemoved)
+          : [];
+
+        //   تحديث الحجز داخل الـ context بدون refresh
         setBookings((prev) =>
-          prev.map((b) =>
-            b._id === (updatedBooking._id || selectedBooking._id)
-              ? { ...b, ...updatedBooking }
-              : b
-          )
+          prev.map((b) => {
+            if (b._id === (updatedBooking._id || selectedBooking._id)) {
+              return {
+                ...b,
+                ...updatedBooking,
+                members: activeMembersForSingle.map((m) =>
+                  typeof m === "object"
+                    ? {
+                        _id: m._id || m.id,
+                        name: m.name || "مشترك غير معروف",
+                      }
+                    : { _id: m, name: "مشترك غير معروف" }
+                ),
+              };
+            }
+            return b;
+          })
         );
 
-        toast.success("تم تعديل اليوم بنجاح ✅");
+        toast.success("تم تعديل اليوم بنجاح  ");
         handleClose();
         setLoading(false);
         return;
@@ -912,16 +929,16 @@ export default function AddBookingModal({
       // fallback
       setLoading(false);
     } catch (err) {
-      console.error("❌ فشل الحفظ:", err.response?.data || err.message);
+      console.error(" فشل الحفظ:", err.response?.data || err.message);
 
-      // 🟣 قراءة رسالة الباك الأساسية
+      //  قراءة رسالة الباك الأساسية
       let backendMsg =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.response?.data?.details?.[0]?.message ||
         "حدث خطأ غير متوقع أثناء حفظ الحجز";
 
-      // 🟣 لو فيه أيام متعارضة، نكوّن رسالة تفصيلية
+      //  لو فيه أيام متعارضة، نكوّن رسالة تفصيلية
       const conflicted = err?.response?.data?.conflictedDays;
       if (Array.isArray(conflicted) && conflicted.length > 0) {
         const details = conflicted
@@ -953,8 +970,8 @@ export default function AddBookingModal({
     }
   };
 
-    // فتح المودال من الخارج (زر إضافة)
-    useEffect(() => {
+  // فتح المودال من الخارج (زر إضافة)
+  useEffect(() => {
     if (!openEventName) return;
 
     const handleOpenAdd = () => handleOpen();
@@ -974,7 +991,7 @@ export default function AddBookingModal({
       setFullBookingData(booking); // 🟣 نخزّن نسخة كاملة من الحجز الأصلي
       setFormData(formatted);
 
-      // ✳️ إغناء المشتركين بالأسماء الكاملة عند تعديل الحجز
+      //  إغناء المشتركين بالأسماء الكاملة عند تعديل الحجز
       if (booking?.members?.length && allMembers.length > 0) {
         const enrichedMembers = booking.members.map((m) => {
           const id = typeof m === "object" ? m.id || m._id : m;
@@ -996,12 +1013,12 @@ export default function AddBookingModal({
         }));
 
         console.log(
-          "✅ [AddBookingModal] تم إغناء المشتركين بالأسماء:",
+          "  [AddBookingModal] تم إغناء المشتركين بالأسماء:",
           enrichedMembers
         );
       }
 
-      // 🟣 بعد setFormData(formatted)
+      //  بعد setFormData(formatted)
       const allEmployees = JSON.parse(
         localStorage.getItem("allEmployees") || "[]"
       );
@@ -1035,7 +1052,7 @@ export default function AddBookingModal({
       );
     };
 
-     window.addEventListener(editEventName, handleOpenEdit);
+    window.addEventListener(editEventName, handleOpenEdit);
     return () => window.removeEventListener(editEventName, handleOpenEdit);
   }, [editEventName]);
 
@@ -1045,7 +1062,7 @@ export default function AddBookingModal({
     setShowCalendar(false);
   }, [formData, isEditing]);
 
-  // 🟣 وقت الأساس لحساب التذكير في Step2 (نفس منطق التحويل للبك تقريباً)
+  // وقت الأساس لحساب التذكير في Step2 (نفس منطق التحويل للبك تقريباً)
   const baseDateTimeForStep2 = formData?.start
     ? formData.start
     : formData?.dateOnly &&
@@ -1064,7 +1081,7 @@ export default function AddBookingModal({
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25">
           <div className="bg-white rounded-2xl shadow-lg w-[849px] h-[712px] flex flex-col p-6 text-right overflow-hidden animate-fadeIn relative">
-            {/* 🟣 اللودنج */}
+            {/* اللودنج */}
             {loading && (
               <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-50">
                 <div className="w-16 h-16 border-4 border-[var(--color-purple)] border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -1078,7 +1095,7 @@ export default function AddBookingModal({
               </div>
             )}
 
-            {/* 🟣 الهيدر */}
+            {/* الهيدر */}
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-3">
                 <h2 className="text-[16px] font-bold text-black">
@@ -1195,7 +1212,7 @@ export default function AddBookingModal({
                               if (found) {
                                 handleSelectBooking(found);
 
-                                // ✅ نخزّن الـ _id تبع اليوم المختار عشان handleSubmit تقدر تلاقيه
+                                //   نخزّن الـ _id تبع اليوم المختار عشان handleSubmit تقدر تلاقيه
                                 setSelectedOption(found._id || found.date);
 
                                 const formattedDate =
@@ -1224,7 +1241,11 @@ export default function AddBookingModal({
                 onClick={handleClose}
                 className="w-8 h-8 flex items-center justify-center"
               >
-                <img src={CloseIcon} className="rounded-[8px] bg-gray-100" alt="إغلاق" />
+                <img
+                  src={CloseIcon}
+                  className="rounded-[8px] bg-gray-100"
+                  alt="إغلاق"
+                />
               </button>
             </div>
 
@@ -1307,7 +1328,7 @@ export default function AddBookingModal({
                         });
                         setStep1Errors({});
                         setActiveStep(1);
-                        console.log("✅ Step1 validation passed");
+                        console.log("  Step1 validation passed");
                       } catch (err) {
                         const formattedErrors = {};
                         if (Array.isArray(err.inner)) {
@@ -1333,7 +1354,7 @@ export default function AddBookingModal({
                     <button
                       className="w-full py-3 text-white text-sm font-medium rounded-[8px] bg-[var(--color-purple)]"
                       onClick={async () => {
-                        // 🟣 تحقق يدوي من Step2 قبل الحفظ
+                        //  تحقق يدوي من Step2 قبل الحفظ
                         const newErrors = {};
 
                         if (!formData.dateOnly)
@@ -1349,7 +1370,7 @@ export default function AddBookingModal({
                         ) {
                           newErrors.daysSchedule = "أضف يومًا واحدًا على الأقل";
                         } else {
-                          // 🟣 تحقق من كل يوم داخل الجدول
+                          //  تحقق من كل يوم داخل الجدول
                           const invalidDay = formData.daysSchedule.find(
                             (d) =>
                               !d.day?.trim() ||
@@ -1363,7 +1384,7 @@ export default function AddBookingModal({
                           }
                         }
 
-                        // ✅ نتحقق من start/end فقط في الحجز الفردي
+                        //   نتحقق من start/end فقط في الحجز الفردي
                         if (
                           selectedBooking &&
                           (!formData.start || !formData.end)
@@ -1386,15 +1407,15 @@ export default function AddBookingModal({
                           end: formData.end,
                           reminders: formData.reminders,
                         });
-                        console.log("🔍 ERRORS so far:", newErrors);
+                        console.log(" ERRORS so far:", newErrors);
 
                         if (Object.keys(newErrors).length > 0) {
                           setStep2Errors(newErrors); // أو setErrors(newErrors) حسب اسمك
                           toast.error("يرجى تعبئة جميع حقول الحجز");
-                          return; // ❌ ما نكمّل الحفظ
+                          return; //  ما نكمّل الحفظ
                         }
 
-                        // ✅ إذا كله تمام كمّلي الحفظ
+                        //   إذا كله تمام كمّلي الحفظ
                         handleSubmit();
                       }}
                       disabled={loading}
