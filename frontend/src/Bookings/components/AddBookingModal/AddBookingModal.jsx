@@ -138,7 +138,6 @@ export default function AddBookingModal({
     const fetchMembers = async () => {
       try {
         const token =
-          localStorage.getItem("authToken") ||
           localStorage.getItem("token") ||
           "";
         const headers = { Authorization: `Bearer ${token}` };
@@ -1239,7 +1238,7 @@ export default function AddBookingModal({
 
               <button
                 onClick={handleClose}
-                className="w-8 h-8 flex items-center justify-center"
+                className="w-8 h-8 flex items-center justify-center cursor-pointer"
               >
                 <img
                   src={CloseIcon}
@@ -1317,7 +1316,7 @@ export default function AddBookingModal({
               <div className="w-[344px] mt-4 self-center flex flex-row gap-2">
                 {activeStep === 0 ? (
                   <button
-                    className="w-full py-3 text-white text-sm font-medium rounded-[8px] bg-[var(--color-purple)]"
+                    className="w-full py-3 text-white text-sm font-medium rounded-[8px] bg-[var(--color-purple)] cursor-pointer"
                     onClick={async () => {
                       try {
                         if (isCoach && coachId && !formData.coachId)
@@ -1346,13 +1345,13 @@ export default function AddBookingModal({
                 ) : (
                   <>
                     <button
-                      className="w-full py-3 text-[var(--color-purple)] text-sm font-medium rounded-[8px] border border-[var(--color-purple)]"
+                      className="w-full py-3 text-[var(--color-purple)] text-sm font-medium rounded-[8px] border border-[var(--color-purple)] cursor-pointer"
                       onClick={() => setActiveStep(0)}
                     >
                       السابق
                     </button>
                     <button
-                      className="w-full py-3 text-white text-sm font-medium rounded-[8px] bg-[var(--color-purple)]"
+                      className="w-full py-3 text-white text-sm font-medium rounded-[8px] bg-[var(--color-purple)] cursor-pointer"
                       onClick={async () => {
                         //  تحقق يدوي من Step2 قبل الحفظ
                         const newErrors = {};

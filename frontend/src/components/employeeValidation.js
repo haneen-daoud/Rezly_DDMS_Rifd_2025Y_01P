@@ -66,10 +66,10 @@ export const step2Schema = Yup.object().shape({
 });
 // Step 3 (معلومات الوظيفة)
 export const step3Schema = Yup.object().shape({
-  jobTitle: Yup.string().required("الوظيفة مطلوبة"),
+  jobTitle: Yup.string().required(" المسمّى الوظيفي مطلوب"),
   department: Yup.string()
     .min(2, "يجب أن يحتوي على حرفين على الأقل")
     .required("القسم مطلوب"),
   contractType: Yup.string().required("نوع العقد مطلوب"),
-  startDate: Yup.date().required("تاريخ التعيين مطلوب"),
+  startDate: Yup.string().required("تاريخ التعيين مطلوب"),
 });

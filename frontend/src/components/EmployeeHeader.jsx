@@ -20,6 +20,9 @@ export default function EmployeesHeader({
   handleAddEmployeeClick,
   activeIconIndex,
   setActiveIconIndex,
+  onApplyFilters,
+  filterData,
+  setFilterData,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,7 +45,7 @@ const [showFilter, setShowFilter] = useState(false);
           <button
             key={tab.name}
             onClick={() => handleTabClick(tab)} // ← التنقل للرابط الجديد
-            className={`relative text-[12px] font-semibold font-Cairo pb-[3px] transition-colors duration-200 ${
+            className={`relative text-[12px] font-semibold font-Cairo pb-[3px] transition-colors duration-200 cursor-pointer ${
               activeTab === tab.name || currentPath === tab.path
                 ? "text-[var(--color-purple)]"
                 : "text-[#7E818C]"
@@ -63,7 +66,7 @@ const [showFilter, setShowFilter] = useState(false);
           {activeTab === "الموظفين" && (
             <button
               onClick={handleAddEmployeeClick}
-              className="flex items-center justify-center gap-[8px] bg-[var(--color-purple)] text-white h-[36px] px-3 rounded-lg text-sm font-semibold font-Cairo transition"
+              className="flex items-center justify-center gap-[8px] bg-[var(--color-purple)] text-white h-[36px] px-3 rounded-lg text-sm font-semibold font-Cairo transition cursor-pointer"
             >
               <MembersIcon className="w-4 h-4" />
               <span>إضافة موظف</span>
@@ -77,7 +80,7 @@ const [showFilter, setShowFilter] = useState(false);
             }
           >
             <button onClick={() => setShowFilter(!showFilter)}>
-            <FilterIcon className="w-5 h-5 text-[var(--color-purple)]" />
+            <FilterIcon className="w-5 h-5 text-[var(--color-purple)] cursor-pointer" />
 </button>
 <div className="relative">
   <button onClick={() => setShowFilter(!showFilter)}>
@@ -85,9 +88,13 @@ const [showFilter, setShowFilter] = useState(false);
   </button>
 
   <EmployeeFilter
-    isOpen={showFilter}
-    onClose={() => setShowFilter(false)}
-  />
+  isOpen={showFilter}
+  onClose={() => setShowFilter(false)}
+  filterData={filterData}
+  setFilterData={setFilterData}
+  onApply={onApplyFilters}
+/>
+
 </div>
 
 

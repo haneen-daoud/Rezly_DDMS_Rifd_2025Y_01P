@@ -80,7 +80,6 @@ useEffect(() => {
     const fetchMembersSmart = async () => {
       try {
         const token =
-          localStorage.getItem("authToken") ||
           localStorage.getItem("token") ||
           "";
         const headers = {

@@ -22,13 +22,28 @@ export const createEmployee = async (formData) => {
 };
 
 // جلب جميع الموظفين
-export const getAllEmployees = async () => {
-  const res = await api.get("/auth/getAllEmployees", {
+// جلب جميع الموظفين (مع دعم الفلاتر من الكويري)
+export const getAllEmployees = async (filters = {}) => {
+  const params = new URLSearchParams();
+
+  if (filters.id) params.append("id", filters.id);
+  if (filters.role) params.append("role", filters.role);
+  if (filters.jobTitle) params.append("jobTitle", filters.jobTitle);
+  if (filters.department) params.append("department", filters.department);
+  if (filters.contractType) params.append("contractType", filters.contractType);
+
+  const queryString = params.toString();
+  const url = queryString
+    ? `/auth/getAllEmployees?${queryString}`
+    : `/auth/getAllEmployees`;
+
+  const res = await api.get(url, {
     headers: { Authorization: `Bearer ${FIXED_TOKEN}` },
   });
 
   return res.data;
 };
+
 // حذف أو تعطيل موظف
 export const toggleEmployeeStatus = async (id, active) => {
   const res = await api.patch(
@@ -167,14 +182,40 @@ export const addNewMember = async (memberData) => {
 };
 
 
-// جلب جميع الأعضاء (المشتركين) مع دعم السيرتش من الباك
-export const getAllMembers = async (page = 1, search = "") => {
+// جلب جميع الأعضاء (المشتركين) مع دعم السيرتش + الفلاتر من الباك
+export const getAllMembers = async (page = 1, search = "", filters = {}) => {
   try {
     const params = new URLSearchParams();
-    params.append("page", page);
 
+    // البيج والليمت
+    params.append("page", page);
+    // لو حابة تثبتي الليمت 10 نفس منطق التاب
+    // params.append("limit", 10);
+
+    // السيرتش
     if (search && search.trim() !== "") {
       params.append("search", search.trim());
+    }
+
+    // الفلاتر
+    if (filters.packageName) {
+      params.append("packageName", filters.packageName);
+    }
+
+    if (filters.city) {
+      params.append("city", filters.city);
+    }
+
+    if (filters.coachId) {
+      params.append("coachId", filters.coachId);
+    }
+
+    if (filters.startDate) {
+      params.append("startDate", filters.startDate);
+    }
+
+    if (filters.endDate) {
+      params.append("endDate", filters.endDate);
     }
 
     const res = await api.get(`/auth/getAllMembers?${params.toString()}`, {
@@ -189,6 +230,7 @@ export const getAllMembers = async (page = 1, search = "") => {
     throw err;
   }
 };
+
 
 
 export const getmemb =async()=>{
@@ -283,17 +325,27 @@ export const updateMember = async (memberId, memberData) => {
 
 
   // جلب جميع المدربين
+// 🟣 جلب جميع المدربين (Employees بدور Coach)
 export const getAllCoaches = async () => {
   try {
     const res = await api.get("/auth/getAllEmployees?role=Coach", {
-      headers: { Authorization: `Bearer ${FIXED_TOKEN}` },
+      headers: {
+        Authorization: `Bearer ${FIXED_TOKEN}`,
+      },
     });
-    return res.data.employees || []; 
+
+    // حسب استجابة الباك، بس غالباً employees
+    const coaches = res.data.employees || res.data.data || [];
+    return coaches;
   } catch (err) {
-    console.error("خطأ أثناء جلب المدربين:", err.response?.data || err.message);
-    return [];
-  }
+    console.error(
+      "❌ خطأ أثناء جلب المدربين:",
+      err.response?.data || err.message
+    );
+    throw err;
+  }
 };
+
 
 /////////////////
 

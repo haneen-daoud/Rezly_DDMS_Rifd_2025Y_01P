@@ -23,7 +23,7 @@ import Icon9 from "../assets/icon/card-icon9.svg";
 import User1 from "../img/User1.svg";
 import User2 from "../img/User2.svg";
 import User3 from "../img/User3.svg";
-
+import UpcomingBookings from "../components/UpcomingBookings.jsx";
 const needsFollowUp = [
   { id: 1, name: "خالد السالم", reason: "تغيب يومين", image: User1 },
   { id: 2, name: "فاطمة أحمد", reason: "تأخر متكرر", image: User2 },
@@ -364,10 +364,10 @@ export default function Home() {
             </section>
           )}
 
-          {/* جدول الحضور */}
-          <section className="bg-white rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-3 sm:p-4 flex-1">
-            <AttendanceTable />
-          </section>
+         <section className="bg-white rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-3 sm:p-4 flex-1">
+  {isCoach ? <UpcomingBookings /> : <AttendanceTable />}
+</section>
+
         </div>
 
         {/* العمود اليمين */}

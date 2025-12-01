@@ -66,7 +66,6 @@ export default function EventModal({
       try {
         // 🟣 التوكن من اللوكل ستورج
         const token =
-          localStorage.getItem("authToken") ||
           localStorage.getItem("token") ||
           "";
 

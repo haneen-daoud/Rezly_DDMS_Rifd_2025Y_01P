@@ -3,12 +3,12 @@ import * as Yup from "yup";
 export const step1Schema = Yup.object().shape({
   firstName: Yup.string()
     .required("الاسم الأول مطلوب")
-    .min(2, "يجب أن لا يقل عن حرفين ")
+    .min(3, "يجب أن لا يقل عن 3 حروف ")
     .max(15, "يجب ألا يزيد عن 15 حرفًا"),
 
   lastName: Yup.string()
     .required("الاسم الثاني مطلوب")
-    .min(2, "يجب أن لا يقل عن حرفين ")
+    .min(3, "يجب أن لا يقل عن 3 حروف ")
     .max(15, "يجب ألا يزيد عن 15 حرفًا"),
 
   gender: Yup.string()

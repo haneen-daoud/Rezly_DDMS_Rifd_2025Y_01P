@@ -13,7 +13,6 @@ const BASE_URL =
 ---------------------------------------------------------- */
 function getCurrentToken() {
   const token =
-    localStorage.getItem("authToken") ||
     localStorage.getItem("token") ||
     import.meta.env.VITE_API_TOKEN ||
     "";
@@ -42,7 +41,6 @@ api.interceptors.request.use((config) => {
 export async function getUserFromToken() {
   try {
     const tokenStr =
-      localStorage.getItem("authToken") ||
       localStorage.getItem("token") ||
       "";
     if (!tokenStr) return null;
@@ -235,7 +233,6 @@ const BASE2_URL = "https://rezly-ddms-rifd-2025y-01p.onrender.com";
 export const searchMembersAPI = async (search = "") => {
   try {
     const token =
-      localStorage.getItem("authToken") ||
       localStorage.getItem("token") ||
       "";
     const res = await axios.get(`${BASE2_URL}/auth/getAllMembers`, {

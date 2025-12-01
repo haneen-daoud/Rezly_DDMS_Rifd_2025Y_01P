@@ -7,7 +7,6 @@ export const getAllCoachesAPI = async () => {
   try {
     // ✅ قراءة ذكية للتوكن (تدعم authToken أو token من Login)
 const token =
-  localStorage.getItem("authToken") ||
   (localStorage.getItem("token")
     ? `Bearer ${localStorage.getItem("token")}`
     : import.meta.env.VITE_API_TOKEN) ||

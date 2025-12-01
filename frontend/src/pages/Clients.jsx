@@ -32,9 +32,21 @@ export default function ClientsPage() {
 
   const [subscribersFilterAnchorRect, setSubscribersFilterAnchorRect] =
     useState(null);
+  const [subscribersFilters, setSubscribersFilters] = useState({});
+
+  // عدد المشتركين المعرُوضين بعد الفلترة / السيرتش
+const [displayedMembersCount, setDisplayedMembersCount] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  const hasActiveMemberFilters =
+  (membersSearch && membersSearch.trim() !== "") ||
+  (subscribersFilters &&
+    Object.values(subscribersFilters).some(
+      (v) => v !== undefined && v !== null && v !== ""
+    ));
+
 
   //  نقرأ اسم التاب من الـ URL أول ما ندخل الصفحة
   useEffect(() => {
@@ -145,7 +157,15 @@ export default function ClientsPage() {
   const renderContent = () => {
     switch (activeTab) {
       case "المشتركين":
-        return <SubscribersTab searchValue={membersSearch} />;
+      return (
+        <SubscribersTab
+          searchValue={membersSearch}
+          filters={subscribersFilters}
+          onMembersCountChange={(count) => {
+            setDisplayedMembersCount(count);
+          }}
+        />
+      );
       case "الحجوزات":
         return <BookingsPage />;
       default:
@@ -245,7 +265,11 @@ export default function ClientsPage() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         totalBookings={totalBookings}
-        totalMembers={totalMembers}
+        totalMembers={
+    hasActiveMemberFilters && displayedMembersCount !== null
+      ? displayedMembersCount   // عدد المفلترين
+      : totalMembers            // الإجمالي
+  }
         handleAddBookingClick={handleAddBookingClick}
         onOpenFilter={handleOpenBookingsFilter}
         onSearchChange={handleSearchChange}
@@ -275,22 +299,18 @@ export default function ClientsPage() {
         />
       )}
 
-      {/* مودال فلترة الحجوزات */}
-      {isBookingsFilterOpen && activeTab === "الحجوزات" && (
-        <FilterBookings
-          onClose={() => setIsBookingsFilterOpen(false)}
-          onApply={(filters) => {
-            console.log("Filters applied: ", filters);
-            // لاحقًا تربطي الفلاتر مع جدول الحجوزات
-            setIsBookingsFilterOpen(false);
-          }}
-          coachesList={[]}
-          locationsList={[]}
-          anchorRect={filterAnchorRect} //  مكان زر الفلترة
-        />
-      )}
+            {/* مودال فلترة الحجوزات */}
+      {filterAnchorRect &&
+        isBookingsFilterOpen &&
+        activeTab === "الحجوزات" && (
+          <FilterBookings
+            isOpen={isBookingsFilterOpen}
+            onClose={() => setIsBookingsFilterOpen(false)}
+            anchorRect={filterAnchorRect}
+          />
+        )}
 
-      {/* مودال فلترة المشتركين */}
+            {/* مودال فلترة المشتركين */}
       {subscribersFilterAnchorRect &&
         isSubscribersFilterOpen &&
         activeTab === "المشتركين" && (
@@ -298,10 +318,19 @@ export default function ClientsPage() {
             isOpen={isSubscribersFilterOpen}
             onClose={() => setIsSubscribersFilterOpen(false)}
             anchorRect={subscribersFilterAnchorRect}
+            filters={subscribersFilters}
+            onApply={(filters) => {
+              // نخزن الفلاتر بالستيت
+              setSubscribersFilters(filters || {});
+              // نسكر كرت الفلترة
+              setIsSubscribersFilterOpen(false);
+            }}
           />
         )}
 
+
       <Outlet />
+
     </div>
   );
 }

@@ -21,6 +21,8 @@ export default function Employees() {
   const [loading, setLoading] = useState(true);
   const EMPLOYEES_CACHE_KEY = "employees_cache_v1";
 
+  const [filterData, setFilterData] = useState({});
+
   const { activeSubTab, setActiveSubTab } = useOutletContext();
   const navigate = useNavigate();
   const location = useLocation();
@@ -156,6 +158,28 @@ export default function Employees() {
     }
   };
 
+  const handleApplyFilters = async (filters) => {
+  try {
+    setLoading(true);
+    setFilterData(filters);
+
+    const data = await getAllEmployees(filters);
+
+    const list = data.data?.employees || data.employees || data.data || [];
+    const cleanedList = Array.isArray(list) ? list : [];
+
+    setEmployees(cleanedList);
+    setTotalEmployees(data.totalCount || cleanedList.length);
+  } catch (error) {
+    console.error("Error applying employee filters:", error);
+    // لو عندك toast:
+    // toast.error("فشل تطبيق الفلاتر");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   /* --------------------------------------------------------
       حذف موظف + Toast
   -------------------------------------------------------- */
@@ -221,13 +245,17 @@ export default function Employees() {
     <div className="flex flex-col gap-3 flex-1 w-full">
       {/* Header */}
       <EmployeesHeader
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        totalEmployees={totalEmployees}
-        handleAddEmployeeClick={handleAddEmployeeClick}
-        activeIconIndex={activeIconIndex}
-        setActiveIconIndex={setActiveIconIndex}
-      />
+  activeTab={activeTab}
+  setActiveTab={setActiveTab}
+  totalEmployees={totalEmployees}
+  handleAddEmployeeClick={handleAddEmployeeClick}
+  activeIconIndex={activeIconIndex}
+  setActiveIconIndex={setActiveIconIndex}
+  onApplyFilters={handleApplyFilters}
+  filterData={filterData}
+  setFilterData={setFilterData}
+/>
+
 
       {/* Content */}
       {renderContent()}

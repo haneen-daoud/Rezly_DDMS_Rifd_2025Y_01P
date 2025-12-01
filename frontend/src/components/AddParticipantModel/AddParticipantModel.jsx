@@ -347,7 +347,7 @@ const AddParticipantModel = ({
               {activeStep > 0 && (
                 <button
                   onClick={handleBack}
-                  className="w-full py-3 border border-gray-300 text-gray-700 text-sm font-medium rounded-[8px] hover:bg-gray-100"
+                  className="w-full py-3 border border-gray-300 text-gray-700 text-sm font-medium rounded-[8px] hover:bg-gray-100 cursor-pointer"
                 >
                   السابق
                 </button>
@@ -355,7 +355,7 @@ const AddParticipantModel = ({
 
               <button
                 onClick={handleNext}
-                className="w-full py-3 text-white text-sm font-medium rounded-[8px]"
+                className="w-full py-3 text-white text-sm font-medium rounded-[8px] cursor-pointer"
                 style={{ backgroundColor: "#6A0EAD" }}
               >
                 {activeStep === steps.length - 1

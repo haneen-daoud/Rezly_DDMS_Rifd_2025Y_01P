@@ -60,7 +60,6 @@ const Login = () => {
         // تخزين التوكن
         if (token) {
           localStorage.setItem("token", token);
-          localStorage.setItem("authToken", token);
         }
 
         // تخزين اليوزر كامل
@@ -175,7 +174,7 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 cursor-pointer"
               >
                 {showPassword ? (
                   <EyeOnIcon className="text-[var(--color-purple)]" />
@@ -194,7 +193,7 @@ const Login = () => {
                 name="rememberMe"
                 checked={formData.rememberMe}
                 onChange={handleChange}
-                className="ml-2 accent-[#6A0EAD]"
+                className="ml-2 accent-[#6A0EAD] cursor-pointer"
               />
               تذكرني
             </label>
@@ -211,7 +210,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full h-12 text-white font-semibold rounded-lg hover:bg-[#580b94] transition flex items-center justify-center gap-2 ${
+            className={`w-full h-12 text-white font-semibold rounded-lg hover:bg-[#580b94] transition flex items-center justify-center cursor-pointer gap-2 ${
               loading ? "opacity-90 cursor-wait" : ""
             }`}
             style={{ backgroundColor: "var(--color-purple)" }}
@@ -228,7 +227,7 @@ const Login = () => {
             <button
               type="button"
               onClick={() => navigate("/signup")}
-              className="text-[#6A0EAD] font-semibold hover:underline"
+              className="text-[#6A0EAD] font-semibold hover:underline cursor-pointer"
             >
               أنشئ حساب الآن
             </button>

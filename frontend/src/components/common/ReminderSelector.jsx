@@ -496,7 +496,7 @@ const ReminderSelector = ({
                       e.stopPropagation();
                       handleAddCustomReminder();
                     }}
-                    className="flex items-center gap-1 px-3 h-8 rounded-full bg-[var(--color-purple)] text-white text-[12px] font-semibold"
+                    className="flex items-center gap-1 px-3 h-8 rounded-full bg-[var(--color-purple)] text-white text-[12px] font-semibold cursor-pointer"
                   >
                     <span className="text-[16px] leading-none">+</span>
                     <span>إضافة</span>

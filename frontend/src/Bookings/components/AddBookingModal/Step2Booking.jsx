@@ -168,7 +168,7 @@ export default function Step2Booking({
   setOpenDuration(false);
 }}
 
-              className="h-10 w-full pr-5 pl-2 rounded-md focus:outline-none font-normal"
+              className="h-10 w-full pr-5 pl-2 rounded-md focus:outline-none font-normal cursor-pointer"
             />
             {showCalendar && (
               <div className="absolute top-full left-0 mt-2 z-30 w-60">
@@ -308,7 +308,7 @@ export default function Step2Booking({
             <button
               onClick={handleAddDay}
               type="button"
-              className="text-[var(--color-purple)] font-semibold text-sm flex items-center gap-1 hover:underline"
+              className="text-[var(--color-purple)] font-semibold text-sm flex items-center gap-1 hover:underline cursor-pointer"
             >
               <span className="text-lg leading-none">＋</span>
               <span>إضافة يوم جديد</span>
@@ -364,7 +364,7 @@ export default function Step2Booking({
   <select
     value={row.day}
     onChange={(e) => handleChange(index, "day", e.target.value)}
-    className="flex-1 h-9 w-full rounded-md border border-gray-300 pr-3 pl-3 text-sm focus:outline-none appearance-none"
+    className="flex-1 h-9 w-full rounded-md border border-gray-300 pr-3 pl-3 text-sm focus:outline-none appearance-none cursor-pointer"
   >
     <option value="">اختر اليوم</option>
     {allDays.map((d) => (
@@ -404,7 +404,7 @@ export default function Step2Booking({
                       onClick={() => handleDeleteDay(index)}
                       
                     >
-                      <DeleteIcon className="w-7 h-7 text-red-500" />
+                      <DeleteIcon className="w-7 h-7 text-red-500 cursor-pointer" />
                     </button>
                   </div>
                 ))}

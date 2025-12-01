@@ -11,6 +11,8 @@ import {
   Copy,
   Phone,
 } from "lucide-react";
+import Select from "react-select";
+import selectStyles from "../selectStyles.js";
 
 const Step3Participant = forwardRef(({ memberData, setMemberData }, ref) => {
   const [selectedMethod, setSelectedMethod] = useState(
@@ -18,6 +20,11 @@ const Step3Participant = forwardRef(({ memberData, setMemberData }, ref) => {
   );
   const [selectedForm, setSelectedForm] = useState(memberData.healthForm || "");
   const [errors, setErrors] = useState({});
+
+  const healthFormOptions = [
+  { value: "general", label: "الفورم الصحي العام" },
+  { value: "specific", label: "فورم خاص" },
+];
 
   useImperativeHandle(ref, () => ({
     setErrors: (newErrors) => setErrors(newErrors),
@@ -41,29 +48,33 @@ const Step3Participant = forwardRef(({ memberData, setMemberData }, ref) => {
     <div className=" flex justify-center  bg-white w-full">
       <form className="w-[343px] flex flex-col gap-4 font-[Cairo]">
         {/* اختيار الفورم الصحي */}
-        <div className="flex flex-col gap-2">
-          <label className="text-[14px] font-[700] text-black">
-            اختر الفورم الصحي
-          </label>
-          <select
-            value={selectedForm}
-            onChange={(e) => setSelectedForm(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-3 py-2 text-[12px] text-[color:var(--grey,#7E818C)] focus:outline-none focus:ring-2 focus:ring-purple-600"
-          >
-            <option value="">مثال: الفورم الصحي العام</option>
-            <option value="general">الفورم الصحي العام</option>
-            <option value="specific">فورم خاص</option>
-          </select>
-        </div>
+<div className="flex flex-col">
+  <label className="text-[14px] font-[700] text-black mb-2">
+    اختر الفورم الصحي
+  </label>
+
+  <Select
+    options={healthFormOptions}
+    value={
+      healthFormOptions.find((opt) => opt.value === selectedForm) || null
+    }
+    onChange={(opt) => setSelectedForm(opt ? opt.value : "")}
+    placeholder="مثال: الفورم الصحي العام"
+    styles={selectStyles}
+    isRtl={true}
+    isSearchable={false}
+  />
+</div>
+
 
         {/* طريقة الإرسال */}
-        <div className="flex flex-col gap-3 mb-1.5">
+        <div className="flex flex-col gap-3">
           <p className="text-[14px] font-[700] text-black">طريقة الإرسال</p>
 
           {/* Email */}
           <div
             onClick={() => setSelectedMethod("email")}
-            className={`flex items-center justify-between border rounded-xl px-4 py-3 cursor-pointer transition-all ${
+            className={`flex items-center justify-between border rounded-[8px] p-3 cursor-pointer transition-all ${
               selectedMethod === "email"
                 ? "border-[var(--color-purple)] bg-purple-50"
                 : "border-gray-300 hover:border-[var(--color-purple)]"
@@ -96,7 +107,7 @@ const Step3Participant = forwardRef(({ memberData, setMemberData }, ref) => {
           {/* SMS */}
           <div
             onClick={() => setSelectedMethod("sms")}
-            className={`flex items-center justify-between border rounded-xl px-4 py-3 cursor-pointer transition-all ${
+            className={`flex items-center justify-between border rounded-[8px] p-3 cursor-pointer transition-all ${
               selectedMethod === "sms"
                 ? "border-[var(--color-purple)] bg-purple-50"
                 : "border-gray-300 hover:border-[var(--color-purple)]"
@@ -129,7 +140,7 @@ const Step3Participant = forwardRef(({ memberData, setMemberData }, ref) => {
           {/* Whatsapp */}
           <div
             onClick={() => setSelectedMethod("whatsapp")}
-            className={`flex items-center justify-between border rounded-xl px-4 py-3 cursor-pointer transition-all ${
+            className={`flex items-center justify-between border rounded-[8px] p-3 cursor-pointer transition-all ${
               selectedMethod === "whatsapp"
                 ? "border-[var(--color-purple)] bg-purple-50"
                 : "border-gray-300 hover:border-[var(--color-purple)]"
@@ -161,10 +172,10 @@ const Step3Participant = forwardRef(({ memberData, setMemberData }, ref) => {
         </div>
 
         {/* رابط  */}
-        <div className="flex justify-between rounded-xl items-center bg-gray-100 px-2 py-2">
+        <div className="flex justify-between rounded-[8px] items-center bg-gray-100 p-3">
           <button
             onClick={copyLink}
-            className="bg-[var(--color-purple)] rounded-xl text-white px-4 py-2 text-[12px] font-medium hover:bg-[var(--color-purple)] transition-all"
+            className="bg-[var(--color-purple)] rounded-[8px] text-white px-4 py-2 text-[12px] font-medium hover:bg-[var(--color-purple)] transition-all cursor-pointer"
           >
             نسخ
           </button>
