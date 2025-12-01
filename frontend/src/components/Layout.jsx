@@ -100,7 +100,7 @@ export default function Layout() {
   //تأكد فيه توكن وإلا رجّعه للوج إن
   useEffect(() => {
     const token =
-      localStorage.getItem("authToken") || localStorage.getItem("token");
+      localStorage.getItem("token");
 
     if (!token) {
       navigate("/", { replace: true });

@@ -46,7 +46,7 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
       <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
         {/* رقم الهاتف */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
+          <label className="block text-[14px] font-[700] text-black mb-2">
             رقم الهاتف <span className="text-red-500">*</span>
           </label>
           <input
@@ -54,8 +54,8 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
             placeholder="05xxxxxxxxx"
             value={data.phoneNumber || ""}
             onChange={(e) => handleChange("phoneNumber", e.target.value)}
-            className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-  focus:outline-none ${
+            className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
+              text-right placeholder:text-right focus:outline-none ${
     localErrors.phoneNumber
       ? "border-red-500"
       : "border-gray-300 focus:border-[var(--color-purple)]"
@@ -70,7 +70,7 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
 
         {/* الإيميل */}
         <div>
-          <label className="block text-[14px] font-[700] mb-1.5 text-black">
+          <label className="block text-[14px] font-[700]  mb-2 text-black">
             البريد الإلكتروني <span className="text-red-500">*</span>
           </label>
           <input
@@ -78,7 +78,7 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
             placeholder="example@gmail.com"
             value={data.email || ""}
             onChange={(e) => handleChange("email", e.target.value)}
-            className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+            className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
   focus:outline-none ${
     localErrors.email
       ? "border-red-500"
@@ -93,18 +93,24 @@ const Step2Employee = forwardRef(({ data, onChange }, ref) => {
 
         {/* العنوان */}
         <div>
-          <label className="block text-[14px] font-[700] mb-1.5 text-black">
-            العنوان
+          <label className="block text-[14px] font-[700] mb-2 text-black">
+            العنوان <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             placeholder="أدخل العنوان"
             value={data.address || ""}
             onChange={(e) => handleChange("address", e.target.value)}
-            className="w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
-  border-gray-300 focus:outline-none focus:border-[var(--color-purple)]"
-
+            className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
+  border-gray-300 focus:outline-none ${
+    localErrors.email
+      ? "border-red-500"
+      : "border-gray-300 focus:border-[var(--color-purple)]"
+  }`}
           />
+          {localErrors.address && (
+            <p className="text-red-500 text-[11px] mt-1">{localErrors.address}</p>
+          )}
         </div>
       </form>
     </div>

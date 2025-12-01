@@ -73,7 +73,7 @@ export default function UserAttendance() {
       setMessage("");
 
       const token =
-        localStorage.getItem("authToken") || localStorage.getItem("token");
+        localStorage.getItem("token");
 
       if (!token) {
         toast.error("يجب تسجيل الدخول أولاً.");

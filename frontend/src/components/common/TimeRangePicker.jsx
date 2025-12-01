@@ -107,7 +107,7 @@ const TimeRangePicker = ({
           className={`w-full rounded-md border ${borderColor}
     ${variant === "filter" ? "h-[32px]" : "h-10"}
   pr-${showIcons ? 8 : 2} focus:outline-none appearance-none max-h-56 
-  overflow-y-auto custom-scrollbar
+  overflow-y-auto custom-scrollbar cursor-pointer
   ${
     variant === "filter"
       ? "font-normal text-[12px] text-[#1D1E20]"
@@ -160,7 +160,7 @@ const TimeRangePicker = ({
            className={`w-full rounded-md border ${borderColor}
     ${variant === "filter" ? "h-[32px]" : "h-10"}
   pr-${showIcons ? 8 : 2} focus:outline-none appearance-none max-h-56 
-  overflow-y-auto custom-scrollbar
+  overflow-y-auto custom-scrollbar cursor-pointer
   ${
     variant === "filter"
       ? "font-normal text-[12px] text-[#1D1E20]"

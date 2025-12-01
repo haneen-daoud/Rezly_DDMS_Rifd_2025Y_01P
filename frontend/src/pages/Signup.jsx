@@ -3,6 +3,7 @@ import UserIcon from "../icons/user.svg?react";
 import EmailIcon from "../icons/email.svg?react";
 import PasswordIcon from "../icons/password.svg?react";
 import EyeOffIcon from "../icons/eyeOff.svg?react";
+import EyeOnIcon from "../icons/eyeOn.svg?react";
 import SignupBg from "../icons/signup.svg";
 import { useNavigate } from "react-router-dom";
 import { signup } from "../api.js";
@@ -67,11 +68,8 @@ const Signup = () => {
       }}
     >
       {/* نموذج التسجيل */}
-      <div
-        className="flex flex-col items-center flex-1 w-full md:max-w-[600px] bg-white rounded-xl p-6 md:p-8 shadow-md"
-      >
+      <div className="flex flex-col items-center flex-1 w-full md:max-w-[600px] bg-white rounded-xl p-6 md:p-8 shadow-md">
         <div className="mb-4 flex justify-center w-full">
-        
           <img src={Logo} alt="logo" className="logo mb-1 w-[150px] h-auto" />
         </div>
 
@@ -132,9 +130,13 @@ const Signup = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 cursor-pointer"
               >
-                <EyeOffIcon />
+                {showPassword ? (
+                  <EyeOnIcon className="text-[var(--color-purple)]" />
+                ) : (
+                  <EyeOffIcon />
+                )}
               </button>
             </div>
           </div>
@@ -155,16 +157,20 @@ const Signup = () => {
               <button
                 type="button"
                 onClick={() => setShowCPassword(!showCPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 cursor-pointer"
               >
-                <EyeOffIcon />
+                {showCPassword ? (
+                  <EyeOnIcon className="text-[var(--color-purple)]" />
+                ) : (
+                  <EyeOffIcon />
+                )}
               </button>
             </div>
           </div>
 
           {/* رقم الهاتف */}
           <div className="mb-3">
-            <label className="block mb-1 text-black">رقم الجوال</label>
+            <label className="block mb-1 text-black">رقم الهاتف</label>
             <input
               type="text"
               name="phone"
@@ -179,7 +185,7 @@ const Signup = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 text-white font-semibold rounded-lg hover:bg-[#580b94] transition"
+            className="w-full h-12 text-white font-semibold rounded-lg hover:bg-[#580b94] transition cursor-pointer"
             style={{ backgroundColor: "#6A0EAD" }}
           >
             {loading ? "جاري الإنشاء..." : "إنشاء حساب"}
@@ -190,7 +196,7 @@ const Signup = () => {
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="text-[#6A0EAD] font-semibold hover:underline"
+              className="text-[#6A0EAD] font-semibold hover:underline cursor-pointer"
             >
               تسجيل الدخول
             </button>

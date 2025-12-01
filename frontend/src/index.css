@@ -165,6 +165,21 @@ h1 {
   scrollbar-color: rgba(106, 14, 173, 0.45) transparent;
 }
 
+.rz__menu-list {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(106, 14, 173, 0.45) transparent;
+}
+
+.rz__menu-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rz__menu-list::-webkit-scrollbar-thumb {
+  background-color: rgba(106, 14, 173, 0.45);
+  border-radius: 4px;
+}
+
+
 /* Chrome / Edge / Safari */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

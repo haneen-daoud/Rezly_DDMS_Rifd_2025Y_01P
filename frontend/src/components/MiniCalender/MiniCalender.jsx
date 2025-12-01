@@ -210,7 +210,7 @@ export default function MiniCalender({
       <button
         type="button"
         onClick={decreaseMonth}
-        className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200"
+        className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200 cursor-pointer"
         title="الشهر السابق"
       >
         <img src={RightArrowIcon} alt="prev-month" />
@@ -220,7 +220,7 @@ export default function MiniCalender({
       <button
         type="button"
         onClick={increaseMonth}
-        className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200"
+        className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200 cursor-pointer"
         title="الشهر التالي"
       >
         <img src={LeftArrowIcon} alt="next-month" />
@@ -231,7 +231,7 @@ export default function MiniCalender({
         />
 
         <button
-          className="w-full h-[36px] mt-3 bg-[var(--color-purple)] text-white rounded-[8px] font-bold text-[14px] hover:bg-[var(--color-purple)] transition"
+          className="w-full h-[36px] mt-3 bg-[var(--color-purple)] text-white rounded-[8px] font-bold text-[14px] hover:bg-[var(--color-purple)] transition cursor-pointer"
           onClick={() => handleDateChange(tempDate)}
         >
           اختيار

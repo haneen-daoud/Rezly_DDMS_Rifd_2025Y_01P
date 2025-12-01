@@ -208,7 +208,6 @@ export default function CalendarView() {
   const handleDeleteBooking = async (bookingToDelete) => {
     try {
       const token =
-        localStorage.getItem("authToken") ||
         (localStorage.getItem("token")
           ? `Bearer ${localStorage.getItem("token")}`
           : `Bearer ${import.meta.env.VITE_API_TOKEN}`) ||

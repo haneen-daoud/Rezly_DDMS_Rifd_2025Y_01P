@@ -138,8 +138,8 @@ export default function FilterBookings({
 
           <button
             type="button"
+            className="cursor-pointer"
             onClick={handleReset}
-            className="font-Cairo text-[12px] font-normal text-[#F04438]"
           >
             إعادة التعيين
           </button>
@@ -418,6 +418,7 @@ export default function FilterBookings({
               rounded-[8px]
               font-Cairo
               text-[16px]
+              cursor-pointer
             "
           >
             تطبيق الفلتر

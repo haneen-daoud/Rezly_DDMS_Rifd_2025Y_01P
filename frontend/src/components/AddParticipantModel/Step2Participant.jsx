@@ -52,26 +52,25 @@ const Step2Participant = forwardRef(({ memberData, setMemberData }, ref) => {
       <form className="w-[343px] flex flex-col gap-3 font-[Cairo]">
         {/*  رقم الهاتف */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
+          <label className="block text-[14px] font-[700] text-black mb-2">
             رقم الهاتف <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            placeholder="05xxxxxxxxxx"
+            placeholder="05xxxxxxxx"
             value={memberData.phone || ""} // نعرض القيمة من الـ state
             onChange={(e) => handleChange("phone", e.target.value)}
-            className="w-full p-2.5 border border-gray-300 rounded-xl text-sm 
-                                   placeholder-[color:var(--grey,#7E818C)] focus:outline-none 
-                                   focus:ring-2 focus:ring-purple-500"
+            className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-sm 
+                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[#6A0EAD] focus:outline-none"
           />
           {errors.phone && (
-            <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+            <p className="text-red-500 text-[11px]">{errors.phone}</p>
           )}
         </div>
 
         {/*الإيميل */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
+          <label className="block text-[14px] font-[700] text-black mb-2">
             الإيميل <span className="text-red-500">*</span>
           </label>
           <input
@@ -79,16 +78,15 @@ const Step2Participant = forwardRef(({ memberData, setMemberData }, ref) => {
             placeholder="example@gmail.com"
             value={memberData.email || ""}
             onChange={(e) => handleChange("email", e.target.value)}
-            className="w-full p-2.5 border border-gray-300 rounded-xl text-sm 
-                                   placeholder-[color:var(--grey,#7E818C)] focus:outline-none 
-                                   focus:ring-2 focus:ring-purple-500"
+            className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-sm 
+                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[#6A0EAD] focus:outline-none"
           />
           {errors.email && (
-            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+            <p className="text-red-500 text-[11px]">{errors.email}</p>
           )}
         </div>
-        <div className="flex flex-col gap-2">
-          <label className="text-[14px] font-[700] text-black">
+        <div className="flex flex-col">
+          <label className="text-[14px] font-[700] text-black mb-2">
             المدينة <span className="text-red-500">*</span>
           </label>
           <Select
@@ -99,15 +97,16 @@ const Step2Participant = forwardRef(({ memberData, setMemberData }, ref) => {
             styles={selectStyles}
             isRtl={true}
             isSearchable={true} // تفعيل البحث
+            classNamePrefix="rz"
           />
           {errors.city && (
-            <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+            <p className="text-red-500 text-[11px]">{errors.city}</p>
           )}
         </div>
 
         {/* العنوان */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
+          <label className="block text-[14px] font-[700] text-black mb-2">
             العنوان <span className="text-red-500">*</span>
           </label>
           <input
@@ -115,12 +114,11 @@ const Step2Participant = forwardRef(({ memberData, setMemberData }, ref) => {
             placeholder="أدخل العنوان"
             value={memberData.address || ""}
             onChange={(e) => handleChange("address", e.target.value)}
-            className="w-full p-2.5 border border-gray-300 rounded-xl text-sm 
-                                   placeholder-[color:var(--grey,#7E818C)] focus:outline-none 
-                                   focus:ring-2 focus:ring-purple-500"
+            className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-sm 
+                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[#6A0EAD] focus:outline-none"
           />
           {errors.address && (
-            <p className="text-red-500 text-xs mt-1">{errors.address}</p>
+            <p className="text-red-500 text-[11px]">{errors.address}</p>
           )}
         </div>
       </form>

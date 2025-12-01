@@ -32,7 +32,7 @@ export default function EmployeeCard({ emp, onDelete }) {
       </div>
 
       {/* الاسم + الصورة */}
-      <div className="flex absolute items-center mt-2 gap-7 text-[12px] font-[500]">
+      <div className="flex absolute items-center mt-2 gap-7 text-[12px] font-[500] pt-1">
         <img
           src={image}
           alt={`${firstName} ${lastName}`}

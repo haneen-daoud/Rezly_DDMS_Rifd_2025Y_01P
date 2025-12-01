@@ -92,6 +92,7 @@ export default function EmployeeTable({
             <th>
               <input
                 type="checkbox"
+                className="cursor-pointer"
                 checked={
                   employees.length > 0 &&
                   selectedEmployees.length === employees.length
@@ -99,7 +100,7 @@ export default function EmployeeTable({
                 onChange={handleSelectAll}
               />
             </th>
-            <th>الإسم</th>
+            <th>الاسم</th>
             <th>البريد الإلكتروني</th>
             <th>رقم الهاتف</th>
             <th>المسمى الوظيفي</th>
@@ -125,6 +126,7 @@ export default function EmployeeTable({
                   <td>
                     <input
                       type="checkbox"
+                      className="cursor-pointer"
                       checked={selectedEmployees.includes(emp._id)}
                       onChange={() => handleSelectEmployee(emp._id)}
                     />
@@ -138,7 +140,7 @@ export default function EmployeeTable({
                   <td className="table-text">
                     {emp.contractType ? (
                       <div
-                        className={`py-1 text-white text-xs font-semibold rounded-full`}
+                        className={`p-1 text-white text-xs font-semibold rounded-full`}
                         style={{
                           backgroundColor:
                             emp.contractType === "كامل" ||
@@ -159,7 +161,7 @@ export default function EmployeeTable({
 
                   <td className="table-text">
                     {emp.startDate
-                      ? new Date(emp.startDate).toLocaleDateString("ar-EG")
+                      ? new Date(emp.startDate).toLocaleDateString("en-GB")
                       : "-"}
                   </td>
 

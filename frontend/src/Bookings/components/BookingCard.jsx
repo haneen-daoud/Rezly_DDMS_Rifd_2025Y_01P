@@ -137,9 +137,7 @@ export default function BookingCard({
     .filter((s) => s.startDateTime && s.endDateTime);
 
   // المواعيد اللي لسه ما خلص وقتها
-  const futureSchedules = schedulesWithTimes.filter(
-    (s) => s.endDateTime > now
-  );
+  const futureSchedules = schedulesWithTimes.filter((s) => s.endDateTime > now);
 
   // أقرب موعد قادم
   const nextSchedule =
@@ -152,9 +150,7 @@ export default function BookingCard({
   // آخر جلسة في الجدول (حسب وقت النهاية)
   const lastSchedule =
     schedulesWithTimes.length > 0
-      ? [...schedulesWithTimes].sort(
-          (a, b) => b.endDateTime - a.endDateTime
-        )[0]
+      ? [...schedulesWithTimes].sort((a, b) => b.endDateTime - a.endDateTime)[0]
       : null;
 
   // هذا اللي بنستخدمه لعرض المدرب + الوقت + عدد المشتركين
@@ -207,7 +203,7 @@ export default function BookingCard({
     }
   }
 
-    // لو المستخدم الحالي مدرب، نستخدم اسمه من بيانات تسجيل الدخول
+  // لو المستخدم الحالي مدرب، نستخدم اسمه من بيانات تسجيل الدخول
   if (isCoach && currentUser) {
     const fullName = `${currentUser.firstName || ""} ${
       currentUser.lastName || ""
@@ -216,7 +212,6 @@ export default function BookingCard({
       coachName = fullName;
     }
   }
-
 
   const timeStart = upcomingSchedule?.timeStart || "غير محدد";
   const timeEnd = upcomingSchedule?.timeEnd || "";
@@ -512,7 +507,7 @@ export default function BookingCard({
 
       {/* الأزرار */}
       <div className="mt-4 flex items-center justify-between gap-2">
-        <button className="flex-1 flex items-center justify-center gap-2 bg-[#F4F4F4] text-[#000] text-[13px] md:text-[14px] font-semibold py-2 rounded-[12px] hover:bg-gray-200 transition">
+        <button className="flex-1 flex items-center justify-center gap-2 bg-[#F4F4F4] text-[#000] text-[13px] md:text-[14px] font-semibold py-2 rounded-[12px] hover:bg-gray-200 transition cursor-pointer">
           <span>عرض التفاصيل</span>
           <DetailsIcon className="w-4 h-4 text-[var(--color-purple)]" />
         </button>
@@ -523,7 +518,7 @@ export default function BookingCard({
               .writeText(window.location.href)
               .then(() => toast.info("تم نسخ رابط الحجز 📋"))
           }
-          className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
+          className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition cursor-pointer"
         >
           <ShareIcon className="w-5 h-5 text-[#000]" />
         </button>
@@ -531,12 +526,12 @@ export default function BookingCard({
         <div className="relative">
           <button
             ref={menuButtonRef}
-            onClick={() =>
-              setOpenMenu(openMenu === index ? null : index)
-            }
+            onClick={() => setOpenMenu(openMenu === index ? null : index)}
             className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center bg-[#F4F4F4] rounded-[12px] hover:bg-gray-200 transition"
           >
-            <span className="text-xl leading-none text-[#000]">⋯</span>
+            <span className="text-xl leading-none text-[#000] cursor-pointer">
+              ⋯
+            </span>
           </button>
 
           {openMenu === index &&
@@ -544,8 +539,7 @@ export default function BookingCard({
               (() => {
                 if (!menuButtonRef.current) return null;
 
-                const rect =
-                  menuButtonRef.current.getBoundingClientRect();
+                const rect = menuButtonRef.current.getBoundingClientRect();
                 const menuWidth = 131;
                 const menuHeight = 82;
                 const margin = 8;
@@ -553,10 +547,7 @@ export default function BookingCard({
                 let top = rect.bottom + margin - 10;
                 let left = rect.right - menuWidth;
 
-                if (
-                  rect.bottom + menuHeight + margin >
-                  window.innerHeight
-                ) {
+                if (rect.bottom + menuHeight + margin > window.innerHeight) {
                   top = rect.top - menuHeight - margin + 10;
                 }
 
@@ -577,11 +568,9 @@ export default function BookingCard({
                       width: `${menuWidth}px`,
                       height: `${menuHeight}px`,
                       padding: "8px",
-                      transition:
-                        "opacity 0.15s ease, transform 0.15s ease",
+                      transition: "opacity 0.15s ease, transform 0.15s ease",
                       transformOrigin:
-                        rect.bottom + menuHeight + margin >
-                        window.innerHeight
+                        rect.bottom + menuHeight + margin > window.innerHeight
                           ? "bottom right"
                           : "top right",
                     }}
@@ -599,7 +588,7 @@ export default function BookingCard({
                         );
                         setOpenMenu(null);
                       }}
-                      className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-[var(--color-purple)] transition-colors"
+                      className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-[var(--color-purple)] transition-colors cursor-pointer"
                     >
                       <EditIcon className="w-4 h-4 text-[var(--color-purple)]" />
                       تعديل
@@ -609,17 +598,16 @@ export default function BookingCard({
 
                     {/* حذف */}
                     {/* حذف - متاح لكل الأدوار */}
-<button
-  onClick={() => {
-    setShowDeleteModal(true);
-    setOpenMenu(null);
-  }}
-  className="flex items-center pr-1 gap-2 text-[13px] md:text-[14px] font-bold text-black hover:text-red-600 transition-colors"
->
-  <DeleteIcon className="w-4 h-4" />
-  حذف
-</button>
-
+                    <button
+                      onClick={() => {
+                        setShowDeleteModal(true);
+                        setOpenMenu(null);
+                      }}
+                      className="flex items-center pr-1 gap-2 text-[12px] font-bold text-black hover:text-red-600 transition-colors cursor-pointer"
+                    >
+                      <DeleteIcon className="w-4 h-4" />
+                      حذف
+                    </button>
                   </div>
                 );
               })(),

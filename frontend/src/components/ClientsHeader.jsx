@@ -68,7 +68,7 @@ export default function ClientsHeader({
           <button
             key={tab.name}
             onClick={() => handleTabClick(tab)}
-            className={`relative text-[12px] font-semibold font-Cairo leading-[150%] pb-[3px] transition-colors duration-200 ${
+            className={`relative text-[12px] font-semibold font-Cairo leading-[150%] pb-[3px] transition-colors duration-200 cursor-pointer ${
               // ✅ التاب النشط لو المسار يطابق الرابط أو الـ activeTab
               activeTab === tab.name || currentPath === tab.path
                 ? "text-[var(--color-purple)]"
@@ -149,7 +149,7 @@ export default function ClientsHeader({
       bg-[var(--color-purple)] text-white 
       w-full lg:w-[144px] h-[40px] sm:h-[32px]
       rounded-lg transition
-      text-sm font-semibold font-Cairo
+      text-sm font-semibold font-Cairo cursor-pointer
     "
             >
               {activeTab === "المشتركين" ? (

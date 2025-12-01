@@ -1,4 +1,10 @@
-import React, { useState, useImperativeHandle, forwardRef } from "react";
+import React, {
+  useState,
+  useImperativeHandle,
+  forwardRef,
+  useRef,
+  useEffect,
+} from "react";
 import { step1Schema } from "../employeeValidation.js";
 import Select from "react-select";
 import selectStyles from "../selectStyles.js";
@@ -9,37 +15,51 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
   const [localErrors, setLocalErrors] = useState({});
   const [showCalendar, setShowCalendar] = useState(false);
 
+  const calendarRef = useRef(null);
+
+  useEffect(() => {
+    if (!showCalendar) return;
+
+    const handleClickOutside = (e) => {
+      if (calendarRef.current && !calendarRef.current.contains(e.target)) {
+        setShowCalendar(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showCalendar]);
+
   const genderOptions = [
     { value: "ذكر", label: "ذكر" },
     { value: "أنثى", label: "أنثى" },
   ];
 
   const handleFileChange = (e) => {
-  const file = e.target.files[0];
+    const file = e.target.files[0];
 
-  if (!file) {
-    // لو شال الملف بعد ما اختاره
-    onChange("image", null);
-    setLocalErrors((prev) => ({ ...prev, image: "" }));
-    return;
-  }
+    if (!file) {
+      // لو شال الملف بعد ما اختاره
+      onChange("image", null);
+      setLocalErrors((prev) => ({ ...prev, image: "" }));
+      return;
+    }
 
-  // التحقق من حجم الملف
-  if (file.size > 2 * 1024 * 1024) {
-    // أكبر من 2MB → خطأ تحت الحقل
-    onChange("image", null); // نتأكد إنه مش محفوظ
-    setLocalErrors((prev) => ({
-      ...prev,
-      image: "حجم الصورة يجب ألا يتجاوز 2MB",
-    }));
-  } else {
-    // حجم مناسب → نخزّنه ونمسح الخطأ
-    onChange("image", file);
-    setLocalErrors((prev) => ({ ...prev, image: "" }));
-    validateField("image", file);
-  }
-};
-
+    // التحقق من حجم الملف
+    if (file.size > 2 * 1024 * 1024) {
+      // أكبر من 2MB → خطأ تحت الحقل
+      onChange("image", null); // نتأكد إنه مش محفوظ
+      setLocalErrors((prev) => ({
+        ...prev,
+        image: "حجم الصورة يجب ألا يتجاوز 2MB",
+      }));
+    } else {
+      // حجم مناسب → نخزّنه ونمسح الخطأ
+      onChange("image", file);
+      setLocalErrors((prev) => ({ ...prev, image: "" }));
+      validateField("image", file);
+    }
+  };
 
   const validateField = async (field, value) => {
     try {
@@ -80,9 +100,9 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
     <div className="flex justify-center bg-white w-full relative">
       <form className="w-[343px] flex flex-col gap-2 font-[Cairo] relative">
         {/* الاسم الأول + الثاني */}
-        <div className="flex gap-3 align-item-center">
+        <div className="flex gap-4 align-item-center">
           <div className="flex-1">
-            <label className="block text-[14px] font-[700] text-black mb-1.5">
+            <label className="block text-[14px] font-[700] text-black mb-2">
               الاسم الأول <span className="text-red-500">*</span>
             </label>
             <input
@@ -90,7 +110,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
               placeholder="أدخل الاسم الأول"
               value={data.firstName}
               onChange={(e) => handleChange("firstName", e.target.value)}
-              className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+              className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
   focus:outline-none ${
     combinedErrors.firstName
       ? "border-red-500"
@@ -105,7 +125,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
           </div>
 
           <div className="flex-1">
-            <label className="block text-[14px] font-[700] text-black mb-1.5">
+            <label className="block text-[14px] font-[700] text-black  mb-2">
               الاسم الثاني <span className="text-red-500">*</span>
             </label>
             <input
@@ -113,7 +133,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
               placeholder="أدخل الاسم الثاني"
               value={data.lastName}
               onChange={(e) => handleChange("lastName", e.target.value)}
-              className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+              className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
   focus:outline-none ${
     combinedErrors.lastName
       ? "border-red-500"
@@ -130,7 +150,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
 
         {/* الجنس */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
+          <label className="block text-[14px] font-[700] text-black mb-2">
             الجنس <span className="text-red-500">*</span>
           </label>
           <Select
@@ -150,7 +170,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
 
         {/* رقم الهوية */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
+          <label className="block text-[14px] font-[700] text-black mb-2">
             رقم الهوية
           </label>
           <input
@@ -158,7 +178,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
             placeholder="أدخل رقم الهوية"
             value={data.nationalId}
             onChange={(e) => handleChange("nationalId", e.target.value)}
-            className={`w-full p-2.5 border rounded-xl text-[12px] placeholder-[#7E818C]
+            className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
   focus:outline-none ${
     combinedErrors.nationalId
       ? "border-red-500"
@@ -173,16 +193,17 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
         </div>
 
         {/* تاريخ الميلاد + MiniCalender */}
-<div className="flex flex-col gap-2">
-  <label className="block text-[14px] font-[700] text-black mb-1.5">
-    تاريخ الميلاد
-  </label>
+        <div className="relative" ref={calendarRef}>
+          <div className="flex flex-col">
+            <label className="block text-[14px] font-[700] text-black  mb-2">
+              تاريخ الميلاد <span className="text-red-500">*</span>
+            </label>
 
-  <div className="relative">
-    <button
-      type="button"
-      onClick={() => setShowCalendar((prev) => !prev)}
-      className={`w-full flex items-center gap-2 border rounded-xl px-3 py-2.5 cursor-pointer 
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowCalendar((prev) => !prev)}
+                className={`w-full h-[42px] flex items-center gap-2 border rounded-[8px] p-3 cursor-pointer 
         text-[12px] placeholder-[#7E818C]
         ${
           combinedErrors.birthDate
@@ -191,43 +212,45 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
         }
         focus:outline-none
       `}
-    >
-      <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
-      <span className={data.birthDate ? "text-black" : "text-[#7E818C]"}>
-        {data.birthDate || "اختر تاريخ الميلاد"}
-      </span>
-    </button>
+              >
+                <CalenderIcon className="w-5 h-5 text-[var(--color-purple)]" />
+                <span
+                  className={data.birthDate ? "text-black" : "text-[#7E818C]"}
+                >
+                  {data.birthDate || "اختر تاريخ الميلاد"}
+                </span>
+              </button>
 
-    {showCalendar && (
-      <MiniCalender
-        currentDate={
-          data.birthDate ? new Date(data.birthDate) : new Date()
-        }
-        variant="employeeTop"
-        handleDateChange={(date) => {
-          const iso = date.toISOString().split("T")[0];
-          handleChange("birthDate", iso);
-          setShowCalendar(false);
-        }}
-      />
-    )}
-  </div>
+              {showCalendar && (
+                <MiniCalender
+                  currentDate={
+                    data.birthDate ? new Date(data.birthDate) : new Date()
+                  }
+                  variant="employeeTop"
+                  handleDateChange={(date) => {
+                    const iso = date.toISOString().split("T")[0];
+                    handleChange("birthDate", iso);
+                    setShowCalendar(false);
+                  }}
+                />
+              )}
+            </div>
 
-  {combinedErrors.birthDate && (
-    <p className="text-red-500 text-[11px] mt-1">
-      {combinedErrors.birthDate}
-    </p>
-  )}
-</div>
-
+            {combinedErrors.birthDate && (
+              <p className="text-red-500 text-[11px] mt-1">
+                {combinedErrors.birthDate}
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* صورة الملف الشخصي */}
         <div>
-          <label className="block text-[14px] font-[700] text-black mb-1.5">
+          <label className="block text-[14px] font-[700] text-black  mb-2">
             صورة الملف الشخصي
           </label>
 
-          <div className="border-2 border-dashed border-[var(--color-purple)] rounded-xl p-5 text-center text-gray-500 text-[12px] cursor-pointer hover:border-purple-400 transition">
+          <div className="border-2 border-dashed border-[var(--color-purple)] rounded-[8px] p-5 text-center text-gray-500 text-[12px] cursor-pointer hover:border-purple-400 transition">
             <input
               type="file"
               accept="image/*"
@@ -260,11 +283,10 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
               )}
             </label>
             {combinedErrors.image && (
-  <p className="text-red-500 text-[11px] mt-1">
-    {combinedErrors.image}
-  </p>
-)}
-
+              <p className="text-red-500 text-[11px] mt-1">
+                {combinedErrors.image}
+              </p>
+            )}
           </div>
         </div>
       </form>

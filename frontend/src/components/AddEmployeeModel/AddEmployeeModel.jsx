@@ -315,14 +315,14 @@ const AddEmployeeModel = ({
                 {activeStep > 0 && (
                   <button
                     onClick={() => setActiveStep(activeStep - 1)}
-                    className="w-full py-3 border text-[16px] font-medium rounded-[8px] hover:bg-gray-100"
+                    className="w-full py-3 border text-[16px] font-medium rounded-[8px] hover:bg-gray-100 cursor-pointer"
                   >
                     السابق
                   </button>
                 )}
                 <button
                   onClick={handleNext}
-                  className="w-full py-3 text-white text-[16px] font-medium rounded-[8px]"
+                  className="w-full py-3 text-white text-[16px] font-medium rounded-[8px] cursor-pointer"
                   style={{ backgroundColor: "#6A0EAD" }}
                 >
                   {activeStep === steps.length - 1
