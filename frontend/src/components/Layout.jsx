@@ -99,8 +99,7 @@ export default function Layout() {
 
   //تأكد فيه توكن وإلا رجّعه للوج إن
   useEffect(() => {
-    const token =
-      localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
     if (!token) {
       navigate("/", { replace: true });
@@ -241,6 +240,56 @@ export default function Layout() {
     currentUser &&
     (currentUser.role === "Admin" || currentUser.role === "Receptionist") &&
     isDashboardHome;
+
+  // تنزيل الصورة كـ PNG
+  const downloadQRAsImage = () => {
+    try {
+      const link = document.createElement("a");
+      link.href = currentQR; // Base64 جاهز
+      link.download =
+        attendanceActiveTab === "CHECK_IN"
+          ? "CheckIn_QR.png"
+          : "CheckOut_QR.png";
+      link.click();
+    } catch (err) {
+      console.error(err);
+      toast.error("حدث خطأ أثناء تحميل الصورة");
+    }
+  };
+
+  // تنزيل كـ PDF
+  const downloadQRAsPDF = () => {
+    try {
+      import("jspdf").then((jsPDF) => {
+        const doc = new jsPDF.jsPDF({
+          orientation: "portrait",
+          unit: "pt",
+          format: "a4",
+        });
+
+        doc.setFontSize(18);
+        doc.text(
+          attendanceActiveTab === "CHECK_IN"
+            ? "QR Code - Check In"
+            : "QR Code - Check Out",
+          40,
+          40
+        );
+
+        // إضافة الصورة
+        doc.addImage(currentQR, "PNG", 40, 80, 300, 300);
+
+        doc.save(
+          attendanceActiveTab === "CHECK_IN"
+            ? "CheckIn_QR.pdf"
+            : "CheckOut_QR.pdf"
+        );
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("حدث خطأ أثناء تحميل PDF");
+    }
+  };
 
   return (
     //أهم تعديل: نخلي اللفة الأساسية على قد الشاشة وما تسمح للصفحة نفسها تسكرول
@@ -437,6 +486,22 @@ export default function Layout() {
                         API.
                       </span>
                     )}
+                  </div>
+                  {/* أزرار التحميل */}
+                  <div className="flex flex-row gap-2 mt-4 items-center">
+                    <button
+                      onClick={downloadQRAsImage}
+                      className="w-[250px] py-2 bg-[var(--color-purple)] text-white rounded-xl text-[13px] font-[700] hover:bg-[#5209B5] transition"
+                    >
+                      تحميل كصورة PNG
+                    </button>
+
+                    <button
+                      onClick={downloadQRAsPDF}
+                      className="w-[250px] py-2 bg-[var(--color-purple)] text-white rounded-xl text-[13px] font-[700] hover:bg-[#5209B5] transition"
+                    >
+                      تحميل كملف PDF
+                    </button>
                   </div>
                 </div>
               </div>

@@ -27,7 +27,7 @@ const bookings = [
 export default function UpcomingBookings() {
     return (
         <div className="p-4 max-w-md mx-auto">
-            <h2 className="text-lg font-semibold mb-4">حجوزاتك القادمة</h2>
+            <h2 className="text-lg text-black font-semibold mb-4">حجوزاتك القادمة</h2>
             <div className="space-y-3">
                 {bookings.map((booking, idx) => (
                     <div
