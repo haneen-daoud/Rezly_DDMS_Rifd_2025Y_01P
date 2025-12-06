@@ -6,6 +6,7 @@ import EyeOffIcon from "../icons/eyeOff.svg?react";
 import EyeOnIcon from "../icons/eyeOn.svg?react";
 import login from "../icons/login.svg";
 import { useNavigate } from "react-router-dom";
+import { getApiErrorMessage } from "../components/getApiErrorMessage.jsx";
 import { signIn } from "../api.js";
 import { toast } from "react-toastify";
 const Login = () => {
@@ -55,7 +56,7 @@ const Login = () => {
       console.log("LOGIN RESPONSE:", res);
 
       if (res.status === 200) {
-        const { token, firstName, lastName, role, id } = res.data || {};
+        const { token, firstName, lastName, role, id, email } = res.data || {};
 
         // تخزين التوكن
         if (token) {
@@ -68,6 +69,7 @@ const Login = () => {
           firstName: firstName,
           lastName: lastName,
           role: role,
+          email: email || "",
         };
 
         localStorage.setItem("currentUser", JSON.stringify(currentUser));
@@ -82,13 +84,10 @@ const Login = () => {
 
         navigate(targetPath, { replace: true });
       }
-    } catch (err) {
-      const message =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "حدث خطأ أثناء تسجيل الدخول";
-
-      toast.error(`❌ ${message}`);
+    } catch (error) {
+      const message = getApiErrorMessage(error, "حدث خلل");
+      console.log("API error response:", error?.response?.data);
+      toast.error(<div dangerouslySetInnerHTML={{ __html: message }} />);
     } finally {
       setLoading(false);
     }
@@ -144,7 +143,7 @@ const Login = () => {
               اسم المستخدم أو البريد الإلكتروني
             </label>
             <div className="relative w-full">
-              <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
+              <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
               <input
                 type="text"
                 name="identifier"
@@ -160,7 +159,7 @@ const Login = () => {
           <div className="mb-6">
             <label className="block mb-2 text-black">كلمة المرور</label>
             <div className="relative w-full">
-              <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
+              <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
 
               <input
                 type={showPassword ? "text" : "password"}
@@ -193,14 +192,14 @@ const Login = () => {
                 name="rememberMe"
                 checked={formData.rememberMe}
                 onChange={handleChange}
-                className="ml-2 accent-[#6A0EAD] cursor-pointer"
+                className="ml-2 accent-[var(--color-purple)] cursor-pointer"
               />
               تذكرني
             </label>
 
             <a
               href="#"
-              className="text-sm text-[#6A0EAD] hover:underline font-semibold"
+              className="text-sm text-[var(--color-purple)] hover:underline font-semibold"
             >
               نسيت كلمة المرور؟
             </a>
@@ -227,7 +226,7 @@ const Login = () => {
             <button
               type="button"
               onClick={() => navigate("/signup")}
-              className="text-[#6A0EAD] font-semibold hover:underline cursor-pointer"
+              className="text-[var(--color-purple)] font-semibold hover:underline cursor-pointer"
             >
               أنشئ حساب الآن
             </button>

@@ -118,7 +118,7 @@ export default function FilterBookings({
       <div
         className="
           bg-white
-          w-[256px]
+          w-[320px]
           h-[520px]
           max-h-[80vh]
           rounded-[8px]

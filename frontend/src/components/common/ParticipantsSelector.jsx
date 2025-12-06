@@ -15,6 +15,7 @@ export default function ParticipantsSelector({
   showLabel = true,
   showIcon = false,
   variant = "booking",
+  readOnly = false,
 }) {
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
@@ -136,6 +137,7 @@ export default function ParticipantsSelector({
 
   // تفعيل وإلغاء المشترك مؤقتًا (إضافة أو إزالة)
   const toggleMember = (member) => {
+    if (readOnly) return;
     const id = member.id || member._id;
 
     setBooking((prev) => {
@@ -208,6 +210,7 @@ export default function ParticipantsSelector({
   };
 
   const addNewMemberLocally = (member) => {
+    if (readOnly) return;
     if (!member) return;
 
     const id = member._id || member.id;
@@ -336,13 +339,15 @@ export default function ParticipantsSelector({
 
       {/* الحقل الرئيسي */}
       <div
-        className={`h-10 border rounded-[8px] flex items-center justify-between cursor-pointer p-3 relative transition-colors
+        className={`h-10 border rounded-[8px] flex items-center justify-between p-3 relative transition-colors
     ${
       variant === "booking"
         ? "w-full border-[#D9D9D9]"
         : "w-[313px] border-[#7E818C]"
-    }`}
-        onClick={() => setOpen(!open)}
+    }
+    ${readOnly ? "bg-gray-100" : "bg-white"}
+  `}
+        onClick={() => setOpen((prev) => !prev)}
       >
         {variant !== "booking" && (
           <span className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -362,7 +367,7 @@ export default function ParticipantsSelector({
                   ? "font-bold text-[14px] text-[#000]"
                   : "font-normal text-[14px] text-[#000]"
                 : "text-gray-400 font-normal text-[14px]"
-            }`}
+            } ${readOnly ? "text-gray-500" : ""}`}
           >
             {currentIds.length > 0
               ? `${currentIds.length} مشترك${currentIds.length > 1 ? "ين" : ""}`
@@ -376,7 +381,7 @@ export default function ParticipantsSelector({
       {/* القائمة */}
       {open && (
         <div
-          className={`absolute left-0 bg-white rounded-[16px] border shadow-lg z-50 ${
+          className={`absolute left-0 ${readOnly ? "bg-gray-100" : "bg-white"} rounded-[16px] border shadow-lg z-50 ${
             openUp ? "bottom-[calc(100%-2px)] mb-1" : "top-full mt-1"
           }
       ${

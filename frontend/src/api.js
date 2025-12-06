@@ -125,13 +125,20 @@ export const updateEmployeeRole = async (id, newRole) => {
 // دالة تسجيل الدخول
 export const signIn = async (formData) => {
   try {
-    const res = await api.post("/auth/Signin", formData);
+    // نرسل على الراوت الجديد اللي عمله الباك
+    const res = await api.post("/auth/SignInv2", {
+      identifier: formData.identifier,
+      password: formData.password,
+      rememberMe: formData.rememberMe,
+    });
+
     return res;
   } catch (err) {
     console.error("SignIn error:", err);
     throw err;
   }
 };
+
 
 
 
@@ -189,7 +196,7 @@ export const getAllMembers = async (page = 1, search = "", filters = {}) => {
 
     // البيج والليمت
     params.append("page", page);
-    // لو حابة تثبتي الليمت 10 نفس منطق التاب
+    // لو بدنا نثبت الليمت 10 نفس منطق التاب
     // params.append("limit", 10);
 
     // السيرتش
@@ -349,7 +356,7 @@ export const getAllCoaches = async () => {
 
 /////////////////
 
-// 🆕 دالة خاصة للداشبورد: إحصائيات الأعضاء
+//  دالة خاصة للداشبورد: إحصائيات الأعضاء
 export const getMembersStats = async () => {
   try {
     const res = await api.get(
@@ -370,6 +377,52 @@ export const getMembersStats = async () => {
   }
 };
 export default api;
+/////////////////////////////////
+
+// إنشاء Gym جديد (إعدادات النادي من صفحة الإعدادات)
+export const createGym = async (data) => {
+  try {
+    const formData = new FormData();
+
+    // الحقول البسيطة
+    formData.append("name", data.name || "");
+    formData.append("phone", data.phone || "");
+    formData.append("email", data.email || "");
+    formData.append("location", data.location || "");
+    formData.append("currency", data.currency || "");
+    formData.append("logo", data.logo || "");
+    formData.append("status", data.status || "active");
+
+    // الصورة (لو فيه)
+    if (data.imageFile) {
+      formData.append("image", data.imageFile);
+    }
+
+    // الحقول المركّبة (لازم JSON.stringify لأن الباك بعمل JSON.parse)
+    formData.append("departments", JSON.stringify(data.departments || []));
+    formData.append("roles", JSON.stringify(data.roles || []));
+    formData.append("contracts", JSON.stringify(data.contracts || []));
+    formData.append("classes", JSON.stringify(data.classes || []));
+    formData.append("halls", JSON.stringify(data.halls || []));
+    formData.append("subscriptions", JSON.stringify(data.subscriptions || []));
+
+    // نجيب التوكن اللي اتخزن بعد اللوجين
+    const token = localStorage.getItem("token");
+
+    const res = await api.post("/gym", formData, {
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {},
+    });
+
+    return res.data;
+  } catch (err) {
+    console.error("CreateGym error:", err);
+    throw err;
+  }
+};
 
 
 /*

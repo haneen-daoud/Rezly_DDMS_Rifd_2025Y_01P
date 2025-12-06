@@ -8,7 +8,7 @@ const selectStyles = {
     boxShadow: "none",
     fontFamily: "Cairo",
     fontSize: "12px",
-    "&:hover": { borderColor: "#6A0EAD" },
+    "&:hover": { borderColor: "var(--color-purple)" },
     cursor: "pointer",
     padding: "2px 2px",
   }),
@@ -16,7 +16,7 @@ const selectStyles = {
   menu: (base) => ({
     ...base,
     borderRadius: "8px",
-    borderColor: "#6A0EAD",
+    borderColor: "var(--color-purple)",
   }),
 
   // 👈 هذا اللي أضفناه
@@ -29,9 +29,9 @@ const selectStyles = {
   option: (base, state) => ({
     ...base,
     backgroundColor: state.isSelected
-      ? "#6A0EAD"
+      ? "var(--color-purple)"
       : state.isFocused
-      ? "#E1CFEF"
+      ? "var(--color-lightpurple)"
       : "#fff",
     color: state.isSelected ? "#fff" : "#111827",
     fontSize: "12px",

@@ -1,7 +1,8 @@
 import React from "react";
+import DownArrowIcon from "../../icons/downarrow.svg";
 
 export const LABEL_BASE_CLASS =
-  "text-[14px] font-bold text-[#000000] whitespace-nowrap";
+  "text-[14px] font-bold text-[#000000]";
 
 export default function SettingsLinkRow({
   label,
@@ -10,38 +11,31 @@ export default function SettingsLinkRow({
   children,
 }) {
   return (
-    <div className="w-full rounded-[8px] border border-[#E5E7EB] bg-white overflow-hidden">
+    <div className="flex flex-col gap-2 border-b border-[#E5E7EB] pb-3 last:border-b-0 last:pb-0">
+      {/* صف العنوان القابل للضغط */}
       <button
         type="button"
         onClick={onToggle}
-        className="w-full h-[48px] px-3 flex items-center justify-between text-[14px] font-bold text-[#000000]
-                   hover:bg-[#F9FAFF] transition-colors"
+        className="w-full flex items-center justify-between text-right"
       >
-        <span>{label}</span>
+        <span className="text-[16px] font-medium text-[#000000]">
+          {label}
+        </span>
 
+        {/* سهم بسيط يوضح الفتح/الإغلاق */}
         <span
-          className={[
-            "inline-flex items-center justify-center w-[22px] h-[22px] rounded-full",
-            "transition-transform",
-            isExpanded ? "rotate-90" : "rotate-0",
-          ].join(" ")}
+          className={`text-[18px] leading-none transform transition-transform ${
+            isExpanded ? "rotate-180" : ""
+          }`}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-3 h-3"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M12.707 15.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 111.414 1.414L9.414 10l3.293 3.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <img src={DownArrowIcon} alt="اختر" />
         </span>
       </button>
 
-      {isExpanded && <div className="px-3 pt-2 pb-3 bg-white">{children}</div>}
+      {/* المحتوى: نخلّيه دايماً موجود، بس نعمله hidden لما يكون القسم مسكّر */}
+      <div className={isExpanded ? "mt-2" : "mt-2 hidden"}>
+        {children}
+      </div>
     </div>
   );
 }

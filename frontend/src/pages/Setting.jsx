@@ -15,7 +15,7 @@ export default function Setting() {
             className={[
               "flex-1 rounded-[8px] text-[14px] font-bold transition-all",
               activeTab === "profile"
-                ? "bg-[#6A0EAD] text-white shadow-sm"
+                ? "bg-[var(--color-purple)] text-white shadow-sm"
                 : "bg-transparent text-[#4B5563] hover:bg-[#F3E8FF]",
             ].join(" ")}
           >
@@ -29,7 +29,7 @@ export default function Setting() {
             className={[
               "flex-1 rounded-[8px] text-[14px] font-bold transition-all",
               activeTab === "club"
-                ? "bg-[#6A0EAD] text-white shadow-sm"
+                ? "bg-[var(--color-purple)] text-white shadow-sm"
                 : "bg-transparent text-[#4B5563] hover:bg-[#F3E8FF]",
             ].join(" ")}
           >

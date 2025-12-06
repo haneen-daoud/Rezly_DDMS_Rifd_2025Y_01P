@@ -8,6 +8,7 @@ import DownVectorIcon from "../icons/downVector.svg?react";
 
 export default function Topbar({ title, onMenuClick, user }) {
   const roleArabic = {
+    superadmin: "سوبر آدمن",
     admin: "آدمن",
     coach: "مدرب",
     receptionist: "استقبال",
@@ -15,7 +16,10 @@ export default function Topbar({ title, onMenuClick, user }) {
     member: "مشترك",
   };
 
-  const userName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+  const userName =
+  (user?.firstName || user?.lastName)
+    ? `${user?.firstName || ""} ${user?.lastName || ""}`.trim()
+    : user?.email || "مستخدم";
   const userRole = roleArabic[user?.role?.toLowerCase()] || "مستخدم";
 
   // 👇 لو عنده صورة من الداتا استعمليها، غير هيك استعملي الصورة الثابتة كباك أب

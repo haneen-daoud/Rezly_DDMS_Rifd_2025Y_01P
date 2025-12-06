@@ -61,7 +61,7 @@ const Step2Participant = forwardRef(({ memberData, setMemberData }, ref) => {
             value={memberData.phone || ""} // نعرض القيمة من الـ state
             onChange={(e) => handleChange("phone", e.target.value)}
             className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-sm 
-                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[#6A0EAD] focus:outline-none"
+                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[var(--color-purple)] focus:outline-none"
           />
           {errors.phone && (
             <p className="text-red-500 text-[11px]">{errors.phone}</p>
@@ -79,7 +79,7 @@ const Step2Participant = forwardRef(({ memberData, setMemberData }, ref) => {
             value={memberData.email || ""}
             onChange={(e) => handleChange("email", e.target.value)}
             className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-sm 
-                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[#6A0EAD] focus:outline-none"
+                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[var(--color-purple)] focus:outline-none"
           />
           {errors.email && (
             <p className="text-red-500 text-[11px]">{errors.email}</p>
@@ -115,7 +115,7 @@ const Step2Participant = forwardRef(({ memberData, setMemberData }, ref) => {
             value={memberData.address || ""}
             onChange={(e) => handleChange("address", e.target.value)}
             className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-sm 
-                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[#6A0EAD] focus:outline-none"
+                                   placeholder-[color:var(--grey,#7E818C)] focus:border-[var(--color-purple)] focus:outline-none"
           />
           {errors.address && (
             <p className="text-red-500 text-[11px]">{errors.address}</p>

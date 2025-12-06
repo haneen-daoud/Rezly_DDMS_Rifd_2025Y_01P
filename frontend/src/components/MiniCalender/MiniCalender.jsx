@@ -5,6 +5,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import "./MiniCalender.css";
 import RightArrowIcon from "../../icons/rightarrow.svg";
 import LeftArrowIcon from "../../icons/leftarrow.svg";
+import Dropdown from "../Dropdown";
 
 const arLocale = {
   ...ar,
@@ -15,7 +16,7 @@ const arLocale = {
 registerLocale("ar", arLocale);
 
 const YEARS = [];
-for (let y = 2000; y <= 2035; y++) {
+for (let y = 1960; y <= 2035; y++) {
   YEARS.push(y);
 }
 
@@ -87,20 +88,20 @@ export default function MiniCalender({
       inner: "flex flex-col w-full items-center py-3 px-4",
     },
     employee: {
-    container:
-      "absolute top-[calc(100%+8px)] right-0 z-50 w-full max-w-[343px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
-    inner: "flex flex-col w-full items-center py-3 px-4",
-  },
-  employeeTop: {
-    container:
-      "absolute bottom-full left-0 z-50 w-[340px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
-    inner: "flex flex-col w-full items-center py-3 px-4",
-  },
-   filter: {
-    container:
-      "absolute top-[calc(100%+4px)] right-0 z-50 w-full rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
-    inner: "flex flex-col w-full items-center py-3 px-4",
-  },
+      container:
+        "absolute top-[calc(100%+8px)] right-0 z-50 w-full max-w-[343px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
+      inner: "flex flex-col w-full items-center py-3 px-4",
+    },
+    employeeTop: {
+      container:
+        "absolute bottom-full left-0 z-50 w-[340px] rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
+      inner: "flex flex-col w-full items-center py-3 px-4",
+    },
+    filter: {
+      container:
+        "absolute top-[calc(100%+4px)] right-0 z-50 w-full rounded-[12px] bg-white shadow-[0_8px_25px_rgba(0,0,0,0.15)] border border-[#ddd]",
+      inner: "flex flex-col w-full items-center py-3 px-4",
+    },
     default: {
       container:
         "absolute left-0 top-full mt-2 w-[500px] rounded-[12px] bg-white shadow-lg",
@@ -167,67 +168,77 @@ export default function MiniCalender({
             return "text-black bg-transparent";
           }}
           renderCustomHeader={({
-  date,
-  changeYear,
-  changeMonth,
-  decreaseMonth,
-  increaseMonth,
-}) => (
-  <div
-    className="mini-calendar-header flex items-center justify-between w-full mb-2"
-    style={{ direction: "rtl" }}
-  >
-    {/* حقل اختيار الشهر + حقل اختيار السنة */}
-    <div className="flex items-center gap-2">
-      <select
-        className="mini-calendar-header-select"
-        value={date.getMonth()}
-        onChange={(e) => changeMonth(Number(e.target.value))}
-      >
-        {MONTHS.map((month, idx) => (
-          <option key={month} value={idx}>
-            {month}
-          </option>
-        ))}
-      </select>
+            date,
+            changeYear,
+            changeMonth,
+            decreaseMonth,
+            increaseMonth,
+          }) => {
+            const currentMonthIndex = date.getMonth();
+            const currentMonthLabel = MONTHS[currentMonthIndex];
+            const currentYearLabel = date.getFullYear().toString();
 
-      <select
-        className="mini-calendar-header-select"
-        value={date.getFullYear()}
-        onChange={(e) => changeYear(Number(e.target.value))}
-      >
-        {YEARS.map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
-    </div>
+            return (
+              <div
+                className="mini-calendar-header flex items-center justify-between w-full mb-2"
+                style={{ direction: "rtl" }}
+              >
+                {/* اختيار الشهر + اختيار السنة باستخدام Dropdown */}
+                <div className="flex items-center gap-2">
+                  {/* شهر */}
+                  <Dropdown
+                    options={MONTHS}
+                    value={currentMonthLabel}
+                    onChange={(label) => {
+                      const idx = MONTHS.indexOf(label);
+                      if (idx !== -1) changeMonth(idx);
+                    }}
+                    // مهم: نفس كلاس ال<select> القديمة بالضبط
+                    className="w-[120px]"
+                    fieldClassName="h-[32px] flex items-center justify-between px-3 text-[13px] rounded-[8px] border border-[#E5E7EB] bg-white"
+                    menuClassName="dropdown-menu-scroll custom-scrollbar"
+                  />
 
-    {/* أسهم الشهر بس */}
-    <div className="flex items-center gap-1">
-      {/* شهر سابق */}
-      <button
-        type="button"
-        onClick={decreaseMonth}
-        className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200 cursor-pointer"
-        title="الشهر السابق"
-      >
-        <img src={RightArrowIcon} alt="prev-month" />
-      </button>
+                  {/* سنة */}
+                  <Dropdown
+                    options={YEARS.map(String)}
+                    value={currentYearLabel}
+                    onChange={(label) => {
+                      const y = Number(label);
+                      if (!Number.isNaN(y)) changeYear(y);
+                    }}
+                    // برضه نفس عرض واستايل حقل السنة القديم
+                    className="w-[80px]"
+                    fieldClassName="h-[32px] flex items-center justify-between px-3 text-[13px] rounded-[8px] border border-[#E5E7EB] bg-white"
+                    menuClassName="dropdown-menu-scroll custom-scrollbar"
+                  />
+                </div>
 
-      {/* شهر تالي */}
-      <button
-        type="button"
-        onClick={increaseMonth}
-        className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200 cursor-pointer"
-        title="الشهر التالي"
-      >
-        <img src={LeftArrowIcon} alt="next-month" />
-      </button>
-    </div>
-  </div>
-)}
+                {/* أسهم الشهر بس */}
+                <div className="flex items-center gap-1">
+                  {/* شهر سابق */}
+                  <button
+                    type="button"
+                    onClick={decreaseMonth}
+                    className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200 cursor-pointer"
+                    title="الشهر السابق"
+                  >
+                    <img src={RightArrowIcon} alt="prev-month" />
+                  </button>
+
+                  {/* شهر تالي */}
+                  <button
+                    type="button"
+                    onClick={increaseMonth}
+                    className="flex items-center justify-center w-[26px] h-[26px] rounded-[6px] bg-gray-100 border border-gray-200 cursor-pointer"
+                    title="الشهر التالي"
+                  >
+                    <img src={LeftArrowIcon} alt="next-month" />
+                  </button>
+                </div>
+              </div>
+            );
+          }}
         />
 
         <button

@@ -13,6 +13,7 @@ export default function CoachSelector({
   variant = "add",
   showLabel = true,
   height = "40px", // ارتفاع افتراضي، بالفلترة بعطيناه 32px
+  disabled = false,
 }) {
   const [openCoach, setOpenCoach] = useState(false);
   const [coachSearch, setCoachSearch] = useState("");
@@ -42,15 +43,21 @@ export default function CoachSelector({
 
       {/* الحقل الرئيسي */}
       <div
-        className="w-full flex items-center justify-between cursor-pointer"
-        onClick={() => setOpenCoach(!openCoach)}
-        style={{
-          border: `1px solid ${borderStyle}`,
-          height,
-          borderRadius: "8px",
-          paddingInline: "12px", // نفس حقول الفلترة
-        }}
-      >
+  className={`w-full flex items-center justify-between ${
+    disabled ? "cursor-not-allowed bg-gray-100" : "cursor-pointer bg-white"
+  }`}
+  onClick={() => {
+    if (disabled) return;
+    setOpenCoach((prev) => !prev);
+  }}
+  style={{
+    border: `1px solid ${borderStyle}`,
+    height,
+    borderRadius: "8px",
+    paddingInline: "12px",
+  }}
+>
+
         {/* الأيقونة + النص */}
         <div className="flex items-center gap-2 w-full">
           {showIcon && (
@@ -58,16 +65,17 @@ export default function CoachSelector({
           )}
 
           <span
-            className={`flex-1 flex items-center text-[14px] ${
-              selectedCoach
-                ? variant === "event"
-                  ? "font-bold text-[#000]"
-                  : "font-normal text-[#000]"
-                : `${placeholderColor} font-normal`
-            }`}
-          >
-            {selectedCoach?.name || "اختر المدرب"}
-          </span>
+  className={`flex-1 flex items-center text-[14px] ${
+    selectedCoach
+      ? variant === "event"
+        ? "font-bold text-[#000]"
+        : "font-normal text-[#000]"
+      : `${placeholderColor} font-normal`
+  } ${disabled ? "text-gray-500" : ""}`}   // 🆕
+>
+  {selectedCoach?.name || "اختر المدرب"}
+</span>
+
         </div>
 
         {/* سهم الدروب داون */}
@@ -75,8 +83,8 @@ export default function CoachSelector({
       </div>
 
       {/* القائمة */}
-      {openCoach && (
-        <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-500/40 mt-1 shadow-[0_4px_12px_rgba(0,0,0,0.25)] z-50 text-[#000000]">
+      {openCoach && !disabled && ( 
+  <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-500/40 mt-1 shadow-[0_4px_12px_rgba(0,0,0,0.25)] z-50 text-[#000000]">
           <div className="w-full h-full p-4 box-border max-h-[250px] overflow-y-auto custom-scrollbar">
             {/* البحث */}
             <div className="relative w-full h-[30px] mb-2">

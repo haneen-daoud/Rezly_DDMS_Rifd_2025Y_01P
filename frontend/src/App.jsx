@@ -9,8 +9,9 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup";
 import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-//   تحميل الصفحات
+// الصفحات (lazy)
 const Home = lazy(() => import("./pages/Home"));
 const Clients = lazy(() => import("./pages/Clients"));
 const Employees = lazy(() => import("./pages/Employees"));
@@ -21,42 +22,63 @@ const UserLayout = lazy(() => import("./components/UserLayout.jsx"));
 const UserAttendance = lazy(() => import("./pages/UserAttendance.jsx"));
 const ScanAttendance = lazy(() => import("./pages/ScanAttendance.jsx"));
 
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
 export default function App() {
   return (
     <Router>
       <Suspense fallback={<div className="p-6">جارٍ التحميل...</div>}>
         <Routes>
-          {/*   Dashboard routes */}
-          <Route path="/dashboard" element={<Layout />}>
+          {/* 🟣 داشبورد الإدارة (Layout واحد فقط) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            {/* هاي هي الصفحات الداخلية اللي بتبين جوّا <Outlet /> تبع Layout */}
             <Route index element={<Home />} />
-
-            {/*   إدارة العملاء */}
-            <Route path="clients/*" element={<Clients />} />
-
-            {/*   طاقم العمل */}
+            <Route path="clients/*" element={<Clients />} />      
             <Route path="employees/*" element={<Employees />} />
-
-            {/*   المالية */}
             <Route path="finance" element={<Finance />} />
-
-            {/*   الإعدادات */}
             <Route path="setting" element={<Setting />} />
           </Route>
 
-          {/*   User dashboard (للمشترك) */}
-          <Route path="/user" element={<UserLayout />}>
-            {/* صفحة الحضور (الـ QR) */}
+          {/* 🟢 واجهة المستخدم (المشترك) */}
+          <Route
+            path="/user"
+            element={
+              <ProtectedRoute>
+                <UserLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<UserAttendance />} />
+            <Route path="attendance" element={<UserAttendance />} />
+            <Route path="scan" element={<ScanAttendance />} />
           </Route>
 
-          {/*   صفحة مسح كود الحضور/الانصراف */}
-          <Route path="/scan" element={<ScanAttendance />} />
+          {/* 🔵 صفحة مسح كود الحضور/الانصراف (لو حابة تبقيها مستقلة) */}
+          <Route
+            path="/scan"
+            element={
+              <ProtectedRoute>
+                <ScanAttendance />
+              </ProtectedRoute>
+            }
+          />
 
-          {/*   Public routes */}
+          {/* 🔓 Public routes */}
           <Route path="/" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-
-  
         </Routes>
       </Suspense>
 

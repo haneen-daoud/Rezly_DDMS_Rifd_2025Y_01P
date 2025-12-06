@@ -5,6 +5,7 @@ import Step2Participant from "./Step2Participant.jsx";
 import Step3Participant from "./Step3Participant.jsx";
 import Step4Participant from "./Step4Participant.jsx";
 import { addNewMember, updateMember, getAllPackages } from "../../api";
+import { getApiErrorMessage } from "../getApiErrorMessage.jsx";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
@@ -161,8 +162,10 @@ const AddParticipantModel = ({
 
       onClose();
     } catch (error) {
-      console.error("  خطأ أثناء الإضافة:", error);
-      toast.error("حدث خطأ أثناء إضافة المشترك!");
+      const message = getApiErrorMessage(error, "حدث خلل أثناء إضافة المشترك");
+      console.log("API error response:", error?.response?.data);
+      setIsLoading(false);
+      toast.error(<div dangerouslySetInnerHTML={{ __html: message }} />);
     } finally {
       setIsLoading(false);
     }
@@ -219,10 +222,10 @@ const AddParticipantModel = ({
         });
       }
     } catch (error) {
-      console.error("  خطأ أثناء التعديل:", error);
-      const msg =
-        error?.response?.data?.message || "حدث خطأ أثناء حفظ التعديلات!";
-      toast.error(msg);
+      const message = getApiErrorMessage(error, " أثناء تعديل بيانات المشترك حدث خلل");
+      console.log("API error response:", error?.response?.data);
+      setIsLoading(false);
+      toast.error(<div dangerouslySetInnerHTML={{ __html: message }} />);
     } finally {
       setIsLoading(false);
     }
@@ -246,8 +249,8 @@ const AddParticipantModel = ({
         {/* سبينر التحميل */}
         {isLoading && (
           <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-50">
-            <div className="w-16 h-16 border-4 border-[#6A0EAD] border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-[18px] text-[#6A0EAD] font-medium">
+            <div className="w-16 h-16 border-4 border-[var(--color-purple)] border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-[18px] text-[var(--color-purple)] font-medium">
               {isEditMode ? "جاري الحفظ..." : "جاري الإضافة..."}
             </p>
           </div>
@@ -256,7 +259,7 @@ const AddParticipantModel = ({
         {/* رسالة النجاح */}
         {!isLoading && isSubmitted ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <h3 className="text-[20px] font-bold text-[#6A0EAD] mb-2">
+            <h3 className="text-[20px] font-bold text-[var(--color-purple)] mb-2">
               {isEditMode ? "تم حفظ التعديلات بنجاح!" : "تمت الإضافة بنجاح!"}
             </h3>
             <p className="text-gray-600 mb-6">
@@ -266,7 +269,7 @@ const AddParticipantModel = ({
             </p>
             <button
               onClick={onClose}
-              className="px-8 py-3 bg-[#6A0EAD] text-white rounded-lg text-[16px] font-medium hover:bg-purple-800 transition"
+              className="px-8 py-3 bg-[var(--color-purple)] text-white rounded-lg text-[16px] font-medium hover:bg-purple-800 transition"
             >
               إغلاق
             </button>
@@ -284,9 +287,9 @@ const AddParticipantModel = ({
                     <div
                       className={`w-[20px] h-[20px] flex items-center justify-center rounded-full text-xs font-medium border ${
                         index < activeStep
-                          ? "border-[#6A0EAD] bg-[#6A0EAD] text-white"
+                          ? "border-[var(--color-purple)] bg-[var(--color-purple)] text-white"
                           : index === activeStep
-                          ? "border-[#6A0EAD] text-[#6A0EAD]"
+                          ? "border-[var(--color-purple)] text-[var(--color-purple)]"
                           : "border-gray-300 text-gray-500"
                       }`}
                     >
@@ -294,7 +297,7 @@ const AddParticipantModel = ({
                     </div>
                     <span
                       className={`text-sm font-medium ${
-                        index <= activeStep ? "text-[#6A0EAD]" : "text-gray-500"
+                        index <= activeStep ? "text-[var(--color-purple)]" : "text-gray-500"
                       }`}
                     >
                       {step}
@@ -347,7 +350,7 @@ const AddParticipantModel = ({
               {activeStep > 0 && (
                 <button
                   onClick={handleBack}
-                  className="w-full py-3 border border-gray-300 text-gray-700 text-sm font-medium rounded-[8px] hover:bg-gray-100 cursor-pointer"
+                  className="w-full py-3 border border-[var(--color-purple)] text-[var(--color-purple)] text-sm font-medium rounded-[8px] hover:bg-gray-100 cursor-pointer"
                 >
                   السابق
                 </button>
@@ -356,7 +359,7 @@ const AddParticipantModel = ({
               <button
                 onClick={handleNext}
                 className="w-full py-3 text-white text-sm font-medium rounded-[8px] cursor-pointer"
-                style={{ backgroundColor: "#6A0EAD" }}
+                style={{ backgroundColor: "var(--color-purple)" }}
               >
                 {activeStep === steps.length - 1
                   ? isEditMode

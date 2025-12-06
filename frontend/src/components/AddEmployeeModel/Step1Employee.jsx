@@ -177,6 +177,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
             type="text"
             placeholder="أدخل رقم الهوية"
             value={data.nationalId}
+            maxLength={9}
             onChange={(e) => handleChange("nationalId", e.target.value)}
             className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
   focus:outline-none ${

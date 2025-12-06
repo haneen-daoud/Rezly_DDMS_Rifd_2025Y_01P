@@ -87,6 +87,8 @@ export default function SubscribersTab({
 
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [loading, setLoading] = useState(false);
+
   // نقرأ الرول من currentUser
   const [userRole, setUserRole] = useState(null);
 
@@ -138,6 +140,7 @@ export default function SubscribersTab({
     }
 
     const fetchAllMembers = async () => {
+      setLoading(true);
       try {
         let allMembers = [];
         let currentPage = 1;
@@ -182,6 +185,8 @@ export default function SubscribersTab({
         console.log("تم جلب جميع المشتركين:", sortedMembers.length);
       } catch (error) {
         console.error(" حدث خطأ أثناء جلب المشتركين", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -347,6 +352,14 @@ export default function SubscribersTab({
     }
   }, [clients.length, onMembersCountChange]);
 
+    if (loading && clients.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-[200px]">
+        <span className="loader"></span>
+      </div>
+    );
+  }
+
   return (
     <div className="">
       {/* جدول المشتركين */}
@@ -436,7 +449,7 @@ export default function SubscribersTab({
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                       <path
                         d="M5.99805 12.7034L5.12891 13.5725C4.53647 14.1647 3.73317 14.4973 2.89551 14.4973H2C1.72386 14.4973 1.5 14.2735 1.5 13.9973V13.1047C1.5 12.2669 1.83251 11.4629 2.4248 10.8704L3.29492 10.0002L5.99805 12.7034ZM7.66504 11.0364L6.70605 11.9963L4.00293 9.29321L4.96191 8.33325L7.66504 11.0364ZM11.4551 1.84106C11.9102 1.38588 12.6487 1.38659 13.1035 1.84204L14.1602 2.89966C14.6144 3.35471 14.6139 4.09247 14.1592 4.54712L8.37305 10.3323L5.66895 7.62817L11.4551 1.84106Z"
-                        fill="#6A0EAD"
+                        fill="var(--color-purple)"
                       />
                     </svg>
                   </button>
@@ -557,7 +570,6 @@ export default function SubscribersTab({
         }
       />
 
-      <ToastContainer position="top-left" autoClose={3000} />
     </div>
   );
 }
