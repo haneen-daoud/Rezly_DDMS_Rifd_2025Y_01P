@@ -7,6 +7,7 @@
   --color-bg: #F8F9FA;
   --color-purple: #6A0EAD;
   ;
+  --color-lightpurple: #E1CFEF;
   --color-green: #4caf50;
   --color-yellow: #FACC15;
   --color-white: #ffffff;
@@ -17,7 +18,7 @@
   font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
+  color-scheme: light;
   background-color: #242424;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -74,7 +75,7 @@ h1 {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: var(--color-purple);
+    color: #000000;
     background-color: #ffffff;
   }
 
@@ -162,12 +163,12 @@ h1 {
 .custom-scrollbar {
   /* Firefox */
   scrollbar-width: thin; 
-  scrollbar-color: rgba(106, 14, 173, 0.45) transparent;
+  scrollbar-color: var(--color-lightpurple) transparent;
 }
 
 .rz__menu-list {
   scrollbar-width: thin; /* Firefox */
-  scrollbar-color: rgba(106, 14, 173, 0.45) transparent;
+  scrollbar-color: var(--color-lightpurple) transparent;
 }
 
 .rz__menu-list::-webkit-scrollbar {
@@ -175,7 +176,7 @@ h1 {
 }
 
 .rz__menu-list::-webkit-scrollbar-thumb {
-  background-color: rgba(106, 14, 173, 0.45);
+  background-color: var(--color-lightpurple);
   border-radius: 4px;
 }
 
@@ -188,7 +189,7 @@ h1 {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(106, 14, 173, 0.45); /* بنفسجي شفاف */
+  background-color: var(--color-lightpurple); /* بنفسجي شفاف */
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
@@ -199,7 +200,7 @@ h1 {
 .loader {
   width: 48px;
   height: 48px;
-  border: 5px dotted #6A0EAD;
+  border: 5px dotted var(--color-purple);
   border-radius: 50%;
   display: inline-block;
   position: relative;
@@ -225,4 +226,55 @@ h1 {
 .scrollbar-hide {
   -ms-overflow-style: none; /* لـ Edge و IE */
   scrollbar-width: none; /* لـ Firefox */
+}
+
+.Toastify__toast-container {
+  z-index: 999999 !important;
+}
+
+/* غلاف السيلكت العام */
+.custom-select-container {
+  position: relative;
+  display: inline-block; /* عشان ياخد عرضه من الparent أو من الكلاس اللي تعطيه إياه */
+}
+
+
+
+/* خيارات المينيو */
+.custom-menu {
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #dddddd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 999999;
+}
+
+/* عنصر خيار */
+.custom-option {
+  padding: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: "Cairo";
+  color: #444444;
+}
+
+.custom-option:hover {
+  background: var(--color-lightpurple);
+}
+
+.custom-option.selected {
+  background: var(--color-purple);
+  color: #ffffff;
+}
+
+/* السهم الصغير */
+.custom-arrow {
+  font-size: 12px;
+}
+
+/* كلاس عام للتحكم بارتفاع منيو أي دروب داون */
+.dropdown-menu-scroll {
+  max-height: 200px;
+  overflow-y: auto;
 }

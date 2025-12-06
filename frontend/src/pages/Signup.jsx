@@ -8,6 +8,8 @@ import SignupBg from "../icons/signup.svg";
 import { useNavigate } from "react-router-dom";
 import { signup } from "../api.js";
 import Logo from "../assets/icon/rezly-logo.svg";
+import { getApiErrorMessage } from "../components/getApiErrorMessage.jsx";
+import { toast } from "react-toastify";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -30,10 +32,6 @@ const Signup = () => {
   const handleSignUp = async (e) => {
     e.preventDefault();
 
-    if (formData.password !== formData.cpassword) {
-      alert("كلمة المرور وتأكيدها غير متطابقين");
-      return;
-    }
 
     try {
       setLoading(true);
@@ -42,18 +40,11 @@ const Signup = () => {
       alert("تم إنشاء الحساب بنجاح!");
       navigate("/");
     } catch (error) {
-      console.error("❌ Signup failed:", error);
-
-      if (error.response) {
-        const backendErrors = error.response.data.errors || error.response.data;
-        alert(
-          typeof backendErrors === "string"
-            ? backendErrors
-            : JSON.stringify(backendErrors, null, 2)
-        );
-      } else {
-        alert(error.message || "حدث خطأ أثناء التسجيل، حاول مرة أخرى");
-      }
+      const message = getApiErrorMessage(error, "حدث خلل");
+      console.log("API error response:", error?.response?.data);
+      console.log("SHOW TOAST SUCCESS");
+      toast.error(<div dangerouslySetInnerHTML={{ __html: message }} />);
+    
     } finally {
       setLoading(false);
     }
@@ -86,7 +77,7 @@ const Signup = () => {
           <div className="mb-4">
             <label className="block mb-2 text-black">اسم المستخدم</label>
             <div className="relative w-full">
-              <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
+              <UserIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
               <input
                 type="text"
                 name="userName"
@@ -102,7 +93,7 @@ const Signup = () => {
           <div className="mb-3">
             <label className="block mb-1 text-black">البريد الإلكتروني</label>
             <div className="relative w-full">
-              <EmailIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
+              <EmailIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
               <input
                 type="email"
                 name="email"
@@ -118,7 +109,7 @@ const Signup = () => {
           <div className="mb-3">
             <label className="block mb-1 text-black">كلمة المرور</label>
             <div className="relative w-full">
-              <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
+              <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -145,7 +136,7 @@ const Signup = () => {
           <div className="mb-3">
             <label className="block mb-1 text-black">تأكيد كلمة المرور</label>
             <div className="relative w-full">
-              <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5" />
+              <PasswordIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-purple)]" />
               <input
                 type={showCPassword ? "text" : "password"}
                 name="cpassword"
@@ -185,8 +176,7 @@ const Signup = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 text-white font-semibold rounded-lg hover:bg-[#580b94] transition cursor-pointer"
-            style={{ backgroundColor: "#6A0EAD" }}
+            className="w-full h-12 text-white font-semibold rounded-lg hover:bg-[var(--color-purple)] transition cursor-pointer bg-[var(--color-purple)]"
           >
             {loading ? "جاري الإنشاء..." : "إنشاء حساب"}
           </button>
@@ -196,7 +186,7 @@ const Signup = () => {
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="text-[#6A0EAD] font-semibold hover:underline cursor-pointer"
+              className="text-[var(--color-purple)] font-semibold hover:underline cursor-pointer"
             >
               تسجيل الدخول
             </button>

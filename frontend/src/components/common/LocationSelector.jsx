@@ -14,6 +14,7 @@ export default function LocationSelector({
   showIcon = true,
   showLabel = true,
   variant = "booking",
+  disabled = false,
 }) {
   const [openLocation, setOpenLocation] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -93,8 +94,15 @@ export default function LocationSelector({
 
       {/* الحقل الرئيسي */}
       <div
-        className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer p-3 relative"
-        onClick={() => setOpenLocation(!openLocation)}
+        className={`w-full h-10 rounded-md flex items-center justify-between p-3 relative ${
+          disabled
+            ? "cursor-not-allowed bg-gray-100"
+            : "cursor-pointer bg-white"
+        }`}
+        onClick={() => {
+          if (disabled) return;
+          setOpenLocation((prev) => !prev);
+        }}
         style={{ border: `1px solid ${borderColor}` }}
       >
         <div className="flex items-center gap-2">
@@ -108,7 +116,7 @@ export default function LocationSelector({
                   ? "font-bold text-[14px] text-[#000]"
                   : "font-normal text-[14px] text-[#000]"
                 : `${placeholderColor} font-normal text-[14px]`
-            }`}
+            } ${disabled ? "text-gray-500" : ""}`}
           >
             {selectedLocation || "اختر المكان"}
           </span>
@@ -121,7 +129,7 @@ export default function LocationSelector({
       </div>
 
       {/* القائمة */}
-      {openLocation && (
+      {openLocation && !disabled && (
         <div className="absolute top-full left-0 w-full bg-white rounded-[16px] border border-gray-300 mt-1 shadow-lg z-50 text-[#000000]">
           <div className="p-3">
             {/* مربع البحث */}
@@ -174,13 +182,12 @@ export default function LocationSelector({
                     <div className="flex items-center gap-2">
                       <LocationIcon className="w-4 h-4 text-[var(--color-purple)]" />
                       <span
-  className={`text-[12px] text-[#000] ${
-    selected ? "font-bold" : "font-normal"
-  }`}
->
-  {location}
-</span>
-
+                        className={`text-[12px] text-[#000] ${
+                          selected ? "font-bold" : "font-normal"
+                        }`}
+                      >
+                        {location}
+                      </span>
                     </div>
                     <div
                       className={`w-4 h-4 flex items-center justify-center rounded-full border-2 border-[var(--color-purple)]`}

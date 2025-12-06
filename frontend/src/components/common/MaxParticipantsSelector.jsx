@@ -11,6 +11,7 @@ export default function MaxParticipantsSelector({
   showLabel = true,
   showIcon = false,
   variant = "booking",
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
   const [customValue, setCustomValue] = useState("");
@@ -47,6 +48,7 @@ export default function MaxParticipantsSelector({
 
   const handleCustomSubmit = (e) => {
     if (e) e.preventDefault();
+    if (disabled) return;
 
     const value = Number(customValue);
 
@@ -86,8 +88,15 @@ export default function MaxParticipantsSelector({
 
       {/* الزر الرئيسي */}
       <div
-        className="w-full h-10 rounded-md flex items-center justify-between cursor-pointer p-3 relative"
-        onClick={() => setOpen(!open)}
+        className={`w-full h-10 rounded-md flex items-center justify-between p-3 relative ${
+          disabled
+            ? "cursor-not-allowed bg-gray-100"
+            : "cursor-pointer bg-white"
+        }`}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((prev) => !prev);
+        }}
         style={{ border: `1px solid ${borderColor}` }}
       >
         {showIcon && (
@@ -108,7 +117,7 @@ export default function MaxParticipantsSelector({
                   ? "font-bold text-[14px] text-[#000]"
                   : "font-normal text-[14px] text-[#000]"
                 : "text-gray-400 font-normal text-[14px]"
-            }`}
+            } ${disabled ? "text-gray-500" : ""}`}
           >
             {selectedMax
               ? selectedMax === 9999
@@ -122,7 +131,7 @@ export default function MaxParticipantsSelector({
       </div>
 
       {/* الدروب داون */}
-      {open && (
+      {open && !disabled && (
         <div
           className={`absolute left-0 w-full bg-white rounded-[16px] border border-gray-300 shadow-[0_4px_12px_rgba(0,0,0,0.15)] z-50
   ${
@@ -146,6 +155,7 @@ export default function MaxParticipantsSelector({
                     key={idx}
                     className="flex items-center justify-between h-[40px] px-3 py-2 cursor-pointer hover:bg-gray-100 border-b border-gray-200 last:border-b-0"
                     onClick={() => {
+                      if (disabled) return;
                       const value =
                         option.value === Infinity ? 9999 : option.value;
                       setSelectedMax(value);
@@ -203,7 +213,10 @@ export default function MaxParticipantsSelector({
                         min="1"
                         placeholder="أدخل العدد"
                         value={customValue}
-                        onChange={(e) => setCustomValue(e.target.value)}
+                        onChange={(e) => {
+                          if (disabled) return;
+                          setCustomValue(e.target.value);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             handleCustomSubmit(e);
@@ -216,6 +229,7 @@ export default function MaxParticipantsSelector({
 
                   <div
                     onClick={(e) => {
+                      if (disabled) return;
                       e.stopPropagation();
                       handleCustomSubmit(e);
                     }}

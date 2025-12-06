@@ -84,7 +84,7 @@ useEffect(() => {
                 setMemberData({ ...memberData, firstName: e.target.value });
                 setErrors({ ...errors, firstName: "" });
               }}
-              className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-[12px] placeholder-gray-500 focus:border-[#6A0EAD] focus:outline-none"
+              className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-[12px] placeholder-gray-500 focus:border-[var(--color-purple)] focus:outline-none"
             />
             {errors.firstName && (
               <p className="text-red-500 text-[11px]  ">{errors.firstName}</p>
@@ -104,7 +104,7 @@ useEffect(() => {
                 setMemberData({ ...memberData, lastName: e.target.value });
                 setErrors({ ...errors, lastName: "" });
               }}
-              className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-[12px] placeholder-gray-500 focus:border-[#6A0EAD] focus:outline-none"
+              className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-[12px] placeholder-gray-500 focus:border-[var(--color-purple)] focus:outline-none"
             />
 
             {errors.lastName && (
@@ -150,11 +150,12 @@ useEffect(() => {
             type="text"
             placeholder="أدخل رقم الهوية"
             value={memberData.idNumber}
+            maxLength={9}
             onChange={(e) => {
               setMemberData({ ...memberData, idNumber: e.target.value });
               setErrors({ ...errors, idNumber: "" });
             }}
-            className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-[12px] placeholder-gray-500 focus:border-[#6A0EAD] focus:outline-none"
+            className="w-full h-[42px] p-3 border border-gray-300 rounded-[8px] text-[12px] placeholder-gray-500 focus:border-[var(--color-purple)] focus:outline-none"
           />
           {errors.idNumber && (
             <p className="text-red-500 text-[11px]  ">{errors.idNumber}</p>
@@ -179,12 +180,12 @@ useEffect(() => {
         } bg-white cursor-pointer
         ${
           showCalendar
-            ? "focus:border-[#6A0EAD] focus:outline-none"
+            ? "focus:border-[var(--color-purple)] focus:outline-none"
             : "focus:outline-none focus:ring-2 focus:ring-[var(--color-purple)]"
         }
       `}
             >
-              <CalenderIcon className="w-4 h-4 shrink-0" />
+              <CalenderIcon className="w-4 h-4 shrink-0 text-[var(--color-purple)]" />
 
               <span
                 className={

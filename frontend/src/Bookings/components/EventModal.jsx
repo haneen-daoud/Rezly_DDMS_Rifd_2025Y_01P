@@ -60,14 +60,78 @@ export default function EventModal({
   // تحت useState:
   const [members, setMembers] = useState([]);
 
+  //عشان إذا مرّ وقت الحجز تكن الحقول مظللة ريد اونلي
+  const [isPastReadonly, setIsPastReadonly] = useState(false);
+
+  const [originalStart, setOriginalStart] = useState(null);
+
+  // تحويل الوقت العربي "10:00 م" → "22:00"
+const parseArabicTimeTo24 = (timeStr) => {
+  if (!timeStr) return "00:00";
+
+  let txt = String(timeStr).trim();
+  const hasPM = /م/.test(txt);
+  const hasAM = /ص/.test(txt);
+
+  // نحتفظ فقط بالأرقام والنقطتين
+  const clean = txt.replace(/[^\d:]/g, "");
+  const [hStr, mStr] = clean.split(":");
+  let h = parseInt(hStr || "0", 10);
+  let m = parseInt(mStr || "0", 10);
+
+  if (hasPM && h < 12) h += 12;
+  if (hasAM && h === 12) h = 0;
+
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
+
+  // نحسب وقت بداية الحجز الأصلي مرة واحدة فقط عند فتح المودال
+useEffect(() => {
+  if (!booking) return;
+
+  // لو already محسوب، ما نعيد نحسبه حتى لو booking تغيّرت جوّا المودال
+  if (originalStart) return;
+
+  const extractOriginalStart = () => {
+    // لو الباك مرجع start كـ ISO جاهز
+    if (booking.start) return new Date(booking.start);
+
+    const s = booking.selectedSchedule || {};
+    const rawDate = s.date || booking.date;
+    if (!rawDate) return null;
+
+    const dateStr = String(rawDate).split("T")[0];
+    const rawTime = s.timeStart || booking.timeStart || "00:00";
+
+    const time24 = parseArabicTimeTo24(rawTime);
+    return new Date(`${dateStr}T${time24}:00`);
+  };
+
+  const d = extractOriginalStart();
+  setOriginalStart(d);
+}, [booking, originalStart]);
+
+    // حساب إذا الحجز مر وقته أو أقل من ساعة على بدايته
+  useEffect(() => {
+  if (!originalStart || isNaN(originalStart.getTime())) {
+    setIsPastReadonly(false);
+    return;
+  }
+
+  const now = new Date();
+  const diffMs = originalStart.getTime() - now.getTime();
+  const oneHourMs = 60 * 60 * 1000;
+
+  setIsPastReadonly(diffMs < oneHourMs);
+}, [originalStart]);
+
+
   // داخل useEffect جديد:
   useEffect(() => {
     const fetchMembersSmart = async () => {
       try {
         // 🟣 التوكن من اللوكل ستورج
-        const token =
-          localStorage.getItem("token") ||
-          "";
+        const token = localStorage.getItem("token") || "";
 
         const headers = {
           Authorization: `Bearer ${token}`,
@@ -601,11 +665,13 @@ export default function EventModal({
     }
   }, [coaches]);
 
+  const saveDisabled = saving || deleting || isPastReadonly;
+
   return (
     <div className="fixed inset-0 z-[4000] flex justify-center items-center">
-  {/* الخلفية الغامقة */}
-  <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] z-[3990]"></div>
-       <div className="relative z-[4001] w-[361px] h-full bg-white rounded-[16px] flex flex-col overflow-hidden shadow-lg text-right text-black font-cairo p-[24px]">
+      {/* الخلفية الغامقة */}
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] z-[3990]"></div>
+      <div className="relative z-[4001] w-[361px] h-full bg-white rounded-[16px] flex flex-col overflow-hidden shadow-lg text-right text-black font-cairo p-[24px]">
         {/* Header */}
         <div className="w-[313px] h-[40px] flex items-center justify-between mb-[8px]">
           <h3 className="text-[16px] font-bold">تفاصيل الحجز</h3>
@@ -642,7 +708,8 @@ export default function EventModal({
                 value={booking.service || ""}
                 readOnly
                 disabled
-                className="h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2 text-[14px] font-bold text-[#000] bg-white focus:outline-none"
+                className="h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2 text-[14px] font-bold focus:outline-none
+                bg-gray-100 text-gray-500 cursor-not-allowed"
               />
             </div>
           </div>
@@ -662,7 +729,8 @@ export default function EventModal({
                 value={booking.description || ""}
                 readOnly
                 disabled
-                className="h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2 text-[14px] font-bold text-[#000] bg-white focus:outline-none"
+                className="h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2 text-[14px] font-bold focus:outline-none
+                bg-gray-100 text-gray-500 cursor-not-allowed"
               />
             </div>
           </div>
@@ -681,8 +749,19 @@ export default function EventModal({
                 type="text"
                 value={booking.start?.split("T")[0] || ""}
                 readOnly
-                onClick={() => setShowCalendar(!showCalendar)}
-                className="h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2 text-[14px] font-bold text-[#000] bg-white focus:outline-none cursor-pointer"
+                onClick={() => {
+                  if (isPastReadonly) return;
+                  setShowCalendar(!showCalendar);
+                }}
+                className={`
+    h-10 w-[313px] rounded-[8px] border border-[#7E818C] pr-8 pl-2
+    text-[14px] font-bold focus:outline-none
+    ${
+      isPastReadonly
+        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+        : "bg-white"
+    }
+  `}
               />
 
               {showCalendar && (
@@ -730,6 +809,7 @@ export default function EventModal({
                       : booking.timeEnd
                   }
                   onChange={handleTimeChange}
+                  disabled={isPastReadonly}
                   showIcons={true} // ✅ رح يفعّل الأيقونات داخل الحقول فقط في الإيفنت مودال
                 />
               </div>
@@ -752,6 +832,7 @@ export default function EventModal({
                   setBooking({ ...booking, location: room })
                 }
                 locationsList={locations}
+                disabled={isPastReadonly}
               />
             </div>
           </div>
@@ -772,7 +853,7 @@ export default function EventModal({
                     setBooking({ ...booking, coach, coachId: coach.id })
                   }
                   coachesList={coaches}
-                  
+                  disabled={isPastReadonly}
                 />
               </div>
             </div>
@@ -789,6 +870,7 @@ export default function EventModal({
                 variant="event"
                 showLabel={false}
                 showIcon={true} // ✅ الأيقونة رح تبين جوّا الحقل فقط هون
+                disabled={isPastReadonly}
                 selectedMax={booking.maxMembers || 0}
                 setSelectedMax={(value) =>
                   setBooking({ ...booking, maxMembers: Number(value) })
@@ -819,6 +901,7 @@ export default function EventModal({
                 booking={booking}
                 setBooking={setBooking}
                 membersList={members}
+                readOnly={isPastReadonly}
                 onMembersChange={(newList) => setUpdatedMembers(newList)}
               />
             </div>
@@ -832,9 +915,10 @@ export default function EventModal({
                 border: booking.border,
                 text: booking.text,
               }}
-              setSelectedColor={(c) =>
-                setBooking({ ...booking, ...c, __colorChanged: true })
-              }
+              setSelectedColor={(c) => {
+                if (isPastReadonly) return;
+                setBooking({ ...booking, ...c, __colorChanged: true });
+              }}
             />
           </div>
 
@@ -849,13 +933,15 @@ export default function EventModal({
                 variant="event"
                 showLabel={false}
                 selectedReminders={booking.reminders || []}
-                setSelectedReminders={(rem) =>
-                  setBooking({ ...booking, reminders: rem })
-                }
+                setSelectedReminders={(rem) => {
+                  if (isPastReadonly) return;
+                  setBooking({ ...booking, reminders: rem });
+                }}
                 showIconInInput
                 borderStyle="#7E818C"
                 placeholderColor="text-gray-400"
                 baseDateTime={booking.start} // 🟣 نمرّر وقت الحجز الحالي لحساب الفرق
+                disabled={isPastReadonly}
               />
             </div>
           </div>
@@ -864,20 +950,22 @@ export default function EventModal({
         {/* حفظ */}
         <div className="pt-2">
           <button
-  onClick={handleUpdateSingleSchedule}
-  disabled={saving || deleting}
-  className={`
+            onClick={handleUpdateSingleSchedule}
+            disabled={saveDisabled}
+            className={`
     w-[313px] h-10 
-    bg-[var(--color-purple)] text-white 
     rounded-[8px] font-bold text-[14px]
-    hover:bg-[var(--color-purple)] transition
     flex items-center justify-center
-    ${saving || deleting ? "opacity-70 cursor-not-allowed" : ""}
+    transition
+    ${
+      saveDisabled
+        ? "bg-[var(--color-purple)] text-white cursor-not-allowed"
+        : "bg-[var(--color-purple)] text-white hover:bg-[var(--color-purple)]"
+    }
   `}
->
-  {saving ? "جاري الحفظ..." : "حفظ"}
-</button>
-
+          >
+            {saving ? "جاري الحفظ..." : "حفظ"}
+          </button>
         </div>
       </div>
 

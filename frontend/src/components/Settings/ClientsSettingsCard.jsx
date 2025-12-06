@@ -1,9 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SettingsLinkRow, { LABEL_BASE_CLASS } from "./SettingsLinkRow";
 import AddCircleIcon from "../../icons/addcircle.svg?react";
 
-function ClientsSettingsCard() {
+function ClientsSettingsCard({ onChange }) {
   const [expanded, setExpanded] = useState(null);
+
+  const [durationsData, setDurationsData] = useState([]);
+  const [sessionsData, setSessionsData] = useState([]);
+  const [roomsData, setRoomsData] = useState([]);
+
+  useEffect(() => {
+    if (!onChange) return;
+
+    onChange({
+      durations: durationsData,
+      sessions: sessionsData,
+      rooms: roomsData,
+    });
+  }, [durationsData, sessionsData, roomsData, onChange]);
 
   const items = [
     { id: "durations", label: "مدد الاشتراك المتاحة" },
@@ -16,13 +30,13 @@ function ClientsSettingsCard() {
   };
 
   return (
-    <div className="bg-white border border-[#E5E7EB] rounded-[12px] py-6 px-4 flex flex-col gap-4 h-full text-[#000000] text-[14px] font-normal">
+    <div className="bg-white border border-[#E5E7EB] rounded-[12px] py-6 px-4 flex flex-col gap-4 h-full text-[#000000]">
       <div>
         <h2 className="text-[18px] font-bold text-[#000000] mb-2">
           إعدادات إدارة العملاء
         </h2>
         <p className="text-[18px] font-normal text-[#7E818C]">
-          تحكم بكل ما يخص العملاء، الاشتراكات، والصالات.
+          ضبط أنواع الاشتراكات والحصص والقاعات المتاحة للعملاء
         </p>
       </div>
 
@@ -34,9 +48,15 @@ function ClientsSettingsCard() {
             isExpanded={expanded === item.id}
             onToggle={() => handleToggle(item.id)}
           >
-            {item.id === "durations" && <SubscriptionDurationContent />}
-            {item.id === "sessions" && <SessionsContent />}
-            {item.id === "rooms" && <RoomsContent />}
+            {item.id === "durations" && (
+              <SubscriptionDurationContent onChange={setDurationsData} />
+            )}
+            {item.id === "sessions" && (
+              <SessionsContent onChange={setSessionsData} />
+            )}
+            {item.id === "rooms" && (
+              <RoomsContent onChange={setRoomsData} />
+            )}
           </SettingsLinkRow>
         ))}
       </div>
@@ -48,8 +68,14 @@ export default ClientsSettingsCard;
 
 /* ===== مدد الاشتراك ===== */
 
-function SubscriptionDurationContent() {
+function SubscriptionDurationContent({ onChange }) {
   const [durations, setDurations] = useState([""]);
+
+  useEffect(() => {
+    if (onChange) {
+      onChange(durations);
+    }
+  }, [durations, onChange]);
 
   const handleChange = (index, value) => {
     setDurations((prev) => prev.map((item, i) => (i === index ? value : item)));
@@ -66,8 +92,7 @@ function SubscriptionDurationContent() {
   return (
     <div className="flex flex-col gap-3 mt-1">
       <p className="text-[12px] text-[#7E818C]">
-        أدخل الفترات الزمنية المتاحة للاشتراك، وستُعرض كخيارات عند إنشاء حجز
-        جديد.
+        حدّد مدد الاشتراك التي ستكون متاحة للعملاء عند الاشتراك.
       </p>
 
       <div className="flex flex-col gap-2">
@@ -82,14 +107,11 @@ function SubscriptionDurationContent() {
                 type="text"
                 value={value}
                 onChange={(e) => handleChange(index, e.target.value)}
-                placeholder="أدخل مدة الاشتراك (مثلاً: يومي، أسبوعي، شهري…)"
-                className="flex-1 h-[42px] rounded-[8px] border border-[#D1D5DB] px-3
-             text-[14px] text-black font-normal
-             placeholder:text-[12px] placeholder:text-[#7E818C]
-             bg-white
-             focus:outline-none focus:border-[#6A0EAD] focus:ring-1 focus:ring-[#6A0EAD]"
+                placeholder="أدخل مدة الاشتراك (مثلاً: شهري، 3 شهور، سنوي...)"
+                className="flex-1 h-[42px] rounded-[8px] border border-[#D1D5DB] px-3 text-[14px] text-black font-normal
+             placeholder:text-[12px] placeholder:text-[#7E818C] bg-white
+                           focus:outline-none focus:border-[var(--color-purple)] focus:ring-1 focus:ring-[var(--color-purple)]"
               />
-
               <button
                 type="button"
                 onClick={() => handleRemove(index)}
@@ -119,8 +141,14 @@ function SubscriptionDurationContent() {
 
 /* ===== الحصص ===== */
 
-function SessionsContent() {
+function SessionsContent({ onChange }) {
   const [sessions, setSessions] = useState([""]);
+
+  useEffect(() => {
+    if (onChange) {
+      onChange(sessions);
+    }
+  }, [sessions, onChange]);
 
   const handleChange = (index, value) => {
     setSessions((prev) => prev.map((item, i) => (i === index ? value : item)));
@@ -154,7 +182,7 @@ function SessionsContent() {
                 className="flex-1 h-[42px] rounded-[8px] border border-[#D1D5DB] px-3 
                 text-[14px] text-black font-normal
              placeholder:text-[12px] placeholder:text-[#7E818C] bg-white
-                           focus:outline-none focus:border-[#6A0EAD] focus:ring-1 focus:ring-[#6A0EAD]"
+                           focus:outline-none focus:border-[var(--color-purple)] focus:ring-1 focus:ring-[var(--color-purple)]"
               />
               <button
                 type="button"
@@ -185,8 +213,14 @@ function SessionsContent() {
 
 /* ===== القاعات  ===== */
 
-function RoomsContent() {
+function RoomsContent({ onChange }) {
   const [rooms, setRooms] = useState([{ name: "", capacity: "" }]);
+
+  useEffect(() => {
+    if (onChange) {
+      onChange(rooms);
+    }
+  }, [rooms, onChange]);
 
   const handleChange = (index, field, value) => {
     setRooms((prev) =>
@@ -218,13 +252,14 @@ function RoomsContent() {
       <div className="flex flex-col gap-3">
         {rooms.map((room, index) => (
           <div key={index} className="flex flex-col gap-1">
+            {/* الليبل يظهر مرة واحدة فقط */}
             {index === 0 && (
               <div className="grid grid-cols-2 gap-2">
                 <span className="text-[14px] font-bold text-[#000000]">
                   اسم القاعة
                 </span>
                 <span className="text-[14px] font-bold text-[#000000]">
-                  السعة
+                  سعة القاعة
                 </span>
               </div>
             )}
@@ -241,14 +276,12 @@ function RoomsContent() {
                            px-3 text-[14px] text-black font-normal
                            placeholder:text-[12px] placeholder:text-[#7E818C]
                            bg-white focus:outline-none
-                           focus:border-[#6A0EAD] focus:ring-1 focus:ring-[#6A0EAD]"
+                           focus:border-[var(--color-purple)] focus:ring-1 focus:ring-[var(--color-purple)]"
               />
 
-              {/* السعة */}
+              {/* سعة القاعة */}
               <input
                 type="number"
-                min="1"
-                inputMode="numeric"
                 value={room.capacity}
                 onChange={(e) =>
                   handleChange(index, "capacity", Number(e.target.value))
@@ -258,7 +291,7 @@ function RoomsContent() {
                            px-3 text-[14px] text-black font-normal
                            placeholder:text-[12px] placeholder:text-[#7E818C]
                            bg-white focus:outline-none
-                           focus:border-[#6A0EAD] focus:ring-1 focus:ring-[#6A0EAD]"
+                           focus:border-[var(--color-purple)] focus:ring-1 focus:ring-[var(--color-purple)]"
               />
 
               {/* زر الحذف */}

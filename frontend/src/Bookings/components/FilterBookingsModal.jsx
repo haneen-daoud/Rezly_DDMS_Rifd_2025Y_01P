@@ -89,12 +89,12 @@ console.log("🔍 Query sent to API:", query);
         {/* اللودنج */}
         {loading && (
           <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
-            <div className="w-10 h-10 border-4 border-[#6A0EAD] border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-[var(--color-purple)] border-t-transparent rounded-full animate-spin"></div>
           </div>
         )}
 
         {/* العنوان */}
-        <h2 className="text-lg font-bold mb-4 text-right text-[#6A0EAD]">
+        <h2 className="text-lg font-bold mb-4 text-right text-[var(--color-purple)]">
           فلترة الحجوزات
         </h2>
 

@@ -44,7 +44,7 @@ export default function EmployeeFilter({
   const departmentOptions = [
     { value: "HR", label: "الموارد البشرية" },
     { value: "Administration", label: "الإدارة" },
-    { value: "IT", label: "تقنية المعلومات" },
+    { value: "تقنية المعلومات", label: "تقنية المعلومات" },
   ];
 
   const contractTypeOptions = [

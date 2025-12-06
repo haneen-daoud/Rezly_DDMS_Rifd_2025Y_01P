@@ -5,6 +5,7 @@ import Step2Employee from "./Step2Employee.jsx";
 import Step3Employee from "./Step3Employee.jsx";
 import Step4Employee from "./Step4Employee.jsx";
 import { createEmployee, updateEmployee } from "../../api";
+import { getApiErrorMessage } from "../getApiErrorMessage.jsx";
 import { toast } from "react-toastify";
 import {
   step1Schema,
@@ -152,10 +153,12 @@ const AddEmployeeModel = ({
 
       setIsLoading(false);
       onClose();
-    } catch (err) {
-      console.error("خطأ:", err.response?.data || err.message);
+    } catch (error) {
+      const message = getApiErrorMessage(error, "حدث خلل");
+      console.log("API error response:", error?.response?.data);
       setIsLoading(false);
-      toast.error("حدث خطأ أثناء حفظ بيانات الموظف");
+      console.log("SHOW TOAST SUCCESS");
+      toast.error(<div dangerouslySetInnerHTML={{ __html: message }} />);
     }
   };
 
@@ -248,9 +251,9 @@ const AddEmployeeModel = ({
                       <div
                         className={`w-[20px] h-[20px] flex items-center justify-center rounded-full text-xs font-medium border ${
                           index < activeStep
-                            ? "border-[#6A0EAD] bg-[#6A0EAD] text-white"
+                            ? "border-[var(--color-purple)] bg-[var(--color-purple)] text-white"
                             : index === activeStep
-                            ? "border-[#6A0EAD] text-[#6A0EAD]"
+                            ? "border-[var(--color-purple)] text-[var(--color-purple)]"
                             : "border-gray-300 text-gray-500"
                         }`}
                       >
@@ -315,7 +318,7 @@ const AddEmployeeModel = ({
                 {activeStep > 0 && (
                   <button
                     onClick={() => setActiveStep(activeStep - 1)}
-                    className="w-full py-3 border text-[16px] font-medium rounded-[8px] hover:bg-gray-100 cursor-pointer"
+                    className="w-full py-3 border border-[var(--color-purple)] text-[var(--color-purple)] text-[16px] font-medium rounded-[8px] hover:bg-gray-100 cursor-pointer"
                   >
                     السابق
                   </button>
@@ -323,7 +326,7 @@ const AddEmployeeModel = ({
                 <button
                   onClick={handleNext}
                   className="w-full py-3 text-white text-[16px] font-medium rounded-[8px] cursor-pointer"
-                  style={{ backgroundColor: "#6A0EAD" }}
+                  style={{ backgroundColor: "var(--color-purple)" }}
                 >
                   {activeStep === steps.length - 1
                     ? type === "add"

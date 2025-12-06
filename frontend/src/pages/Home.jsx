@@ -54,13 +54,16 @@ export default function Home() {
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
+  const [memberStats, setMemberStats] = useState(null);
+
   const role = currentUser?.role?.toLowerCase() || "";
+  const isSuperAdmin = role === "superadmin";
   const isReception =
     role === "reception" ||
     role === "receptionist" ||
     role === "receptionist_employee";
   const isCoach = role === "coach";
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || isSuperAdmin;
 
   const getDateKey = (value) => {
     if (!value) return null;
@@ -69,96 +72,115 @@ export default function Home() {
     return d.toISOString().slice(0, 10); // YYYY-MM-DD
   };
 
+    // 1) إحصائيات من الحجوزات + دمج إحصائيات الأعضاء لو موجودة
   useEffect(() => {
-    const computeStats = async () => {
-      const today = new Date();
-      const todayKey = getDateKey(today);
+    const today = new Date();
+    const todayKey = getDateKey(today);
 
-      // --------- 1) من الحجوزات (bookings) ----------
-      const allBookings = Array.isArray(bookings) ? bookings : [];
+    const allBookings = Array.isArray(bookings) ? bookings : [];
 
-      let sessionsToday = 0;
-      let cancelledSessionsToday = 0;
+    let sessionsToday = 0;
+    let cancelledSessionsToday = 0;
 
-      allBookings.forEach((booking) => {
-        const schedules = Array.isArray(booking.schedules)
-          ? booking.schedules
-          : [];
+    allBookings.forEach((booking) => {
+      const schedules = Array.isArray(booking.schedules)
+        ? booking.schedules
+        : [];
 
-        schedules.forEach((s) => {
-          const scheduleDateKey = getDateKey(s.date);
-          if (scheduleDateKey === todayKey) {
-            sessionsToday += 1;
-            if (booking.status === "cancelled") {
-              cancelledSessionsToday += 1;
-            }
+      schedules.forEach((s) => {
+        const scheduleDateKey = getDateKey(s.date);
+        if (scheduleDateKey === todayKey) {
+          sessionsToday += 1;
+          if (booking.status === "cancelled") {
+            cancelledSessionsToday += 1;
           }
-        });
+        }
       });
+    });
 
-      const baseStats = {
-        sessionsToday,
-        totalBookings: allBookings.length,
-        cancelledSessionsToday,
-        totalSubscriptions: 0,
-        todaySubscriptions: 0,
-        subscriptionsEndingSoon: 0,
-        pendingPayments: 0,
-      };
+    const baseStats = {
+      sessionsToday,
+      totalBookings: allBookings.length,
+      cancelledSessionsToday,
+      totalSubscriptions: memberStats?.totalSubscriptions || 0,
+      todaySubscriptions: memberStats?.todaySubscriptions || 0,
+      subscriptionsEndingSoon:
+        memberStats?.subscriptionsEndingSoon || 0,
+      pendingPayments: memberStats?.pendingPayments || 0,
+    };
 
-      // --------- 2) من الأعضاء (Admin / Reception فقط) ----------
-      if (isAdmin || isReception) {
-        try {
-          setStatsLoading(true);
+    setStats((prev) => ({ ...prev, ...baseStats }));
+  }, [bookings, memberStats]);
 
-          const data = await getMembersStats();
-          const members = Array.isArray(data.members) ? data.members : [];
-          const totalSubscriptions = data.totalMembers || members.length;
+    // 2) تحميل إحصائيات الأعضاء مرة واحدة فقط (للآدمن و الاستقبال)
+  useEffect(() => {
+    if (!isAdmin && !isReception) return;
 
-          // اشتراكات اليوم (أعضاء مضافة اليوم)
-          const todaySubscriptions = members.filter((m) => {
-            const createdKey = getDateKey(m.createdAt);
-            return createdKey === todayKey;
-          }).length;
+    let cancelled = false;
 
-          // اشتراكات تنتهي خلال 7 أيام
-          const startOfToday = new Date();
-          startOfToday.setHours(0, 0, 0, 0);
-          const after7Days = new Date(startOfToday);
-          after7Days.setDate(startOfToday.getDate() + 7);
+    const loadMembersStats = async () => {
+      try {
+        setStatsLoading(true);
 
-          const subscriptionsEndingSoon = members.filter((m) => {
-            if (!m.endDate) return false;
-            const end = new Date(m.endDate);
-            if (Number.isNaN(end.getTime())) return false;
-            return end >= startOfToday && end <= after7Days;
-          }).length;
+        const data = await getMembersStats();
+        const members = Array.isArray(data.members) ? data.members : [];
+        const totalSubscriptions = data.totalMembers || members.length;
 
-          // المدفوعات المعلقة / غير مدفوعة
-          const pendingPayments = members.filter((m) => {
-            return (
-              m.paymentStatus === "قيد المعالجة" ||
-              m.paymentStatus === "غير مدفوع"
-            );
-          }).length;
+        const today = new Date();
+        const todayKey = getDateKey(today);
 
-          baseStats.totalSubscriptions = totalSubscriptions;
-          baseStats.todaySubscriptions = todaySubscriptions;
-          baseStats.subscriptionsEndingSoon = subscriptionsEndingSoon;
-          baseStats.pendingPayments = pendingPayments;
-        } catch (err) {
-          console.error("خطأ أثناء تحميل إحصائيات الأعضاء للداشبورد:", err);
-        } finally {
+        // اشتراكات اليوم (أعضاء مضافة اليوم)
+        const todaySubscriptions = members.filter((m) => {
+          const createdKey = getDateKey(m.createdAt);
+          return createdKey === todayKey;
+        }).length;
+
+        // اشتراكات تنتهي خلال 7 أيام
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        const after7Days = new Date(startOfToday);
+        after7Days.setDate(startOfToday.getDate() + 7);
+
+        const subscriptionsEndingSoon = members.filter((m) => {
+          if (!m.endDate) return false;
+          const end = new Date(m.endDate);
+          if (Number.isNaN(end.getTime())) return false;
+          return end >= startOfToday && end <= after7Days;
+        }).length;
+
+        // المدفوعات المعلقة / غير مدفوعة
+        const pendingPayments = members.filter((m) => {
+          return (
+            m.paymentStatus === "قيد المعالجة" ||
+            m.paymentStatus === "غير مدفوع"
+          );
+        }).length;
+
+        if (!cancelled) {
+          setMemberStats({
+            totalSubscriptions,
+            todaySubscriptions,
+            subscriptionsEndingSoon,
+            pendingPayments,
+          });
+        }
+      } catch (err) {
+        console.error("خطأ أثناء تحميل إحصائيات الأعضاء للداشبورد:", err);
+      } finally {
+        if (!cancelled) {
           setStatsLoading(false);
         }
       }
-
-      setStats((prev) => ({ ...prev, ...baseStats }));
     };
 
-    computeStats();
-  }, [bookings, isAdmin, isReception]);
+    loadMembersStats();
 
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, isReception]);
+
+  
   // ٤ كروت الأساسية حسب الرول
   const primaryCards = (() => {
     // مدرب
@@ -359,15 +381,14 @@ export default function Home() {
             </div>
           ) : (
             // باقي المستخدمين → شارت
-            <section className="bg-white rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-3 sm:p-4 flex-1">
+            <section className="bg-white rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-3 sm:p-4 flex-1 flex flex-col">
               <Chart />
             </section>
           )}
 
-         <section className="bg-white rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-3 sm:p-4 flex-1">
-  {isCoach ? <UpcomingBookings /> : <AttendanceTable />}
-</section>
-
+          <section className="bg-white rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-3 sm:p-4 flex-1">
+            {isCoach ? <UpcomingBookings /> : <AttendanceTable />}
+          </section>
         </div>
 
         {/* العمود اليمين */}
@@ -387,14 +408,16 @@ export default function Home() {
           )}
 
           {/* الكاليندر */}
-          <div className="w-full bg-white rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-3 sm:p-4 flex flex-col">
-            <CalendarView
-              onEventClick={(event) => {
-                setSelectedEvent(event);
-                setShowEventModal(true);
-              }}
-            />
-          </div>
+          {/* الكاليندر */}
+<div className="w-full bg-white rounded-[16px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] p-3 sm:p-4 flex flex-col min-h-[600px]">
+  <CalendarView
+    onEventClick={(event) => {
+      setSelectedEvent(event);
+      setShowEventModal(true);
+    }}
+  />
+</div>
+
         </div>
       </div>
 

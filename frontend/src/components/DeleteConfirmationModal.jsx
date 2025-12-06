@@ -80,7 +80,7 @@ const DeleteConfirmationModal = ({
         </div>
         {isLoading && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-2xl">
-            <div className="w-10 h-10 border-4 border-[#6A0EAD33] border-t-[#6A0EAD] rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-[#6A0EAD33] border-t-[var(--color-purple)] rounded-full animate-spin" />
           </div>
         )}
       </div>

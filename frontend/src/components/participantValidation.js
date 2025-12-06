@@ -16,8 +16,8 @@ export const step1Schema = Yup.object().shape({
 
   idNumber: Yup.string()
     .required("رقم الهوية مطلوب")
-    .matches(/^[0-9]+$/, "يجب أن يحتوي على أرقام فقط")
-    .min(7, "رقم الهوية غير صحيح")
+    .matches(/^[0-9]+$/, "رقم الهوية يجب أن يتكون من 9 أرقام")
+    .min(9, "رقم الهوية يجب أن يتكون من 9 أرقام")
     .max(15, "رقم الهوية غير صحيح"),
 
  birthDate: Yup

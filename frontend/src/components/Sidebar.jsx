@@ -15,6 +15,8 @@ export default function Sidebar({
   setActiveSubTab,
 }) {
   const role = (user?.role || "").toLowerCase();
+  const isSuperAdmin = role === "superadmin";
+
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,7 +57,7 @@ export default function Sidebar({
   ];
 
   // Only Admin sees employees tab
-  if (role === "admin") {
+  if (role === "admin" || isSuperAdmin) {
     menu.push({
       to: "/dashboard/employees",
       label: "طاقم العمل",
@@ -64,7 +66,7 @@ export default function Sidebar({
     });
   }
 
-  if (role === "admin" || role === "receptionist") {
+  if (role === "admin" || role === "receptionist" || isSuperAdmin) {
     menu.push({
       to: "/dashboard/finance",
       label: "المالية",

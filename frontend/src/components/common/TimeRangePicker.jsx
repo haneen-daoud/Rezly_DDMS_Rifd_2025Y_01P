@@ -1,6 +1,7 @@
 // TimeRangePicker.jsx
 import React, { useState, useEffect } from "react";
 import HourIcon from "../../icons/hour.svg?react";
+import Dropdown from "../Dropdown"; // عدلي المسار إذا الملف في مجلد مختلف
 
 const TimeRangePicker = ({
   startTime: initialStart,
@@ -9,19 +10,25 @@ const TimeRangePicker = ({
   variant = "event",
   showIcons = false,
   isAddMode = false,
-  showArrow = true, // ✅ جديد
+  showArrow = true,
+  disabled = false,
 }) => {
-  const [startTime, setStartTime] = useState(initialStart || "08:00");
-  const [endTime, setEndTime] = useState(initialEnd || "09:00");
+  const [startTime, setStartTime] = useState(
+    isAddMode ? "" : initialStart || ""
+  );
+  const [endTime, setEndTime] = useState(isAddMode ? "" : initialEnd || "");
 
   const [userChangedEnd, setUserChangedEnd] = useState(false);
 
-  useEffect(() => {
-    const isNewBooking =
-      (!initialStart || initialStart === "08:00") &&
-      (!initialEnd || initialEnd === "09:00");
+  const isStartPlaceholder = !startTime;
+  const isEndPlaceholder = !endTime;
 
-    if (isNewBooking && !userChangedEnd && startTime) {
+  useEffect(() => {
+    // إذا في تعديل حجز موجود (initialEnd موجودة) → ما نغير النهاية
+    if (initialEnd && !isAddMode) return;
+
+    // فقط للحجز الجديد أو إذا المستخدم ما عدّل النهاية
+    if (!userChangedEnd && startTime) {
       const [hour, minute] = startTime.split(":").map(Number);
       let endHour = hour + 1;
       if (endHour >= 24) endHour = 23;
@@ -34,9 +41,13 @@ const TimeRangePicker = ({
     }
   }, [startTime]);
 
+  // ضبط أن النهاية دومًا بعد البداية
   useEffect(() => {
+    if (!startTime || !endTime) return;
+
     const [sh, sm] = startTime.split(":").map(Number);
     const [eh, em] = endTime.split(":").map(Number);
+
     const startMins = sh * 60 + sm;
     const endMins = eh * 60 + em;
 
@@ -44,6 +55,7 @@ const TimeRangePicker = ({
       const newEndMins = startMins + 60;
       const newEndHour = Math.floor(newEndMins / 60);
       const newEndMin = newEndMins % 60;
+
       const newEnd = `${String(newEndHour).padStart(2, "0")}:${String(
         newEndMin
       ).padStart(2, "0")}`;
@@ -56,9 +68,10 @@ const TimeRangePicker = ({
     onChange({ start: startTime, end: endTime });
   }, [startTime, endTime]);
 
-  const generateOptions = () => {
+  // خيارات وقت البداية
+  const generateStartOptions = () => {
     const arr = [];
-    for (let i = 8; i <= 22; i++) {
+    for (let i = 8; i <= 23; i++) {
       arr.push({
         value: `${String(i).padStart(2, "0")}:00`,
         label: `${i % 12 || 12}:00 ${i < 12 ? "ص" : "م"}`,
@@ -71,14 +84,52 @@ const TimeRangePicker = ({
     return arr;
   };
 
-  const options = generateOptions();
-  const borderColor =
-  variant === "filter"
-    ? "border-[#E5E7EB]"          // مثل باقي الحقول
-    : variant === "booking"
-    ? "border-black/10"
-    : "border-[#7E818C]";
+  // خيارات وقت النهاية
+  const generateEndOptions = (start) => {
+    if (!start) return []; // يمنع أي خطأ
 
+    const arr = [];
+
+    const [sh, sm] = start.split(":").map(Number);
+    const startMins = sh * 60 + sm;
+
+    for (let i = 8; i <= 23; i++) {
+      const opt00 = i * 60;
+      const opt30 = i * 60 + 30;
+
+      if (opt00 > startMins) {
+        arr.push({
+          value: `${String(i).padStart(2, "0")}:00`,
+          label: `${i % 12 || 12}:00 ${i < 12 ? "ص" : "م"}`,
+        });
+      }
+
+      if (opt30 > startMins) {
+        arr.push({
+          value: `${String(i).padStart(2, "0")}:30`,
+          label: `${i % 12 || 12}:30 ${i < 12 ? "ص" : "م"}`,
+        });
+      }
+    }
+
+    // 12:00 ص لنهاية اليوم
+    arr.push({
+      value: "00:00",
+      label: "12:00 ص",
+    });
+
+    return arr;
+  };
+
+  const startOptions = generateStartOptions();
+  const endOptions = startTime ? generateEndOptions(startTime) : [];
+
+  const borderColor =
+    variant === "filter"
+      ? "border-[#E5E7EB]" // مثل باقي الحقول
+      : variant === "booking"
+      ? "border-black/10"
+      : "border-[#7E818C]";
 
   const isDefault =
     isAddMode &&
@@ -88,12 +139,12 @@ const TimeRangePicker = ({
 
   return (
     <div
-  className={`flex items-center 
+      className={`flex items-center 
     ${variant === "filter" ? "h-[32px] w-full" : "h-10"}
     ${!showArrow ? "gap-2" : ""}
+    
   `}
->
-
+    >
       {/* وقت البداية */}
       <div className="relative w-full">
         {showIcons && (
@@ -101,34 +152,47 @@ const TimeRangePicker = ({
             <HourIcon className="w-4 h-4 text-[var(--color-purple)]" />
           </span>
         )}
-        <select
-          value={startTime}
-          onChange={(e) => setStartTime(e.target.value)}
-          className={`w-full rounded-md border ${borderColor}
-    ${variant === "filter" ? "h-[32px]" : "h-10"}
-  pr-${showIcons ? 8 : 2} focus:outline-none appearance-none max-h-56 
-  overflow-y-auto custom-scrollbar cursor-pointer
-  ${
-    variant === "filter"
-      ? "font-normal text-[12px] text-[#1D1E20]"
-      : isDefault
-      ? "text-gray-400 font-normal text-[14px]"
-      : variant === 'event'
-      ? "font-bold text-[14px] text-[#000]"
-      : "font-normal text-[14px] text-[#000]"
-  }
-`}
 
-        >
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <Dropdown
+          options={startOptions}
+          value={startTime}
+          onChange={(val) => {
+            if (disabled) return;
+            setStartTime(val);
+          }}
+          placeholder="اختر وقت البداية"
+          disabled={disabled}
+          className="w-full"
+          hideArrow={true} // مهم: ما بدنا سهم الدروب داون في الـ TimeRangePicker
+          fieldClassName={`w-full rounded-md border ${borderColor}
+    ${variant === "filter" ? "h-[32px]" : "h-10"}
+    pr-${showIcons ? 8 : 2} focus:outline-none appearance-none
+    flex items-center
+    max-h-56 overflow-y-auto custom-scrollbar
+    ${
+      disabled
+        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+        : "cursor-pointer"
+    }
+    ${
+      // هنا منفرّق بين placeholder وباقي الحالات
+      isStartPlaceholder
+        ? // placeholder → رمادي، أصغر، ويلف سطرين
+          "whitespace-normal break-words leading-[1.2] text-right text-gray-400 text-[12px] font-normal"
+        : variant === "filter"
+        ? "font-normal text-[12px] text-[#000]"
+        : isDefault
+        ? "text-gray-400 font-normal text-[14px]"
+        : variant === "event"
+        ? "font-bold text-[14px] text-[#000]"
+        : "font-normal text-[14px] text-[#000]"
+    }
+  `}
+          menuClassName="dropdown-menu-scroll custom-scrollbar"
+        />
       </div>
 
-      {/* السهم بين البداية والنهاية – بس لو showArrow=true */}
+      {/* السهم بين البداية والنهاية – هذا هو السهم اللي في النص، يضل زي ما هو */}
       {showArrow && (
         <svg
           width="60"
@@ -151,34 +215,45 @@ const TimeRangePicker = ({
             <HourIcon className="w-4 h-4 text-[var(--color-purple)]" />
           </span>
         )}
-        <select
+
+        <Dropdown
+          options={endOptions}
           value={endTime}
-          onChange={(e) => {
-            setEndTime(e.target.value);
+          onChange={(val) => {
+            if (disabled || !startTime) return;
+            setEndTime(val);
             setUserChangedEnd(true);
           }}
-           className={`w-full rounded-md border ${borderColor}
+          placeholder={
+            startTime ? "اختر وقت النهاية" : "اختر وقت النهاية "
+          }
+          disabled={disabled || !startTime}
+          className="w-full"
+          hideArrow={true}
+          fieldClassName={`w-full rounded-md border ${borderColor}
     ${variant === "filter" ? "h-[32px]" : "h-10"}
-  pr-${showIcons ? 8 : 2} focus:outline-none appearance-none max-h-56 
-  overflow-y-auto custom-scrollbar cursor-pointer
-  ${
-    variant === "filter"
-      ? "font-normal text-[12px] text-[#1D1E20]"
-      : isDefault
-      ? "text-gray-400 font-normal text-[14px]"
-      : variant === 'event'
-      ? "font-bold text-[14px] text-[#000]"
-      : "font-normal text-[14px] text-[#000]"
-  }
-`}
-
-        >
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+    pr-${showIcons ? 8 : 2} focus:outline-none appearance-none
+    flex items-center
+    max-h-56 overflow-y-auto custom-scrollbar
+    ${
+      disabled
+        ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+        : "cursor-pointer"
+    }
+    ${
+      isEndPlaceholder
+        ? "whitespace-normal break-words leading-[1.2] text-right text-gray-400 text-[12px] font-normal"
+        : variant === "filter"
+        ? "font-normal text-[12px] text-[#000]"
+        : isDefault
+        ? "text-gray-400 font-normal text-[14px]"
+        : variant === "event"
+        ? "font-bold text-[14px] text-[#000]"
+        : "font-normal text-[14px] text-[#000]"
+    }
+  `}
+          menuClassName="dropdown-menu-scroll custom-scrollbar"
+        />
       </div>
     </div>
   );

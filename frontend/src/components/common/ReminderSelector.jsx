@@ -13,6 +13,7 @@ const ReminderSelector = ({
   variant = "booking",
   showLabel = true,
   baseDateTime,
+  disabled = false,
 }) => {
   const [openReminder, setOpenReminder] = useState(false);
   const [openUp, setOpenUp] = useState(false);
@@ -64,7 +65,7 @@ const ReminderSelector = ({
       const rect = ref.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      setOpenUp(spaceBelow < 260 && spaceAbove > spaceBelow);
+      setOpenUp(spaceBelow < 350 && spaceAbove > spaceBelow);
     }
   }, [openReminder]);
 
@@ -136,8 +137,8 @@ const ReminderSelector = ({
   })();
 
   //استخراج عدد الساعات قبل الموعد من أي تذكير
-    // استخراج عدد الساعات قبل الموعد من أي تذكير
-    //استخراج عدد الساعات قبل الموعد من أي تذكير
+  // استخراج عدد الساعات قبل الموعد من أي تذكير
+  //استخراج عدد الساعات قبل الموعد من أي تذكير
   const getHoursBeforeFromReminder = (r) => {
     if (!r) return null;
 
@@ -181,8 +182,6 @@ const ReminderSelector = ({
 
     return null;
   };
-
-
 
   const handleAddCustomReminder = () => {
     if (!customHours) return;
@@ -243,7 +242,7 @@ const ReminderSelector = ({
     }
   }, [openReminder, localReminders, baseDateTime]);
 
-    const toggleOption = (optionValue) => {
+  const toggleOption = (optionValue) => {
     setLocalReminders((prev) => {
       let updated = Array.isArray(prev) ? [...prev] : [];
 
@@ -253,9 +252,7 @@ const ReminderSelector = ({
       }
 
       // شيل none
-      updated = updated.filter(
-        (r) => !(typeof r === "string" && r === "none")
-      );
+      updated = updated.filter((r) => !(typeof r === "string" && r === "none"));
 
       // لو الخيار نفسه أصلاً موجود → شيله (تبديل تشغيل/إيقاف عادي)
       if (updated.includes(optionValue)) {
@@ -287,7 +284,6 @@ const ReminderSelector = ({
       return updated;
     });
   };
-
 
   const removeReminder = (remToRemove) => {
     setLocalReminders((prev) => {
@@ -335,7 +331,6 @@ const ReminderSelector = ({
     });
   };
 
-  const isPlaceholder = hasNoReminder;
 
   return (
     <div ref={ref} className="relative w-full">
@@ -347,7 +342,9 @@ const ReminderSelector = ({
       <div className="relative w-full">
         {/* الحقل الرئيسي */}
         <div
-          className="w-full h-10 flex items-center justify-between cursor-pointer p-3 rounded-md bg-white"
+          className={`w-full h-10 flex items-center justify-between p-3 rounded-md 
+    ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white cursor-pointer"}
+  `}
           style={{ border: `1px solid ${borderStyle}` }}
           onClick={() => setOpenReminder((prev) => !prev)}
         >
@@ -356,14 +353,18 @@ const ReminderSelector = ({
               <NotificationIcon className="w-4 h-4 text-[var(--color-purple)]" />
             )}
             <span
-              className={`text-[12px] truncate ${
-                isPlaceholder ? placeholderColor : "text-black"
-              }`}
+              className={`text-[14px] text-black truncate 
+                ${variant === "event" ? "font-bold" : "font-normal"}
+                ${disabled ? "text-gray-500" : ""}`}
             >
               {displayLabel || placeholder}
             </span>
           </div>
-          <DownArrowIcon className="w-4 h-4 text-gray-500" />
+          <DownArrowIcon
+            className={`w-4 h-4 ${
+              disabled ? "text-gray-400" : "text-gray-500"
+            }`}
+          />
         </div>
 
         {/* المنسدلة */}

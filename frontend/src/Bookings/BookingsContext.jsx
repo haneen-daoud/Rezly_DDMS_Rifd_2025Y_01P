@@ -30,7 +30,10 @@ export const BookingsProvider = ({ children }) => {
 
       if (savedUser) {
         appUser = JSON.parse(savedUser);
-        console.log("👤 المستخدم من localStorage داخل BookingsContext:", appUser);
+        console.log(
+          "👤 المستخدم من localStorage داخل BookingsContext:",
+          appUser
+        );
       } else {
         appUser = await getUserFromToken();
         console.log("👤 المستخدم من التوكن داخل BookingsContext:", appUser);
@@ -51,11 +54,12 @@ export const BookingsProvider = ({ children }) => {
 
       console.log("🎭 الدور الحالي من الكونتِكست:", currentRole || "(فارغ)");
 
+      const isSuperAdmin = currentRole === "superadmin";
       const isCoach = currentRole === "coach";
-      const isAdmin = currentRole === "admin";
+      const isAdmin = currentRole === "admin" || isSuperAdmin;
       const isReceptionist = currentRole === "receptionist";
 
-      // 2️⃣ جلب المدربين (Admins + Receptionist)
+      // 2 جلب المدربين (Admins + Receptionist)
       let coachesList = [];
       if (isAdmin || isReceptionist) {
         try {
@@ -91,16 +95,13 @@ export const BookingsProvider = ({ children }) => {
       (coachesList || []).forEach((c) => {
         const id = String(c._id || c.id || "");
         const fullName =
-          `${c.firstName || ""} ${c.lastName || ""}`.trim() ||
-          c.name ||
-          "مدرب";
+          `${c.firstName || ""} ${c.lastName || ""}`.trim() || c.name || "مدرب";
         if (id) coachesMap[id] = { id, name: fullName };
       });
 
       // 6️⃣ دمج بيانات المدرب داخل كل حجز
       const formatted = (filtered || []).map((b) => {
-        const schedWithCoach =
-          (b.schedules || []).find((s) => !!s.coach) || {};
+        const schedWithCoach = (b.schedules || []).find((s) => !!s.coach) || {};
         const rawCoach = schedWithCoach.coach ?? b.coach ?? b.coachId ?? null;
 
         const coachId =
@@ -175,7 +176,7 @@ export const BookingsProvider = ({ children }) => {
         loading,
         role,
         currentUser,
-        isAdmin: role === "admin",
+        isAdmin: role === "admin" || role === "superadmin",
         isCoach: role === "coach",
         isReceptionist: role === "receptionist",
       }}

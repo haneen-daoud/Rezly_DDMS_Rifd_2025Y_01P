@@ -33,6 +33,30 @@ export default function Layout() {
   });
   const [qrLoading, setQrLoading] = useState(false);
 
+  const fetchQRCodes = async () => {
+    if (!currentUser) return;
+
+    const allowedRoles = ["Admin", "Receptionist", "superAdmin"];
+    if (!allowedRoles.includes(currentUser.role)) return;
+
+    try {
+      setQrLoading(true);
+      const res = await axios.get(
+        "https://rezly-ddms-rifd-2025y-01p.onrender.com/attendance/qrcodes"
+      );
+
+      setAttendanceQrCodes({
+        checkInQR: res.data.checkInQR || "",
+        checkOutQR: res.data.checkOutQR || "",
+      });
+    } catch (error) {
+      console.error("خطأ أثناء جلب أكواد الحضور:", error);
+      toast.error("حدث خطأ أثناء تحميل أكواد الحضور، حاول مرة أخرى");
+    } finally {
+      setQrLoading(false);
+    }
+  };
+
   //استخراج التاب النشط من الـ URL تلقائياً
   useEffect(() => {
     const path = location.pathname;
@@ -150,17 +174,9 @@ export default function Layout() {
             lastName = me.lastName || lastName;
           }
         } else {
-          //موظف (آدمن، مدرب، استقبال، محاسب): نجيب كل الموظفين ونفلتر
-          const employeesRes = await getAllEmployees();
-          const employees =
-            employeesRes?.employees || employeesRes?.data?.employees || [];
-          const me = employees.find((emp) => emp._id === currentUser.id);
-
-          if (me) {
-            imageUrl = me.image || null;
-            firstName = me.firstName || firstName;
-            lastName = me.lastName || lastName;
-          }
+          // موظف (آدمن، مدرب، استقبال، محاسب):
+          // حالياً بنكتفي بالاسم الموجود من اللوج إن بدون جلب كل الموظفين
+          // لو الباك إند رجّع صورة بالـ Signin، منخزنها في currentUser.image.
         }
 
         updatedUser = {
@@ -189,35 +205,6 @@ export default function Layout() {
     fetchUserProfile();
   }, [currentUser?.id, currentUser?.role]);
 
-  //جلب أكواد الحضور فقط لو المستخدم Admin أو Receptionist
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const allowedRoles = ["Admin", "Receptionist"];
-    if (!allowedRoles.includes(currentUser.role)) return;
-
-    const fetchQRCodes = async () => {
-      try {
-        setQrLoading(true);
-        const res = await axios.get(
-          "https://rezly-ddms-rifd-2025y-01p.onrender.com/attendance/qrcodes"
-        );
-
-        setAttendanceQrCodes({
-          checkInQR: res.data.checkInQR || "",
-          checkOutQR: res.data.checkOutQR || "",
-        });
-      } catch (error) {
-        console.error("خطأ أثناء جلب أكواد الحضور:", error);
-        toast.error("حدث خطأ أثناء تحميل أكواد الحضور، حاول مرة أخرى");
-      } finally {
-        setQrLoading(false);
-      }
-    };
-
-    fetchQRCodes();
-  }, [currentUser]);
-
   const topbarTitle =
     location.pathname === "/dashboard"
       ? "مرحباً بك في لوحة التحكم، نتمنى لك يوماً مثمراً!"
@@ -227,6 +214,13 @@ export default function Layout() {
     attendanceActiveTab === "CHECK_IN"
       ? attendanceQrCodes.checkInQR
       : attendanceQrCodes.checkOutQR;
+
+  const getQrSuccessMessage = () => {
+    if (attendanceActiveTab === "CHECK_IN") {
+      return "تم تحميل كود الحضور بنجاح";
+    }
+    return "تم تحميل كود الانصراف بنجاح";
+  };
 
   const descriptionText =
     attendanceActiveTab === "CHECK_IN"
@@ -238,12 +232,34 @@ export default function Layout() {
 
   const showQrForThisUser =
     currentUser &&
-    (currentUser.role === "Admin" || currentUser.role === "Receptionist") &&
+    (currentUser.role === "Admin" || currentUser.role === "Receptionist" || currentUser.role === "superAdmin") &&
     isDashboardHome;
+
+  const handleToggleQrPanel = async () => {
+    if (!currentUser) return;
+
+    const isOpening = !isQrPanelOpen;
+
+    // أول مرة نفتحه وما في كود محمّل → جيب من الـ API
+    if (
+      isOpening &&
+      !attendanceQrCodes.checkInQR &&
+      !attendanceQrCodes.checkOutQR
+    ) {
+      await fetchQRCodes();
+    }
+
+    setIsQrPanelOpen((prev) => !prev);
+  };
 
   // تنزيل الصورة كـ PNG
   const downloadQRAsImage = () => {
     try {
+      if (!currentQR) {
+        toast.error("لا يوجد كود متاح للتحميل حالياً");
+        return;
+      }
+
       const link = document.createElement("a");
       link.href = currentQR; // Base64 جاهز
       link.download =
@@ -251,6 +267,7 @@ export default function Layout() {
           ? "CheckIn_QR.png"
           : "CheckOut_QR.png";
       link.click();
+      toast.success(getQrSuccessMessage());
     } catch (err) {
       console.error(err);
       toast.error("حدث خطأ أثناء تحميل الصورة");
@@ -260,6 +277,11 @@ export default function Layout() {
   // تنزيل كـ PDF
   const downloadQRAsPDF = () => {
     try {
+      if (!currentQR) {
+        toast.error("لا يوجد كود متاح للتحميل حالياً");
+        return;
+      }
+
       import("jspdf").then((jsPDF) => {
         const doc = new jsPDF.jsPDF({
           orientation: "portrait",
@@ -285,6 +307,7 @@ export default function Layout() {
             : "CheckOut_QR.pdf"
         );
       });
+      toast.success(getQrSuccessMessage());
     } catch (err) {
       console.error(err);
       toast.error("حدث خطأ أثناء تحميل PDF");
@@ -430,7 +453,7 @@ export default function Layout() {
         <>
           {isQrPanelOpen && (
             <div className="fixed bottom-24 left-18 z-99" dir="rtl">
-              <div className="bg-gradient-to-l from-[#7C3AED] via-[#10B981] via-[#3B82F6] to-[#FBBF24] p-[1.5px] rounded-2xl shadow-lg">
+              <div className="bg-gradient-to-l from-[#7C3AED] via-[#10B981] via-[#3B82F6] to-[#FBBF24] p-[4px] rounded-2xl shadow-lg">
                 <div className="bg-white rounded-2xl p-4 w-[320px] sm:w-[360px]">
                   {/* Tabs */}
                   <div className="flex w-full bg-[#F3F3F7] rounded-[16px] p-1 mb-4">
@@ -510,7 +533,7 @@ export default function Layout() {
 
           {/* الزر الدائري */}
           <button
-            onClick={() => setIsQrPanelOpen((prev) => !prev)}
+            onClick={handleToggleQrPanel}
             className="
               fixed left-4 bottom-4
               w-20 h-20 rounded-full
