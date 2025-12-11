@@ -235,7 +235,7 @@ export default function Step1Booking({
               }`}
             />
             {errors?.title && (
-              <p className="text-red-500 text-xs mt-1">{errors.title}</p>
+              <p className="text-red-500 text-xs ">{errors.title}</p>
             )}
           </div>
 
@@ -310,7 +310,7 @@ export default function Step1Booking({
 </div>
 */}
             {errors?.description && (
-              <p className="text-red-500 text-xs mt-1 -mt-1">
+              <p className="text-red-500 text-xs">
                 {errors.description}
               </p>
             )}
@@ -334,12 +334,13 @@ export default function Step1Booking({
                   borderStyle={errors?.coachId ? "red" : "#D1D5DB"}
                   disabled={isReadOnly}
                 />
-              </div>
-              {errors?.coachId && (
-                <p className="text-red-500 text-xs mt-1 -mt-1">
+    {errors?.coachId && (
+                <p className="text-red-500 text-xs">
                   {errors.coachId}
                 </p>
               )}
+              </div>
+          
             </>
           )}
 
@@ -363,10 +364,11 @@ export default function Step1Booking({
               showIcon={false}
               disabled={isReadOnly}
             />
-          </div>
-          {errors?.room && (
-            <p className="text-red-500 text-xs mt-1">{errors.room}</p>
+                {errors?.room && (
+            <p className="text-red-500 text-xs">{errors.room}</p>
           )}
+          </div>
+      
 
           {/* عدد المشتركين */}
           <div>
@@ -395,7 +397,7 @@ export default function Step1Booking({
             />
 
             {errors?.maxMembers && (
-              <p className="text-red-500 text-xs mt-1">{errors.maxMembers}</p>
+              <p className="text-red-500 text-xs mt-0 pt-0">{errors.maxMembers}</p>
             )}
           </div>
 

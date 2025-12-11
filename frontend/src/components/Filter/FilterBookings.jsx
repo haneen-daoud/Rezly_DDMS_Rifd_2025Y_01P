@@ -145,7 +145,7 @@ export default function FilterBookings({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pr-1">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar pr-2">
           <div className="flex flex-col gap-4">
             {/* حالة الحجز */}
             <div className="flex flex-col justify-between h-[55px]">

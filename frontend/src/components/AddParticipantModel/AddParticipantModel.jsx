@@ -282,7 +282,7 @@ const AddParticipantModel = ({
                 <React.Fragment key={index}>
                   <div
                     className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => setActiveStep(index)}
+                
                   >
                     <div
                       className={`w-[20px] h-[20px] flex items-center justify-center rounded-full text-xs font-medium border ${

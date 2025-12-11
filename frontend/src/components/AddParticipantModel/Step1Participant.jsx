@@ -201,6 +201,7 @@ useEffect(() => {
             {/* الميني كاليندر يطلع فوق الحقل مباشرة بفضل variant=employeeTop و parent relative */}
             {showCalendar && (
               <MiniCalender
+              maxYear={2015}
                 currentDate={birthDateObj || new Date()}
                 handleDateChange={handleBirthDateSelect}
                 variant="employeeTop"
