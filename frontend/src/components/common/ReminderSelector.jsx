@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+
 import DownArrowIcon from "../../icons/downarrow.svg?react";
 import MuteIcon from "../../icons/mute.svg?react";
 import NotificationIcon from "../../icons/notification.svg?react";
@@ -23,10 +24,11 @@ const ReminderSelector = ({
       ? selectedReminders
       : ["none"]
   );
+  const [dropdownMaxHeight, setDropdownMaxHeight] = useState(256);
+  const [customError, setCustomError] = useState("");
 
   const ref = useRef(null);
 
-  // مزامنة من الأب → المحلي
   useEffect(() => {
     const safe =
       Array.isArray(selectedReminders) && selectedReminders.length > 0
@@ -38,7 +40,6 @@ const ReminderSelector = ({
     }
   }, [selectedReminders]);
 
-  // مزامنة من المحلي → الأب
   useEffect(() => {
     if (
       !Array.isArray(selectedReminders) ||
@@ -48,26 +49,40 @@ const ReminderSelector = ({
     }
   }, [localReminders]);
 
-  // إغلاق عند الضغط خارجها
+  const getBoundingParent = (element) => {
+    if (!element) return null;
+
+    let parent = element.parentElement;
+
+    while (parent && parent !== document.body) {
+      const style = window.getComputedStyle(parent);
+      const overflowY = style.overflowY;
+
+      if (
+        overflowY === "auto" ||
+        overflowY === "scroll" ||
+        overflowY === "hidden" ||
+        overflowY === "clip"
+      ) {
+        return parent;
+      }
+
+      parent = parent.parentElement;
+    }
+
+    return window;
+  };
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (ref.current && !ref.current.contains(e.target)) {
         setOpenReminder(false);
       }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // تحديد اتجاه المنسدلة (فوق/تحت)
-  useEffect(() => {
-    if (openReminder && ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      setOpenUp(spaceBelow < 350 && spaceAbove > spaceBelow);
-    }
-  }, [openReminder]);
 
   const options = [
     { value: "none", label: "عدم التذكير", icon: MuteIcon },
@@ -76,7 +91,6 @@ const ReminderSelector = ({
     { value: "1day", label: "قبل 1 يوم", icon: NotificationIcon },
   ];
 
-  // فورمات نص حسب عدد الساعات
   const formatHoursBefore = (h) => {
     if (!Number.isFinite(h) || h <= 0) return "";
     if (h === 1) return "قبل ساعة";
@@ -84,19 +98,16 @@ const ReminderSelector = ({
     return `قبل ${h} ساعات`;
   };
 
-  // فورمات نص التذكير الواحد
   const formatReminderLabel = (r) => {
     if (typeof r === "string") {
       return options.find((o) => o.value === r)?.label || r;
     }
 
     if (typeof r === "object") {
-      // لو مخزون مباشرة كـ hoursBefore
       if (typeof r.hoursBefore === "number") {
         return formatHoursBefore(r.hoursBefore);
       }
 
-      // لو جاي من الباك كـ { date, time } نحسب الفرق عن baseDateTime
       if (r.date && r.time && baseDateTime) {
         try {
           const reminderDate = new Date(`${r.date}T${r.time}`);
@@ -105,8 +116,7 @@ const ReminderSelector = ({
           const diffHours = Math.round(diffMs / (1000 * 60 * 60));
           const label = formatHoursBefore(diffHours);
           return label || "تذكير مخصّص";
-        } catch (err) {
-          console.warn("فشل حساب فرق الساعات لعرض التذكير:", err);
+        } catch {
           return "تذكير مخصّص";
         }
       }
@@ -115,9 +125,10 @@ const ReminderSelector = ({
     return "";
   };
 
-  // العناصر بدون "عدم التذكير"
   const nonNoneReminders = Array.isArray(localReminders)
-    ? localReminders.filter((r) => !(typeof r === "string" && r === "none"))
+    ? localReminders.filter(
+        (r) => !(typeof r === "string" && r === "none")
+      )
     : [];
 
   const hasNoReminder =
@@ -125,7 +136,6 @@ const ReminderSelector = ({
     localReminders.length === 0 ||
     (localReminders.length === 1 && localReminders[0] === "none");
 
-  // النص اللي ببين في الحقل الرئيسي
   const displayLabel = (() => {
     if (hasNoReminder) return "عدم التذكير";
 
@@ -136,21 +146,17 @@ const ReminderSelector = ({
     return `${nonNoneReminders.length} تذكيرات مفعّلة`;
   })();
 
-  //استخراج عدد الساعات قبل الموعد من أي تذكير
-  // استخراج عدد الساعات قبل الموعد من أي تذكير
-  //استخراج عدد الساعات قبل الموعد من أي تذكير
   const getHoursBeforeFromReminder = (r) => {
     if (!r) return null;
 
-    // لو التذكير قيمة جاهزة (سترنغ) مثل 30min / 1hour / 1day
     if (typeof r === "string") {
       switch (r) {
         case "30min":
-          return 0.5; // نص ساعة
+          return 0.5;
         case "1hour":
-          return 1; // ساعة
+          return 1;
         case "1day":
-          return 24; // 24 ساعة
+          return 24;
         default:
           return null;
       }
@@ -158,12 +164,10 @@ const ReminderSelector = ({
 
     if (typeof r !== "object") return null;
 
-    // لو مخزون مباشرة كـ hoursBefore
     if (typeof r.hoursBefore === "number") {
       return r.hoursBefore;
     }
 
-    // لو جاي من الباك كـ { date, time } نحسب الفرق عن baseDateTime
     if (r.date && r.time && baseDateTime) {
       try {
         const reminderDate = new Date(`${r.date}T${r.time}`);
@@ -171,11 +175,7 @@ const ReminderSelector = ({
         const diffMs = bookingDate - reminderDate;
         const diffHours = Math.round(diffMs / (1000 * 60 * 60));
         return diffHours > 0 ? diffHours : null;
-      } catch (err) {
-        console.warn(
-          "فشل حساب فرق الساعات في getHoursBeforeFromReminder:",
-          err
-        );
+      } catch {
         return null;
       }
     }
@@ -183,24 +183,36 @@ const ReminderSelector = ({
     return null;
   };
 
+  const isCustomInvalid =
+    !customHours ||
+    Number.isNaN(Number(customHours)) ||
+    Number(customHours) <= 0;
+
   const handleAddCustomReminder = () => {
-    if (!customHours) return;
+    if (!customHours) {
+      setCustomError("أدخل عدد الساعات قبل الموعد");
+      return;
+    }
 
     const hours = Number(customHours);
-    if (Number.isNaN(hours) || hours <= 0) return;
+
+    if (Number.isNaN(hours) || hours <= 0) {
+      setCustomError("أدخل عدد ساعات صحيح أكبر من 0");
+      return;
+    }
+
+    setCustomError("");
 
     setLocalReminders((prev) => {
       const baseArray = Array.isArray(prev) ? prev : [];
 
-      // شيل "none"
       let filtered = baseArray.filter(
         (r) => !(typeof r === "string" && r === "none")
       );
 
-      // لو موجود تذكير بنفس عدد الساعات (سواء hoursBefore أو date/time) ما نكرره
       const alreadyExists = filtered.some((r) => {
-        const existingHours = getHoursBeforeFromReminder(r);
-        return existingHours === hours;
+        const existing = getHoursBeforeFromReminder(r);
+        return existing === hours;
       });
 
       if (alreadyExists) {
@@ -208,80 +220,109 @@ const ReminderSelector = ({
       }
 
       filtered = [...filtered, { hoursBefore: hours }];
-      if (filtered.length === 0) return ["none"];
-      return filtered;
+      return filtered.length === 0 ? ["none"] : filtered;
     });
 
     setCustomHours(String(hours));
   };
 
-  // لما تفتح المنسدلة، نحاول نعبّي حقل الساعات من أول تذكير مخصص إن وجد
   useEffect(() => {
     if (openReminder && Array.isArray(localReminders)) {
-      let foundHours = "";
+      let found = "";
 
       const custom = localReminders.find((r) => typeof r === "object");
 
       if (custom) {
         if (typeof custom.hoursBefore === "number") {
-          foundHours = String(custom.hoursBefore);
+          found = String(custom.hoursBefore);
         } else if (custom.date && custom.time && baseDateTime) {
           try {
             const reminderDate = new Date(`${custom.date}T${custom.time}`);
             const bookingDate = new Date(baseDateTime);
-            const diffMs = bookingDate - reminderDate;
-            const diffHours = Math.round(diffMs / (1000 * 60 * 60));
-            if (diffHours > 0) foundHours = String(diffHours);
-          } catch (err) {
-            console.warn("فشل حساب فرق الساعات:", err);
-          }
+            const diff = Math.round(
+              (bookingDate - reminderDate) / (1000 * 60 * 60)
+            );
+            if (diff > 0) found = String(diff);
+          } catch {}
         }
       }
 
-      setCustomHours(foundHours);
+      setCustomHours(found);
     }
   }, [openReminder, localReminders, baseDateTime]);
+
+  useEffect(() => {
+    if (!openReminder || !ref.current) return;
+
+    const updatePosition = () => {
+      if (!ref.current) return;
+
+      const triggerRect = ref.current.getBoundingClientRect();
+      const boundingParent = getBoundingParent(ref.current);
+      const margin = 8;
+
+      const containerRect =
+        boundingParent === window || !boundingParent
+          ? { top: 0, bottom: window.innerHeight }
+          : boundingParent.getBoundingClientRect();
+
+      const spaceBelow = containerRect.bottom - triggerRect.bottom - margin;
+      const spaceAbove = triggerRect.top - containerRect.top - margin;
+
+      const baseHeight = 160;
+      const extraForTags = nonNoneReminders.length > 0 ? 80 : 0;
+      const expectedHeight = baseHeight + extraForTags;
+
+      const shouldOpenUp =
+        spaceBelow < expectedHeight && spaceAbove > spaceBelow;
+
+      setOpenUp(shouldOpenUp);
+
+      const availableSpace = shouldOpenUp ? spaceAbove : spaceBelow;
+      const max = Math.max(Math.min(availableSpace, 260), 140);
+
+      setDropdownMaxHeight(max);
+    };
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [openReminder, nonNoneReminders.length]);
 
   const toggleOption = (optionValue) => {
     setLocalReminders((prev) => {
       let updated = Array.isArray(prev) ? [...prev] : [];
 
-      // لو اخترنا "عدم التذكير"
-      if (optionValue === "none") {
-        return ["none"];
-      }
+      if (optionValue === "none") return ["none"];
 
-      // شيل none
-      updated = updated.filter((r) => !(typeof r === "string" && r === "none"));
+      updated = updated.filter(
+        (r) => !(typeof r === "string" && r === "none")
+      );
 
-      // لو الخيار نفسه أصلاً موجود → شيله (تبديل تشغيل/إيقاف عادي)
       if (updated.includes(optionValue)) {
         updated = updated.filter((r) => r !== optionValue);
       } else {
-        // قبل ما نضيف الخيار، نتأكد إنه ما في تذكير بنفس عدد الساعات
         const optionHours = getHoursBeforeFromReminder(optionValue);
 
         if (optionHours != null) {
-          const hasSameHours = updated.some((r) => {
-            const h = getHoursBeforeFromReminder(r);
-            return h === optionHours;
-          });
-
-          // لو فيه تذكير بنفس الساعات (سواء كستوم أو جاهز) ما نضيفه
-          if (hasSameHours) {
+          const hasSame = updated.some(
+            (r) => getHoursBeforeFromReminder(r) === optionHours
+          );
+          if (hasSame) {
             return updated.length > 0 ? updated : ["none"];
           }
         }
 
-        // ما في تكرار → نضيفه عادي
         updated.push(optionValue);
       }
 
-      if (updated.length === 0) {
-        updated = ["none"];
-      }
-
-      return updated;
+      return updated.length === 0 ? ["none"] : updated;
     });
   };
 
@@ -290,12 +331,10 @@ const ReminderSelector = ({
       if (!Array.isArray(prev)) return ["none"];
 
       let updated = prev.filter((r) => {
-        // مقارنة النصوص
         if (typeof r === "string" && typeof remToRemove === "string") {
           return r !== remToRemove;
         }
 
-        // مقارنة المخصص بالساعة
         if (
           typeof r === "object" &&
           typeof remToRemove === "object" &&
@@ -305,7 +344,6 @@ const ReminderSelector = ({
           return r.hoursBefore !== remToRemove.hoursBefore;
         }
 
-        // مقارنة تاريخ/وقت
         if (
           typeof r === "object" &&
           typeof remToRemove === "object" &&
@@ -331,7 +369,6 @@ const ReminderSelector = ({
     });
   };
 
-
   return (
     <div ref={ref} className="relative w-full">
       {showLabel && (
@@ -339,27 +376,34 @@ const ReminderSelector = ({
           وقت إرسال التذكير
         </label>
       )}
+
       <div className="relative w-full">
-        {/* الحقل الرئيسي */}
         <div
-          className={`w-full h-10 flex items-center justify-between p-3 rounded-md 
-    ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white cursor-pointer"}
-  `}
+          className={`w-full h-10 flex items-center justify-between p-3 rounded-md
+            ${
+              disabled
+                ? "bg-gray-100 cursor-not-allowed"
+                : "bg-white cursor-pointer"
+            }
+          `}
           style={{ border: `1px solid ${borderStyle}` }}
-          onClick={() => setOpenReminder((prev) => !prev)}
+          onClick={() => !disabled && setOpenReminder((prev) => !prev)}
         >
           <div className="flex items-center gap-2">
             {showIconInInput && !hasNoReminder && (
               <NotificationIcon className="w-4 h-4 text-[var(--color-purple)]" />
             )}
+
             <span
               className={`text-[14px] text-black truncate 
                 ${variant === "event" ? "font-bold" : "font-normal"}
-                ${disabled ? "text-gray-500" : ""}`}
+                ${disabled ? "text-gray-500" : ""}
+              `}
             >
               {displayLabel || placeholder}
             </span>
           </div>
+
           <DownArrowIcon
             className={`w-4 h-4 ${
               disabled ? "text-gray-400" : "text-gray-500"
@@ -367,15 +411,20 @@ const ReminderSelector = ({
           />
         </div>
 
-        {/* المنسدلة */}
+        {customError && (
+          <p className="text-red-500 text-[11px] mt-[4px]">{customError}</p>
+        )}
+
         {openReminder && (
           <div
             className={`absolute z-50 w-full bg-white rounded-md shadow-lg border border-gray-200 ${
               openUp ? "bottom-full mb-1" : "top-full mt-1"
             }`}
           >
-            <div className="py-2 max-h-64 overflow-y-auto custom-scrollbar">
-              {/* الخيارات الجاهزة */}
+            <div
+              className="py-2 overflow-y-auto custom-scrollbar"
+              style={{ maxHeight: dropdownMaxHeight }}
+            >
               {options.map((option) => {
                 const Icon = option.icon;
                 const isSelected = Array.isArray(localReminders)
@@ -403,6 +452,7 @@ const ReminderSelector = ({
                         {option.label}
                       </span>
                     </div>
+
                     <div
                       className={`w-4 h-4 rounded-[4px] border-2 flex items-center justify-center transition-all duration-150 ${
                         isSelected
@@ -431,15 +481,16 @@ const ReminderSelector = ({
                 );
               })}
 
-              {/* التذكيرات المختارة (تاغز) */}
               {nonNoneReminders.length > 0 && (
                 <div className="px-3 pt-2 pb-1 border-t border-gray-100 mt-1">
                   <p className="text-[11px] text-gray-500 mb-1">
                     التذكيرات المختارة:
                   </p>
+
                   <div className="flex flex-wrap gap-1">
                     {nonNoneReminders.map((r, index) => {
                       const label = formatReminderLabel(r);
+
                       const key =
                         typeof r === "string"
                           ? r
@@ -457,6 +508,7 @@ const ReminderSelector = ({
                           <span className="text-[11px] text-[var(--color-purple,#7C3AED)]">
                             {label}
                           </span>
+
                           <button
                             type="button"
                             onClick={(e) => {
@@ -474,30 +526,57 @@ const ReminderSelector = ({
                 </div>
               )}
 
-              {/* التذكير المخصّص بالساعات - صف واحد */}
               <div className="px-3 pt-2 pb-3 border-t border-gray-100 mt-1">
                 <div className="flex items-center gap-2">
                   <span className="text-[12px] text-gray-700 font-semibold">
                     تذكير مخصّص
                   </span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={customHours}
-                    onChange={(e) => setCustomHours(e.target.value)}
-                    className="w-14 h-8 border border-gray-300 rounded-md text-center text-[12px] focus:outline-none focus:ring-1 focus:ring-[var(--color-purple)]"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+
+                  <div className="flex flex-col">
+                    <input
+                      type="number"
+                      min="1"
+                      value={customHours}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setCustomHours(value);
+
+                        if (!value) {
+                          setCustomError("");
+                          return;
+                        }
+
+                        const hours = Number(value);
+                        if (Number.isNaN(hours) || hours <= 0) {
+                          setCustomError("أدخل عدد ساعات صحيح أكبر من 0");
+                        } else {
+                          setCustomError("");
+                        }
+                      }}
+                      className="w-14 h-8 border border-gray-300 rounded-md text-center text-[12px] focus:outline-none focus:ring-1 focus:ring-[var(--color-purple)]"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+
                   <span className="text-[12px] text-gray-600">
                     ساعة قبل الموعد
                   </span>
+
                   <button
                     type="button"
+                    disabled={isCustomInvalid}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (isCustomInvalid) return;
                       handleAddCustomReminder();
                     }}
-                    className="flex items-center gap-1 px-3 h-8 rounded-full bg-[var(--color-purple)] text-white text-[12px] font-semibold cursor-pointer"
+                    className={`flex items-center gap-1 px-3 h-8 rounded-full text-[12px] font-semibold
+                      ${
+                        isCustomInvalid
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-[var(--color-purple)] text-white cursor-pointer"
+                      }
+                    `}
                   >
                     <span className="text-[16px] leading-none">+</span>
                     <span>إضافة</span>

@@ -281,7 +281,7 @@ export const deleteMember = async (id) => {
 // جلب قائمة الباقات (Packages)
 export const getAllPackages = async () => {
   try {
-    const res = await api.get("/package/listPackages", {
+    const res = await api.get("/package/listPackages?active=true", {
       headers: { Authorization: `Bearer ${FIXED_TOKEN}` },
     });
 

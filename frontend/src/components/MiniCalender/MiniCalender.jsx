@@ -15,10 +15,7 @@ const arLocale = {
 };
 registerLocale("ar", arLocale);
 
-const YEARS = [];
-for (let y = 1960; y <= 2035; y++) {
-  YEARS.push(y);
-}
+// ❌ تم حذف YEARS القديم هنا (حسب طلبك)
 
 const MONTHS = [
   "يناير",
@@ -41,8 +38,16 @@ export default function MiniCalender({
   variant = "default",
   highlightedDates = [],
   hideTodayHighlight = false,
+  minYear = 1960,  
+  maxYear = 2035,   
 }) {
   const [tempDate, setTempDate] = useState(currentDate || new Date());
+
+
+  const YEARS = [];
+  for (let y = minYear; y <= maxYear; y++) {
+    YEARS.push(y);
+  }
 
   const formatWeekDay = (nameOfDay) => {
     const map = {
@@ -183,9 +188,7 @@ export default function MiniCalender({
                 className="mini-calendar-header flex items-center justify-between w-full mb-2"
                 style={{ direction: "rtl" }}
               >
-                {/* اختيار الشهر + اختيار السنة باستخدام Dropdown */}
                 <div className="flex items-center gap-2">
-                  {/* شهر */}
                   <Dropdown
                     options={MONTHS}
                     value={currentMonthLabel}
@@ -193,13 +196,11 @@ export default function MiniCalender({
                       const idx = MONTHS.indexOf(label);
                       if (idx !== -1) changeMonth(idx);
                     }}
-                    // مهم: نفس كلاس ال<select> القديمة بالضبط
                     className="w-[120px]"
                     fieldClassName="h-[32px] flex items-center justify-between px-3 text-[13px] rounded-[8px] border border-[#E5E7EB] bg-white"
                     menuClassName="dropdown-menu-scroll custom-scrollbar"
                   />
 
-                  {/* سنة */}
                   <Dropdown
                     options={YEARS.map(String)}
                     value={currentYearLabel}
@@ -207,16 +208,13 @@ export default function MiniCalender({
                       const y = Number(label);
                       if (!Number.isNaN(y)) changeYear(y);
                     }}
-                    // برضه نفس عرض واستايل حقل السنة القديم
                     className="w-[80px]"
                     fieldClassName="h-[32px] flex items-center justify-between px-3 text-[13px] rounded-[8px] border border-[#E5E7EB] bg-white"
                     menuClassName="dropdown-menu-scroll custom-scrollbar"
                   />
                 </div>
 
-                {/* أسهم الشهر بس */}
                 <div className="flex items-center gap-1">
-                  {/* شهر سابق */}
                   <button
                     type="button"
                     onClick={decreaseMonth}
@@ -226,7 +224,6 @@ export default function MiniCalender({
                     <img src={RightArrowIcon} alt="prev-month" />
                   </button>
 
-                  {/* شهر تالي */}
                   <button
                     type="button"
                     onClick={increaseMonth}

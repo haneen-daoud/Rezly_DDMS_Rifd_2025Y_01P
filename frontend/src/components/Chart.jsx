@@ -178,16 +178,25 @@ export default function Chart() {
               data={data}
               margin={{ top: 8, right: 10, left: 10, bottom: 8 }} // قلّلنا المسافات
             >
-              <XAxis
-                dataKey="day"
-                interval={0}
-                tick={{
-                  fontSize: window.innerWidth < 640 ? 9 : 11,
-                  fill: "#333",
-                  fontFamily: "Cairo",
-                }}
-                padding={{ left: 15, right: 15 }}
-              />
+   <XAxis
+  dataKey="day"
+  interval={0}
+  tick={{
+    fontSize:
+      filter === "الشهر"
+        ? (window.innerWidth < 640 ? 6 : 9) // تصغير الخط بالشهر فقط
+        : (window.innerWidth < 640 ? 9 : 11), // اليوم + الأسبوع بدون تغيير
+    fill: "#333",
+    fontFamily: "Cairo",
+  }}
+  padding={
+    filter === "الشهر"
+      ? { left: 8, right: 8 } // عشان ما ينقص أول وآخر شهر
+      : { left: 15, right: 15 } // اليوم + الأسبوع بدون تغيير
+  }
+/>
+
+              
               <YAxis hide />
               <Tooltip />
               <Line
@@ -207,11 +216,18 @@ export default function Chart() {
                 dataKey="day"
                 interval={0}
                 tick={{
-                  fontSize: window.innerWidth < 640 ? 9 : 11,
+                      fontSize:
+      filter === "الشهر"
+        ? (window.innerWidth < 640 ? 6 : 9) // تصغير الخط بالشهر فقط
+        : (window.innerWidth < 640 ? 9 : 11), // اليوم + الأسبوع بدون تغيير
                   fill: "#333",
                   fontFamily: "Cairo",
                 }}
-                padding={{ left: 20, right: 20 }}
+               padding={
+    filter === "الشهر"
+      ? { left: 8, right: 8 } // عشان ما ينقص أول وآخر شهر
+      : { left: 15, right: 15 } // اليوم + الأسبوع بدون تغيير
+  }
               />
               <YAxis hide />
               <Tooltip />

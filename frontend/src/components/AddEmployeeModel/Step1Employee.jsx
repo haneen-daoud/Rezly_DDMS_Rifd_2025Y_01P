@@ -111,11 +111,10 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
               value={data.firstName}
               onChange={(e) => handleChange("firstName", e.target.value)}
               className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
-  focus:outline-none ${
-    combinedErrors.firstName
-      ? "border-red-500"
-      : "border-gray-300 focus:border-[var(--color-purple)]"
-  }`}
+  focus:outline-none ${combinedErrors.firstName
+                  ? "border-red-500"
+                  : "border-gray-300 focus:border-[var(--color-purple)]"
+                }`}
             />
             {combinedErrors.firstName && (
               <p className="text-red-500 text-[11px] mt-1">
@@ -134,11 +133,10 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
               value={data.lastName}
               onChange={(e) => handleChange("lastName", e.target.value)}
               className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
-  focus:outline-none ${
-    combinedErrors.lastName
-      ? "border-red-500"
-      : "border-gray-300 focus:border-[var(--color-purple)]"
-  }`}
+  focus:outline-none ${combinedErrors.lastName
+                  ? "border-red-500"
+                  : "border-gray-300 focus:border-[var(--color-purple)]"
+                }`}
             />
             {combinedErrors.lastName && (
               <p className="text-red-500 text-[11px] mt-1">
@@ -180,11 +178,10 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
             maxLength={9}
             onChange={(e) => handleChange("nationalId", e.target.value)}
             className={`w-full h-[42px] p-3 border rounded-[8px] text-[12px] placeholder-[#7E818C]
-  focus:outline-none ${
-    combinedErrors.nationalId
-      ? "border-red-500"
-      : "border-gray-300 focus:border-[var(--color-purple)]"
-  }`}
+  focus:outline-none ${combinedErrors.nationalId
+                ? "border-red-500"
+                : "border-gray-300 focus:border-[var(--color-purple)]"
+              }`}
           />
           {combinedErrors.nationalId && (
             <p className="text-red-500 text-[11px] mt-1">
@@ -206,11 +203,10 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
                 onClick={() => setShowCalendar((prev) => !prev)}
                 className={`w-full h-[42px] flex items-center gap-2 border rounded-[8px] p-3 cursor-pointer 
         text-[12px] placeholder-[#7E818C]
-        ${
-          combinedErrors.birthDate
-            ? "border-red-500"
-            : "border-gray-300 focus:border-[var(--color-purple)]"
-        }
+        ${combinedErrors.birthDate
+                    ? "border-red-500"
+                    : "border-gray-300 focus:border-[var(--color-purple)]"
+                  }
         focus:outline-none
       `}
               >
@@ -224,6 +220,7 @@ const Step1Employee = forwardRef(({ data, onChange, errors }, ref) => {
 
               {showCalendar && (
                 <MiniCalender
+                maxYear={2015}
                   currentDate={
                     data.birthDate ? new Date(data.birthDate) : new Date()
                   }
